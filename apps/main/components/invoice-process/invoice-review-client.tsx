@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import InvoiceList from "./invoice-list";
 import PdfViewer from "./pdf-viewer";
 import InvoiceDetailsForm from "./invoice-details-form";
@@ -14,18 +14,15 @@ export default function InvoiceReviewClient({
   invoices: InvoiceListItem[];
   initialInvoiceDetails: InvoiceDetails;
 }) {
-  if (!invoices || invoices.length === 0) {
-    return (
-      <div className="flex items-center justify-center h-full col-span-full">
-        <p className="text-muted-foreground">No invoices to display.</p>
-      </div>
-    );
-  }
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>(
     invoices[0]!.id
   );
-
   const selectedInvoice = useMemo(
     () => invoices.find((invoice) => invoice.id === selectedInvoiceId)!,
     [invoices, selectedInvoiceId]
@@ -34,21 +31,27 @@ export default function InvoiceReviewClient({
   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(
     initialInvoiceDetails
   );
-
-  // State to manage which fields are selected for processing
   const [selectedFields, setSelectedFields] = useState<string[]>(() =>
-    invoiceDetails ? Object.keys(invoiceDetails) : []
+    initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
   );
-
   const [isEditing, setIsEditing] = useState(false);
+  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (uploadedPdfUrl) {
+        URL.revokeObjectURL(uploadedPdfUrl);
+      }
+    };
+  }, [uploadedPdfUrl]);
 
   const handleSelectInvoice = (invoice: InvoiceListItem) => {
     setSelectedInvoiceId(invoice.id);
     const details = mockInvoiceDetails[invoice.id];
     setInvoiceDetails(details || null);
-    // When a new invoice is selected, reset selected fields to all fields
     setSelectedFields(details ? Object.keys(details) : []);
     setIsEditing(false);
+    setUploadedPdfUrl(null);
   };
 
   const handleDetailsChange = (
@@ -60,6 +63,28 @@ export default function InvoiceReviewClient({
       prevDetails ? { ...prevDetails, [name]: value } : null
     );
   };
+
+  // This handler now correctly accepts a File object
+  const handleFileUpload = (file: File) => {
+    if (uploadedPdfUrl) {
+      URL.revokeObjectURL(uploadedPdfUrl);
+    }
+    const url = URL.createObjectURL(file);
+    setUploadedPdfUrl(url);
+    console.log("File uploaded and ready for viewing:", file.name);
+  };
+
+  if (!isClient) {
+    return null;
+  }
+
+  if (!invoices || invoices.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full col-span-full">
+        <p className="text-muted-foreground">No invoices to display.</p>
+      </div>
+    );
+  }
 
   if (!selectedInvoice) {
     return (
@@ -78,13 +103,16 @@ export default function InvoiceReviewClient({
           invoices={invoices}
           selectedInvoice={selectedInvoice}
           onSelectInvoice={handleSelectInvoice}
+          onFileUpload={handleFileUpload}
         />
       </div>
-
       {invoiceDetails ? (
         <>
           <div className="md:col-span-5 lg:col-span-5">
-            <PdfViewer invoice={invoiceDetails} />
+            <PdfViewer
+              invoice={invoiceDetails}
+              pdfUrl={uploadedPdfUrl || invoiceDetails.pdfUrl}
+            />
           </div>
           <div className="md:col-span-4 lg:col-span-4">
             <InvoiceDetailsForm

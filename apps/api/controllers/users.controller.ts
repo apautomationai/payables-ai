@@ -3,14 +3,15 @@ import { signJwt } from "@/lib/utils/jwt";
 import { userServices } from "@/services/users.service";
 
 import { NextFunction, Request, Response } from "express";
-import passport from "passport";
+import passport from "@/lib/passport";
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
       const { name, age, email, password } = req.body;
 
-      const result = userServices.registerUser(name, age, email, password);
+      const result =  userServices.registerUser(name, age, email, password);
+      console.log(result)
 
       return res.json({
         success: true,
@@ -23,7 +24,7 @@ export class UserController {
     }
   };
 
-  loginUser = async (req: Request, res: Response, next: NextFunction) => {
+  loginUser =  (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "local",
       { session: false },
@@ -34,7 +35,7 @@ export class UserController {
             .status(401)
             .json({ message: info?.message || "Unauthorized" });
 
-        const token = signJwt({
+        const token =  signJwt({
           sub: (user as any).id,
           email: (user as any).email,
         });
@@ -45,3 +46,5 @@ export class UserController {
 }
 
 export const userController = new UserController();
+
+

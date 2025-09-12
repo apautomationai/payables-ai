@@ -62,11 +62,11 @@ export default function ConfirmationModals({
         </>
       ) : (
         <>
-          <Button variant="destructive" onClick={handleReject}>
-            Reject
-          </Button>
           <Button variant="outline" onClick={() => setIsEditing(true)}>
             Edit
+          </Button>
+          <Button variant="destructive" onClick={handleReject}>
+            Reject
           </Button>
           <Dialog>
             <DialogTrigger asChild>

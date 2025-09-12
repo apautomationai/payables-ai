@@ -11,6 +11,9 @@ import {
   Package2,
   PanelLeftClose,
   PanelLeftOpen,
+  User,
+  LifeBuoy,
+  LogOut,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -76,14 +79,14 @@ export default function Header({
               Dashboard
             </Link>
             <Link
-              href="/dashboard/invoice-review"
+              href="/invoice-review"
               className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <FileText className="h-5 w-5" />
               Invoice Review
             </Link>
             <Link
-              href="/dashboard/settings"
+              href="/settings"
               className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <Settings className="h-5 w-5" />
@@ -137,10 +140,21 @@ export default function Header({
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>My Account</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/profile">
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem>
+              <LifeBuoy className="mr-2 h-4 w-4" />
+              <span>Support</span>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Logout</DropdownMenuItem>
+            <DropdownMenuItem>
+              <LogOut className="mr-2 h-4 w-4" />
+              <Link href={"/sign-in"}>Logout</Link>
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

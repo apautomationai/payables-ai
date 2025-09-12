@@ -1,13 +1,15 @@
 "use server";
 
 import { z } from "zod";
-import { SignUpSchema } from "@/lib/validators";
+import { signUpSchema } from "@/lib/validators";
 
 export type SignUpFormState = {
   message: string;
   errors?: {
+    firstName?: string[];
+    lastName?: string[];
     email?: string[];
-    phone?: string[];
+    // phone?: string[];
     password?: string[];
   };
   success: boolean;
@@ -17,24 +19,32 @@ export async function signUpAction(
   prevState: SignUpFormState,
   formData: FormData
 ): Promise<SignUpFormState> {
-  const validatedFields = SignUpSchema.safeParse(
+  // Validate the form data
+  const validatedFields = signUpSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
 
+  // If validation fails, return the errors
   if (!validatedFields.success) {
     return {
-      message: "Validation failed.",
+      message: "Form submission failed. Please check the errors.",
       errors: validatedFields.error.flatten().fieldErrors,
       success: false,
     };
   }
 
-  // On successful validation, log the data to the server console
-  console.log("Sign-up data received on server:", validatedFields.data);
+  // --- Handle successful submission ---
+  // For demonstration, we'll log the data to the console.
+  // In a real application, you would create the user in your database here.
+  console.log("New user signed up with the following data:");
+  console.log({
+    firstName: validatedFields.data.firstName,
+    lastName: validatedFields.data.lastName,
+    email: validatedFields.data.email,
+    // phone: validatedFields.data.phone,
+  });
 
-  // In a real application, you would handle database logic here,
-  // such as creating a new user record.
-
+  // Return a success message
   return {
     message: "Your account has been created successfully!",
     success: true,

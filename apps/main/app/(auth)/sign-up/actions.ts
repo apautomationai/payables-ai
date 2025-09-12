@@ -1,54 +1,42 @@
 "use server";
 
 import { z } from "zod";
+import { SignUpSchema } from "@/lib/validators";
 
-export interface SignUpState {
-  message: string | null;
+export type SignUpFormState = {
+  message: string;
   errors?: {
-    firstName?: string[];
-    lastName?: string[];
     email?: string[];
+    phone?: string[];
     password?: string[];
   };
-}
-
-const SignUpSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z
-    .string()
-    .min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters." }),
-});
+  success: boolean;
+};
 
 export async function signUpAction(
-  prevState: SignUpState,
+  prevState: SignUpFormState,
   formData: FormData
-): Promise<SignUpState> {
-  // Validate form fields
+): Promise<SignUpFormState> {
   const validatedFields = SignUpSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
 
-  // If form validation fails, return errors
   if (!validatedFields.success) {
     return {
+      message: "Validation failed.",
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Validation failed. Please check the fields.",
+      success: false,
     };
   }
 
-  // Here you would typically handle user creation in your database
-  // For this example, we'll just log the data and return a success message
-  console.log("Creating user with:", validatedFields.data);
+  // On successful validation, log the data to the server console
+  console.log("Sign-up data received on server:", validatedFields.data);
 
-  // Return success state
+  // In a real application, you would handle database logic here,
+  // such as creating a new user record.
+
   return {
-    message: "Account created successfully!",
-    errors: {},
+    message: "Your account has been created successfully!",
+    success: true,
   };
 }

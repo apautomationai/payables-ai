@@ -1,42 +1,53 @@
 "use server";
 
 import { z } from "zod";
+import { SignInSchema } from "@/lib/validators";
 
-const SignInSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z
-    .string()
-    .min(6, { message: "Password must be at least 6 characters." }),
-});
-
-export type SignInState = {
+// This is the shape of the state that will be returned from our server action
+export type SignInFormState = {
+  message: string;
   errors?: {
     email?: string[];
     password?: string[];
   };
-  message?: string | null;
+  success: boolean;
 };
 
-export async function signInAction(prevState: SignInState, formData: FormData) {
-  const validatedFields = SignInSchema.safeParse(
-    Object.fromEntries(formData.entries())
-  );
+// The server action itself
+export async function signInAction(
+  prevState: SignInFormState,
+  formData: FormData
+): Promise<SignInFormState> {
+  // 1. Convert FormData to a plain object
+  const rawFormData = Object.fromEntries(formData.entries());
 
+  // 2. Validate the data on the server using your Zod schema
+  const validatedFields = SignInSchema.safeParse(rawFormData);
+
+  // 3. If validation fails, return the errors
   if (!validatedFields.success) {
     return {
+      message: "Validation failed. Please check the fields.",
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Validation failed. Please check your inputs.",
+      success: false,
     };
   }
 
-  // Here you would typically handle the actual authentication logic,
-  // e.g., call your authentication API, check credentials, etc.
-  console.log("Authentication successful for:", validatedFields.data.email);
+  // 4. If validation succeeds, process the data
+  const { email, password } = validatedFields.data;
 
-  // For this example, we'll just return a success message.
-  // In a real app, you would likely redirect the user upon success
-  // using `redirect()` from `next/navigation`.
+  // The output will now appear in your terminal's server console, not the browser console.
+  console.log("Server Action: Successfully validated sign-in data:", {
+    email,
+    password,
+  });
+
+  // In a real application, you would handle the actual authentication here.
+  // For example, querying your database or calling an auth service.
+
+  // 5. Return a success message
   return {
-    message: "Login successful!",
+    message: "Sign-in successful! Data logged on the server.",
+    success: true,
   };
 }

@@ -77,15 +77,15 @@ export default function SideMenuBar({ isCollapsed }: { isCollapsed: boolean }) {
               href="/invoice-review"
               icon={FileText}
               isCollapsed={isCollapsed}
-              isActive={pathname.startsWith("/dashboard/invoice-review")}
+              isActive={pathname.startsWith("/invoice-review")}
             >
               Invoice Review
             </NavLink>
             <NavLink
-              href="/(dashboard)/settings"
+              href="/settings"
               icon={Settings}
               isCollapsed={isCollapsed}
-              isActive={pathname.startsWith("/dashboard/settings")}
+              isActive={pathname.startsWith("/settings")}
             >
               Settings
             </NavLink>

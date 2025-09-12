@@ -17,7 +17,7 @@ export default function InvoiceReviewPage() {
     );
   }
 
-  const initialInvoiceDetails = mockInvoiceDetails[invoices[0].id];
+  const initialInvoiceDetails = mockInvoiceDetails[invoices[0]!.id];
 
   // Handle the case where the initial invoice details might not exist
   if (!initialInvoiceDetails) {

@@ -23,7 +23,7 @@ export default function InvoiceReviewClient({
   }
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>(
-    invoices[0].id
+    invoices[0]!.id
   );
 
   const selectedInvoice = useMemo(

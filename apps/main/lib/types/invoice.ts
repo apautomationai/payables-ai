@@ -5,17 +5,22 @@ export type User = {
   avatarUrl?: string;
 };
 
-export type InvoiceStatus = "Pending" | "Completed" | "Requires Attention";
+export type InvoiceListItem = {
+  id: string;
+  number: string;
+  status: "Completed" | "Pending" | "Requires Attention";
+  date: string;
+};
 
-export type InvoiceLineItem = {
+export interface LineItem {
   id: string;
   description: string;
   quantity: number;
   unitPrice: number;
   total: number;
-};
+}
 
-export interface Invoice {
+export interface InvoiceDetails {
   id: string;
   invoiceNumber: string;
   vendorName: string;
@@ -24,8 +29,7 @@ export interface Invoice {
   dueDate: string;
   totalAmount: number;
   currency: string;
-  status: InvoiceStatus;
-  lineItems: InvoiceLineItem[];
+  status: "Completed" | "Pending" | "Requires Attention";
+  lineItems: LineItem[];
   pdfUrl: string;
-  extractedText?: string;
 }

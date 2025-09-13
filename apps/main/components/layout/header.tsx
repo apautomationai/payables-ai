@@ -38,6 +38,7 @@ import {
   AvatarImage,
 } from "@workspace/ui/components/avatar";
 import { Button } from "@workspace/ui/components/button";
+import { ThemeToggle } from "@/components/layout/theme-toggle"; // Import the new component
 
 export default function Header({
   isCollapsed,
@@ -79,14 +80,14 @@ export default function Header({
               Dashboard
             </Link>
             <Link
-              href="/invoice-review"
+              href="/dashboard/invoice-review"
               className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <FileText className="h-5 w-5" />
               Invoice Review
             </Link>
             <Link
-              href="/settings"
+              href="/dashboard/settings"
               className="mx-[-0.65rem] flex items-center gap-4 rounded-xl px-3 py-2 text-muted-foreground hover:text-foreground"
             >
               <Settings className="h-5 w-5" />
@@ -123,40 +124,49 @@ export default function Header({
           />
         </div>
 
-        {/* Profile Avatar */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="secondary" size="icon" className="rounded-full">
-              <Avatar>
-                <AvatarImage
-                  src="https://placehold.co/32x32/a7a7a7/ffffff?text=U"
-                  alt="User"
-                />
-                <AvatarFallback>U</AvatarFallback>
-              </Avatar>
-              <span className="sr-only">Toggle user menu</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/profile">
-                <User className="mr-2 h-4 w-4" />
-                <span>Profile</span>
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem>
-              <LifeBuoy className="mr-2 h-4 w-4" />
-              <span>Support</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogOut className="mr-2 h-4 w-4" />
-              <Link href={"/sign-in"}>Logout</Link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {/* Right side icons */}
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" size="icon" className="rounded-full">
+                <Avatar>
+                  <AvatarImage
+                    src="https://placehold.co/32x32/a7a7a7/ffffff?text=U"
+                    alt="User"
+                  />
+                  <AvatarFallback>U</AvatarFallback>
+                </Avatar>
+                <span className="sr-only">Toggle user menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/profile">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <LifeBuoy className="mr-2 h-4 w-4" />
+                <span>Support</span>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

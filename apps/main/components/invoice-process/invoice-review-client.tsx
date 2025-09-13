@@ -97,7 +97,7 @@ export default function InvoiceReviewClient({
   }
 
   return (
-    <div className="grid h-[calc(100vh-8rem)] grid-cols-1 gap-4 md:grid-cols-12">
+    <div className="grid h-96 grid-cols-1 gap-4 md:grid-cols-12">
       <div className="md:col-span-3 lg:col-span-3">
         <InvoiceList
           invoices={invoices}

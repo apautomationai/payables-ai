@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import SideMenuBar from "@/components/layout/side-menubar";
 import Header from "@/components/layout/header";
+import Footer from "@/components/layout/footer";
 import { cn } from "@workspace/ui/lib/utils";
 
 export default function DashboardLayout({
@@ -20,17 +21,16 @@ export default function DashboardLayout({
     <div
       className={cn(
         "grid min-h-screen w-full transition-[grid-template-columns] duration-300 ease-in-out",
-        isCollapsed
-          ? "md:grid-cols-[80px_1fr]"
-          : "md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]"
+        isCollapsed ? "md:grid-cols-[80px_1fr]" : "md:grid-cols-[240px_1fr]"
       )}
     >
       <SideMenuBar isCollapsed={isCollapsed} />
-      <div className="flex flex-col">
+      {/* This is the key change. By creating a grid layout here, we gain precise
+          control over the header, main content, and footer, preventing any overlap. */}
+      <div className="grid grid-rows-[auto_1fr_auto] h-screen">
         <Header isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
-        <main className="flex flex-1 flex-col gap-4 p-4 lg:gap-6 lg:p-6">
-          {children}
-        </main>
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        <Footer />
       </div>
     </div>
   );

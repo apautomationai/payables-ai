@@ -9,10 +9,10 @@ import { BadRequestError, ConflictError } from "@/helpers/errors";
 
 export class UserServices {
 
-    registerUser = async (name:string, age:number, email:string, password:string)=> {
+    registerUser = async (name:string,  email:string, password:string)=> {
         try {
-            if (!name || !age || !email || !password) {
-                throw new BadRequestError("Name, age, email, and password are required")
+            if (!name || !email || !password) {
+                throw new BadRequestError("Name, email, and password are required")
       }
 
       // Check if email already exists
@@ -33,7 +33,7 @@ export class UserServices {
       // Insert the new user
       const inserted = await db
         .insert(usersTable)
-        .values({ name, age, email, passwordHash })
+        .values({ name, email, passwordHash })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;

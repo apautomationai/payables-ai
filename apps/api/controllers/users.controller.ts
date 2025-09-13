@@ -8,12 +8,12 @@ import passport from "@/lib/passport";
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { name, age, email, password } = req.body;
+      const { name,  email, password } = req.body;
 
-      const result =  userServices.registerUser(name, age, email, password);
+      const result = userServices.registerUser(name,  email, password);
       console.log(result)
 
-      return res.json({
+       return res.json({
         success: true,
         data: result,
         timestamp: new Date().toISOString(),

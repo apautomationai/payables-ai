@@ -5,7 +5,6 @@ import { integer, pgTable, varchar, text, timestamp } from "drizzle-orm/pg-core"
 export const usersTable = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   name: varchar("name", { length: 255 }).notNull(),
-  age: integer("age").notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   createdAt: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),

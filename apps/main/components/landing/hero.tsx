@@ -1,0 +1,182 @@
+"use client";
+
+import { Button } from "@workspace/ui/components/button";
+import { Badge } from "@workspace/ui/components/badge";
+import {
+  AnimatedRocket,
+  AnimatedChart,
+  PulsingOrb,
+  FloatingElements,
+  ProfessionalIcons,
+} from "./animated-icons";
+import {
+  ArrowRight,
+  Play,
+  Star,
+  Users,
+  TrendingUp,
+  Shield,
+} from "lucide-react";
+import { motion } from "framer-motion";
+
+export function Hero() {
+  return (
+    <section className="relative overflow-hidden pt-16 pb-32 sm:pt-24 sm:pb-40">
+      {/* Background Elements */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-emerald-50 opacity-60" />
+
+        {/* Professional floating elements */}
+        <FloatingElements />
+        <ProfessionalIcons />
+
+        {/* Animated Background Elements */}
+        <div className="absolute top-20 left-10 opacity-30">
+          <PulsingOrb color="#3B82F6" size={80} />
+        </div>
+        <div className="absolute top-40 right-20 opacity-20">
+          <PulsingOrb color="#10B981" size={120} />
+        </div>
+        <div className="absolute bottom-32 left-1/4 opacity-25">
+          <PulsingOrb color="#8B5CF6" size={60} />
+        </div>
+
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full max-w-7xl">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-blue-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob" />
+          <div className="absolute top-40 right-20 w-72 h-72 bg-emerald-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000" />
+          <div className="absolute bottom-20 left-1/3 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000" />
+        </div>
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-4xl text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <Badge
+              variant="outline"
+              className="mb-6 px-4 py-2 text-sm font-medium border-blue-200 bg-blue-50/50 text-blue-700 hover:bg-blue-100/50 transition-all duration-300"
+            >
+              <Star className="w-4 h-4 mr-2 fill-yellow-400 text-yellow-400" />
+              Trusted by 10,000+ businesses worldwide
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl lg:text-8xl"
+          >
+            Transform Your
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+              {" "}
+              Business{" "}
+            </span>
+            Operations
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mt-8 text-xl leading-8 text-gray-600 max-w-3xl mx-auto"
+          >
+            Streamline workflows, boost productivity, and scale faster with our
+            intelligent automation platform. Join thousands of companies already
+            transforming their operations.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Button
+              size="lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+            >
+              Start Free Trial
+              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              className="px-8 py-4 text-lg font-medium rounded-xl border-gray-300 hover:border-gray-400 transition-all duration-300 group"
+            >
+              <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+              Watch Demo
+            </Button>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-gray-500"
+          >
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span>10,000+ Active Users</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              <span>99.9% Uptime</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4" />
+              <span>Enterprise Security</span>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Product Preview */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.5 }}
+          className="mt-20 mx-auto max-w-6xl"
+        >
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none h-32 bottom-0" />
+
+            {/* Floating animated elements around the preview */}
+            <div className="absolute -top-10 -left-10 z-20">
+              <AnimatedRocket />
+            </div>
+            <div className="absolute -top-5 -right-10 z-20">
+              <AnimatedChart />
+            </div>
+
+            <div className="relative rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-2xl p-4 sm:p-8">
+              <div className="aspect-video rounded-xl bg-gradient-to-br from-blue-100 to-emerald-100 flex items-center justify-center">
+                <div className="text-center">
+                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center">
+                    <Play className="w-8 h-8 text-blue-600" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-700">
+                    Interactive Product Demo
+                  </p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Click to see our platform in action
+                  </p>
+                </div>
+
+                {/* Floating orbs inside the demo area */}
+                <div className="absolute top-4 left-4">
+                  <PulsingOrb color="#3B82F6" size={30} />
+                </div>
+                <div className="absolute bottom-4 right-4">
+                  <PulsingOrb color="#10B981" size={25} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}

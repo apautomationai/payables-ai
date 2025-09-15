@@ -5,14 +5,11 @@ import { usersTable } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
 import { BadRequestError, ConflictError } from "@/helpers/errors";
 
-
-
 export class UserServices {
-
-    registerUser = async (name:string,  email:string, password:string)=> {
-        try {
-            if (!name || !email || !password) {
-                throw new BadRequestError("Name, email, and password are required")
+  registerUser = async (name: string, email: string, password: string) => {
+    try {
+      if (!name || !email || !password) {
+        throw new BadRequestError("Name, email, and password are required");
       }
 
       // Check if email already exists
@@ -22,9 +19,8 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .limit(1)
         .then((r) => r[0]);
-
       if (existingUser) {
-        throw new ConflictError("Email already in use")
+        throw new ConflictError("Email already in use");
       }
 
       // Hash the password
@@ -49,12 +45,10 @@ export class UserServices {
         },
         token,
       };
-        } catch (error) {
-            throw new BadRequestError()
-        }
+    } catch (error) {
+      throw new BadRequestError("Registration failed");
     }
-
-
+  };
 }
 
 export const userServices = new UserServices();

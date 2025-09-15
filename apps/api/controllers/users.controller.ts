@@ -4,27 +4,26 @@ import { userServices } from "@/services/users.service";
 
 import { NextFunction, Request, Response } from "express";
 import passport from "@/lib/passport";
+import { ConflictError } from "@/helpers/errors";
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { name,  email, password } = req.body;
+      const { name, email, password } = req.body;
 
-      const result = userServices.registerUser(name,  email, password);
-      console.log(result)
+      const result = await userServices.registerUser(name, email, password);
 
-       return res.json({
+      return res.status(200).json({
         success: true,
         data: result,
         timestamp: new Date().toISOString(),
       });
     } catch (err) {
-      console.error(err);
-      return res.status(500).json({ message: "Server error" });
+      throw new ConflictError("Email already in use");
     }
   };
 
-  loginUser =  (req: Request, res: Response, next: NextFunction) => {
+  loginUser = (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate(
       "local",
       { session: false },
@@ -35,7 +34,7 @@ export class UserController {
             .status(401)
             .json({ message: info?.message || "Unauthorized" });
 
-        const token =  signJwt({
+        const token = signJwt({
           sub: (user as any).id,
           email: (user as any).email,
         });
@@ -46,5 +45,3 @@ export class UserController {
 }
 
 export const userController = new UserController();
-
-

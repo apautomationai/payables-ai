@@ -143,7 +143,7 @@ export function Features() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="relative p-8 h-full bg-white/80 backdrop-blur-sm border-gray-200 hover:shadow-xl transition-all duration-300 group hover:border-blue-200">
+              <Card className="relative p-8 h-full dark:bg-white/80 bg-white/80 backdrop-blur-sm dark:border-gray-200 border-gray-200 hover:shadow-xl transition-all duration-300 group hover:border-blue-200 dark:hover:border-blue-200">
                 <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-t-lg transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
 
                 {/* Animated Vector Background */}

@@ -129,7 +129,7 @@ export function SocialProof() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-8 h-full bg-white border-gray-200 hover:shadow-lg transition-shadow duration-300 relative">
+              <Card className="p-8 h-full dark:bg-white bg-white dark:border-gray-200 border-gray-200 hover:shadow-lg transition-shadow duration-300 relative">
                 <Quote className="absolute top-6 right-6 w-8 h-8 text-blue-100" />
 
                 {/* Animated corner orb */}

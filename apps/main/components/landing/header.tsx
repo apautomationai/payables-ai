@@ -139,7 +139,7 @@ export function Header() {
           <div className="hidden lg:flex lg:items-center lg:gap-4">
             <Button
               variant="ghost"
-              className="text-gray-700 hover:text-blue-600 font-medium"
+              className="text-gray-700 hover:text-blue-600 font-medium dark:hover:bg-gray-50 transition-colors duration-300"
             >
               <Link href={"/sign-in"}>Sign In</Link>
             </Button>

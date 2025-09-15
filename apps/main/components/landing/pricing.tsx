@@ -107,9 +107,9 @@ export function Pricing() {
               <Card
                 className={`relative p-8 h-full ${
                   plan.popular
-                    ? "border-blue-200 shadow-xl ring-1 ring-blue-100 scale-105"
-                    : "border-gray-200 hover:shadow-lg"
-                } transition-all duration-300 bg-white relative overflow-hidden`}
+                    ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
+                    : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
+                } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
               >
                 {/* Animated background for popular plan */}
                 {plan.popular && (
@@ -124,7 +124,7 @@ export function Pricing() {
                 </div>
 
                 {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 z-10">
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
                     <motion.div
                       animate={{ y: [0, -2, 0] }}
                       transition={{
@@ -133,7 +133,7 @@ export function Pricing() {
                         ease: "easeInOut",
                       }}
                     >
-                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
+                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 dark:bg-gradient-to-r dark:from-blue-600 dark:to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
                         <Star className="w-4 h-4 mr-1 fill-current" />
                         Most Popular
                       </Badge>

@@ -105,7 +105,7 @@ export function Hero() {
             <Button
               variant="outline"
               size="lg"
-              className="px-8 py-4 text-lg font-medium rounded-xl border-gray-300 hover:border-gray-400 transition-all duration-300 group"
+              className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
             >
               <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
               Watch Demo

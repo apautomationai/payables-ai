@@ -186,7 +186,7 @@ export function SocialProof() {
 
                 <Badge
                   variant="secondary"
-                  className="text-xs font-medium bg-emerald-100 text-emerald-700 border-emerald-200"
+                  className="text-xs font-medium bg-emerald-100 dark:hover:bg-gray-50 text-emerald-700 border-emerald-200"
                 >
                   {testimonial.metrics}
                 </Badge>

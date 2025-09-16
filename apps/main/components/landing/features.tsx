@@ -14,11 +14,11 @@ import {
 } from "./animated-icons";
 import {
   Zap,
-  Shield,
-  BarChart3,
-  Users,
-  Workflow,
-  Clock,
+  Mail,
+  TrendingUp,
+  Users2,
+  Database,
+  Upload,
   ArrowRight,
   CheckCircle,
 } from "lucide-react";
@@ -28,76 +28,72 @@ const features = [
   {
     icon: Zap,
     animatedIcon: AnimatedLightning,
-    title: "Lightning Fast Performance",
+    title: "AI-Powered Processing",
     description:
-      "Experience blazing-fast load times and real-time data processing that keeps your team productive.",
-    highlight: "99.9% Uptime",
+      "Automatically extract data from invoices with 98% accuracy using advanced machine learning algorithms.",
+    highlight: "98% Accuracy",
     benefits: [
-      "Sub-second response times",
-      "Real-time synchronization",
-      "Optimized for scale",
+      "Automated data extraction",
+      "Machine learning algorithms",
+      "Intelligent field recognition",
     ],
   },
   {
-    icon: Shield,
-    animatedIcon: AnimatedShield,
-    title: "Enterprise Security",
-    description:
-      "Bank-grade security with end-to-end encryption, SSO integration, and compliance certifications.",
-    highlight: "SOC 2 Compliant",
-    benefits: [
-      "256-bit encryption",
-      "Multi-factor authentication",
-      "Regular security audits",
-    ],
-  },
-  {
-    icon: BarChart3,
-    animatedIcon: AnimatedChart,
-    title: "Advanced Analytics",
-    description:
-      "Get deep insights into your business with customizable dashboards and automated reporting.",
-    highlight: "Real-time Insights",
-    benefits: [
-      "Custom dashboards",
-      "Predictive analytics",
-      "Automated reports",
-    ],
-  },
-  {
-    icon: Users,
-    animatedIcon: AnimatedUsers,
-    title: "Team Collaboration",
-    description:
-      "Seamless collaboration tools that bring your team together, no matter where they work from.",
-    highlight: "Unlimited Users",
-    benefits: [
-      "Real-time collaboration",
-      "Role-based permissions",
-      "Activity tracking",
-    ],
-  },
-  {
-    icon: Workflow,
+    icon: Mail,
     animatedIcon: AnimatedWorkflow,
-    title: "Smart Automation",
+    title: "Email Listener",
     description:
-      "Automate repetitive tasks and workflows to focus on what matters most to your business.",
-    highlight: "AI-Powered",
-    benefits: ["Workflow automation", "Smart notifications", "Custom triggers"],
+      "Automatically capture invoices from email attachments and process them without manual intervention.",
+    highlight: "Auto-Capture",
+    benefits: [
+      "Email integration",
+      "Automatic processing",
+      "No manual intervention",
+    ],
   },
   {
-    icon: Clock,
-    animatedIcon: AnimatedClock,
-    title: "24/7 Support",
+    icon: TrendingUp,
+    animatedIcon: AnimatedChart,
+    title: "Real-time Analytics",
     description:
-      "Our dedicated support team is available around the clock to help you succeed.",
-    highlight: "Always Available",
+      "Monitor your AP workflow with comprehensive dashboards and actionable insights.",
+    highlight: "Live Dashboards",
     benefits: [
-      "Live chat support",
-      "Priority assistance",
-      "Comprehensive docs",
+      "Comprehensive dashboards",
+      "Actionable insights",
+      "Real-time monitoring",
     ],
+  },
+  {
+    icon: Users2,
+    animatedIcon: AnimatedUsers,
+    title: "Multi-user Approval",
+    description:
+      "Streamline approval workflows with role-based permissions and automated routing.",
+    highlight: "Role-Based",
+    benefits: [
+      "Approval workflows",
+      "Role-based permissions",
+      "Automated routing",
+    ],
+  },
+  {
+    icon: Database,
+    animatedIcon: AnimatedShield,
+    title: "Vendor Management",
+    description:
+      "Centralize vendor information and maintain accurate contact details and payment terms.",
+    highlight: "Centralized",
+    benefits: ["Vendor information", "Contact details", "Payment terms"],
+  },
+  {
+    icon: Upload,
+    animatedIcon: AnimatedClock,
+    title: "Bulk Import",
+    description:
+      "Import vendors, customers, and cost codes from Excel or CSV files with ease.",
+    highlight: "Easy Import",
+    benefits: ["Excel/CSV import", "Bulk operations", "Data validation"],
   },
 ];
 
@@ -121,20 +117,19 @@ export function Features() {
           >
             Features
           </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Everything you need to
+          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+            Powerful Features for Modern
             <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
               {" "}
-              succeed
+              AP Teams
             </span>
           </h2>
           <p className="mt-6 text-xl leading-8 text-gray-600">
-            Powerful features designed to streamline your workflow and
-            accelerate your growth.
+            Everything you need to streamline your accounts payable process
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {features.map((feature, index) => (
             <motion.div
               key={feature.title}
@@ -166,7 +161,7 @@ export function Features() {
                   </div>
                   <Badge
                     variant="secondary"
-                    className="text-xs font-medium bg-emerald-100 text-emerald-700 border-emerald-200"
+                    className="text-xs font-medium bg-emerald-100 dark:hover:bg-gray-50 text-emerald-700 border-emerald-200"
                   >
                     {feature.highlight}
                   </Badge>

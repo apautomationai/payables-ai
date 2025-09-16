@@ -73,9 +73,9 @@ export function Hero() {
             Transform Your
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
               {" "}
-              Business{" "}
+              Accounts Payable{" "}
             </span>
-            Operations
+            with AI
           </motion.h1>
 
           <motion.p
@@ -84,9 +84,9 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-8 text-xl leading-8 text-gray-600 max-w-3xl mx-auto"
           >
-            Streamline workflows, boost productivity, and scale faster with our
-            intelligent automation platform. Join thousands of companies already
-            transforming their operations.
+            Automate invoice processing, streamline approvals, and gain
+            real-time insights into your financial operations with our
+            intelligent AP platform.
           </motion.p>
 
           <motion.div

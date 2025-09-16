@@ -16,6 +16,7 @@ import {
   Heart,
   CreditCard,
 } from "lucide-react";
+import Link from "next/link";
 
 const navigation = {
   product: [
@@ -223,8 +224,10 @@ export function Footer() {
           </p>
           <div className="flex items-center gap-1 text-sm text-gray-400">
             Made with{" "}
-            <Heart className="w-4 h-4 text-red-500 fill-current mx-1" /> for
-            finance teams
+            <Heart className="w-4 h-4 text-red-500 fill-current mx-1" /> by
+            <Link href="https://bluubery.com/" target="_blank">
+              Bluubery Technologies
+            </Link>
           </div>
         </div>
       </div>

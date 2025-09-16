@@ -9,8 +9,8 @@ import { motion } from "framer-motion";
 
 const pricingPlans = [
   {
-    name: "Starter",
-    price: 29,
+    name: "Free",
+    price: 0,
     period: "month",
     description: "Perfect for small teams getting started",
     features: [
@@ -25,8 +25,8 @@ const pricingPlans = [
     cta: "Start Free Trial",
   },
   {
-    name: "Professional",
-    price: 79,
+    name: "Pro",
+    price: 299,
     period: "month",
     description: "Ideal for growing businesses",
     features: [
@@ -43,8 +43,8 @@ const pricingPlans = [
     cta: "Start Free Trial",
   },
   {
-    name: "Enterprise",
-    price: 199,
+    name: "Teams",
+    price: 699,
     period: "month",
     description: "For large organizations with complex needs",
     features: [
@@ -90,8 +90,8 @@ export function Pricing() {
             pricing
           </h2>
           <p className="mt-6 text-xl leading-8 text-gray-600">
-            Choose the perfect plan for your team. All plans include a 14-day
-            free trial.
+            Choose the perfect plan for your business needs. All plans include a
+            14-day free trial.
           </p>
         </motion.div>
 
@@ -153,13 +153,11 @@ export function Pricing() {
                     <span className="text-5xl font-bold text-gray-900">
                       ${plan.price}
                     </span>
-                    <div className="text-left">
-                      <div className="text-gray-600">per</div>
+                    <div className="text-left flex flex-row gap-1">
+                      <div className="text-gray-600">/per</div>
                       <div className="text-gray-600">{plan.period}</div>
                     </div>
                   </div>
-
-                  <p className="text-sm text-gray-500">billed monthly</p>
                 </div>
 
                 <ul className="space-y-4 mb-8">

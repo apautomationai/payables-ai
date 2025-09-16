@@ -7,6 +7,7 @@ import {
   AnimatedChart,
   PulsingOrb,
   FloatingElements,
+  GeometricPattern,
   ProfessionalIcons,
 } from "./animated-icons";
 import {
@@ -18,6 +19,7 @@ import {
   Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 export function Hero() {
   return (
@@ -141,29 +143,26 @@ export function Hero() {
           className="mt-20 mx-auto max-w-6xl"
         >
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-t from-white via-transparent to-transparent z-10 pointer-events-none h-32 bottom-0" />
+            <div className="absolute inset-0 bg-gradient-to-t from-gray-300/50 via-transparent to-transparent z-10 " />
 
             {/* Floating animated elements around the preview */}
-            <div className="absolute -top-10 -left-10 z-20">
+            <div className="absolute -top-20 -left-8 z-20">
               <AnimatedRocket />
             </div>
-            <div className="absolute -top-5 -right-10 z-20">
+            <div className="absolute -bottom-5 -right-20 z-20">
               <AnimatedChart />
             </div>
 
-            <div className="relative rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-2xl p-4 sm:p-8">
-              <div className="aspect-video rounded-xl bg-gradient-to-br from-blue-100 to-emerald-100 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-white shadow-lg flex items-center justify-center">
-                    <Play className="w-8 h-8 text-blue-600" />
-                  </div>
-                  <p className="text-lg font-medium text-gray-700">
+            <div className="relative rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-2xl p-4 sm:p-3">
+              <div className="aspect-video rounded-xl bg-gradient-to-br from-blue-100 to-emerald-100 flex items-center justify-center sm:p-8">
+                {/* <div className="text-center p-5">
+                  <p className="text-lg font-bold text-gray-700">
                     Interactive Product Demo
                   </p>
                   <p className="text-sm text-gray-500 mt-1">
                     Click to see our platform in action
                   </p>
-                </div>
+                </div> */}
 
                 {/* Floating orbs inside the demo area */}
                 <div className="absolute top-4 left-4">
@@ -171,6 +170,16 @@ export function Hero() {
                 </div>
                 <div className="absolute bottom-4 right-4">
                   <PulsingOrb color="#10B981" size={25} />
+                </div>
+                <div className="relative rounded-lg shadow-2xl overflow-hidden">
+                  <Image
+                    src="/images/dashboard.png"
+                    alt="Payables.ai Product Screenshot"
+                    width={1200}
+                    height={900}
+                    className="w-auto h-auto border border-gray-200 rounded-2xl"
+                    priority
+                  />
                 </div>
               </div>
             </div>

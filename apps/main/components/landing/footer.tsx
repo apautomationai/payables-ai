@@ -22,30 +22,24 @@ const navigation = {
   product: [
     { name: "Features", href: "#" },
     { name: "Pricing", href: "#" },
-    { name: "API Documentation", href: "#" },
-    { name: "Integrations", href: "#" },
-    { name: "Changelog", href: "#" },
+    { name: "Use Cases", href: "#" },
+    { name: "Sign In", href: "#" },
   ],
   company: [
-    { name: "About Us", href: "#" },
-    { name: "Blog", href: "#" },
-    { name: "Careers", href: "#" },
-    { name: "Press", href: "#" },
+    { name: "About", href: "#" },
     { name: "Contact", href: "#" },
+    { name: "Sign Up", href: "#" },
   ],
   support: [
     { name: "Help Center", href: "#" },
     { name: "Community", href: "#" },
-    { name: "Status", href: "#" },
-    { name: "Security", href: "#" },
-    { name: "System Status", href: "#" },
+    // { name: "Status", href: "#" },
+    // { name: "Security", href: "#" },
+    // { name: "System Status", href: "#" },
   ],
   legal: [
     { name: "Privacy Policy", href: "#" },
     { name: "Terms of Service", href: "#" },
-    { name: "Cookie Policy", href: "#" },
-    { name: "GDPR", href: "#" },
-    { name: "Compliance", href: "#" },
   ],
 };
 
@@ -62,13 +56,13 @@ export function Footer() {
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
             <h2 className="text-3xl font-bold text-white mb-4">
-              Stay updated with our latest features
+              Ready to Transform Your AP Process?
             </h2>
             <p className="text-lg text-gray-400 mb-8">
-              Join thousands of subscribers and get the latest updates, tips,
-              and exclusive offers.
+              Join hundreds of businesses that have already streamlined their
+              accounts payable with Payables.ai
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+            <div className="flex flex-col items-center sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="Enter your email"
@@ -101,9 +95,10 @@ export function Footer() {
               <span className="text-xl font-bold text-white">Payables.ai</span>
             </div>
             <p className="text-gray-400 leading-relaxed mb-6">
-              Transform your accounts payable process with AI-powered
+              {/* Transform your accounts payable process with AI-powered
               automation. Streamline invoice processing, reduce manual work, and
-              improve cash flow management.
+              improve cash flow management. */}
+              Intelligent accounts payable automation for modern businesses.
             </p>
             <div className="flex items-center gap-2 mb-4">
               <Badge
@@ -137,12 +132,6 @@ export function Footer() {
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
                 <Github className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
-                className="text-gray-400 hover:text-white transition-colors duration-300"
-              >
-                <Mail className="w-5 h-5" />
               </a>
             </div>
           </div>

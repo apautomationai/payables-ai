@@ -4,7 +4,7 @@ import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card } from "@workspace/ui/components/card";
 import { PulsingOrb } from "./animated-icons";
-import { CheckCircle, Star, Zap } from "lucide-react";
+import { CheckCircle, Star, Zap, Users, Building2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const pricingPlans = [
@@ -14,15 +14,14 @@ const pricingPlans = [
     period: "month",
     description: "Perfect for small teams getting started",
     features: [
-      "Up to 5 team members",
-      "10GB storage",
-      "Basic analytics",
-      "Email support",
-      "Core automation features",
-      "Mobile app access",
+      "Up to 50 invoices/month",
+      "Basic AI processing",
+      "Email listener (Gmail)",
+      "Basic analytic",
+      "1 user",
     ],
     popular: false,
-    cta: "Start Free Trial",
+    cta: "Start",
   },
   {
     name: "Pro",
@@ -30,14 +29,14 @@ const pricingPlans = [
     period: "month",
     description: "Ideal for growing businesses",
     features: [
-      "Up to 25 team members",
-      "100GB storage",
-      "Advanced analytics",
+      "Up to 500 invoices/month",
+      "Advanced AI processing",
+      "Multi-email provider support",
       "Priority support",
-      "Advanced automation",
-      "Custom integrations",
+      "Advanced analytics",
+      "Custom approval workflows",
       "API access",
-      "Advanced reporting",
+      "Up to 5 users",
     ],
     popular: true,
     cta: "Start Free Trial",
@@ -46,21 +45,40 @@ const pricingPlans = [
     name: "Teams",
     price: 699,
     period: "month",
-    description: "For large organizations with complex needs",
+    description: "For large teams with complex needs",
     features: [
-      "Unlimited team members",
-      "1TB storage",
-      "Custom analytics",
+      "Up to 2,000 invoices/month",
+      "Advanced AI processing",
+      "All email providers",
       "24/7 dedicated support",
-      "AI-powered automation",
+      "Advanced analytics",
+      "Custom approval workflows",
+      "API access",
+      "Up to 20 users",
+      "Team collaboration tools",
+    ],
+    popular: false,
+    cta: "Start Free Trial",
+  },
+  {
+    name: "Enterprise",
+    price: null, // Custom pricing
+    period: "month",
+    description: "For organizations with complex requirements",
+    features: [
+      "Unlimited invoices",
       "Custom integrations",
-      "Full API access",
+      "Unlimited users",
+      "Custom AI models",
       "White-label options",
-      "Advanced security",
       "Custom training",
+      "24/7 dedicated support",
+      "On-premise deployment",
+      "Priority onboarding",
     ],
     popular: false,
     cta: "Contact Sales",
+    customPricing: true,
   },
 ];
 
@@ -95,7 +113,7 @@ export function Pricing() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 space-y-5">
           {pricingPlans.map((plan, index) => (
             <motion.div
               key={plan.name}
@@ -103,18 +121,30 @@ export function Pricing() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
+              className={`
+                ${index === 3 ? "md:col-span-2 xl:col-span-1 xl:col-start-2" : ""}
+              `}
             >
               <Card
                 className={`relative p-8 h-full ${
                   plan.popular
                     ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
-                    : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
+                    : plan.name === "Enterprise"
+                      ? "border-purple-300 dark:border-purple-300 shadow-lg ring-1 dark:ring-purple-100 ring-purple-100"
+                      : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
                 } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
               >
                 {/* Animated background for popular plan */}
                 {plan.popular && (
                   <div className="absolute top-4 right-4 opacity-20">
                     <PulsingOrb color="#3B82F6" size={40} />
+                  </div>
+                )}
+
+                {/* Special orb for Enterprise */}
+                {plan.name === "Enterprise" && (
+                  <div className="absolute top-4 right-4 opacity-20">
+                    <PulsingOrb color="#8B5CF6" size={40} />
                   </div>
                 )}
 
@@ -141,22 +171,55 @@ export function Pricing() {
                   </div>
                 )}
 
+                {plan.name === "Enterprise" && (
+                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
+                    <motion.div
+                      animate={{ scale: [1, 1.02, 1] }}
+                      transition={{
+                        duration: 3,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                      }}
+                    >
+                      <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 dark:bg-gradient-to-r dark:from-purple-600 dark:to-pink-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
+                        <Building2 className="w-4 h-4 mr-1" />
+                        Enterprise Grade
+                      </Badge>
+                    </motion.div>
+                  </div>
+                )}
+
                 <div className="text-center mb-8">
                   <h3
-                    className={`text-2xl font-bold text-gray-900 mb-2 ${plan.popular ? "mt-2" : ""}`}
+                    className={`text-2xl font-bold text-gray-900 mb-2 ${
+                      plan.popular || plan.name === "Enterprise" ? "mt-2" : ""
+                    }`}
                   >
                     {plan.name}
                   </h3>
                   <p className="text-gray-600 mb-4">{plan.description}</p>
 
                   <div className="flex items-center justify-center gap-2 mb-2">
-                    <span className="text-5xl font-bold text-gray-900">
-                      ${plan.price}
-                    </span>
-                    <div className="text-left flex flex-row gap-1">
-                      <div className="text-gray-600">/per</div>
-                      <div className="text-gray-600">{plan.period}</div>
-                    </div>
+                    {plan.customPricing ? (
+                      <div className="flex flex-col items-center">
+                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                          Custom Pricing
+                        </span>
+                        <span className="text-gray-600 text-sm mt-1">
+                          Tailored to your needs
+                        </span>
+                      </div>
+                    ) : (
+                      <>
+                        <span className="text-5xl font-bold text-gray-900">
+                          ${plan.price}
+                        </span>
+                        <div className="text-left flex flex-row gap-1">
+                          <div className="text-gray-600">/per</div>
+                          <div className="text-gray-600">{plan.period}</div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -179,10 +242,15 @@ export function Pricing() {
                   className={`w-full ${
                     plan.popular
                       ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
-                      : "bg-gray-900 hover:bg-gray-800 text-white"
+                      : plan.name === "Enterprise"
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
+                        : "bg-gray-900 hover:bg-gray-800 text-white"
                   } transition-all duration-300`}
                 >
                   {plan.popular && <Zap className="w-4 h-4 mr-2" />}
+                  {plan.name === "Enterprise" && (
+                    <Users className="w-4 h-4 mr-2" />
+                  )}
                   {plan.cta}
                 </Button>
               </Card>

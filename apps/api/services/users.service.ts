@@ -27,8 +27,9 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .limit(1)
         .then((r) => r[0]);
+        console.log("use exists", existingUser)
       if (existingUser) {
-        throw new ConflictError("Email already in use");
+        throw new  ConflictError("Email already in use");
       }
 
       // Hash the password
@@ -53,8 +54,8 @@ export class UserServices {
         },
         token,
       };
-    } catch (error) {
-      throw new BadRequestError("Registration failed");
+    } catch (error:any) {
+      throw new BadRequestError( error.message || "Registration failed");
     }
   };
   getUsers = async () => {

@@ -4,7 +4,11 @@ import { userServices } from "@/services/users.service";
 
 import { NextFunction, Request, Response } from "express";
 import passport from "@/lib/passport";
-import { BadRequestError, InternalServerError } from "@/helpers/errors";
+import {
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+} from "@/helpers/errors";
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
@@ -18,8 +22,8 @@ export class UserController {
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (err) {
-      throw new InternalServerError("Unable to connect to the server");
+    } catch (err: any) {
+      throw new ConflictError(err.message || "Unable to connect to the server");
     }
   };
 
@@ -80,8 +84,10 @@ export class UserController {
         return res.status(200).send(updatedUser);
       }
       throw new BadRequestError("User has not updated");
-    } catch {
-      throw new InternalServerError("Unable to connect the server");
+    } catch (err: any) {
+      throw new InternalServerError(
+        err.message || "Unable to connect the server"
+      );
     }
   };
   resetPassword = async (req: Request, res: Response) => {

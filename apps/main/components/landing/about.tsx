@@ -40,7 +40,10 @@ export function About() {
   ];
 
   return (
-    <section className="py-24 sm:py-32 bg-white relative overflow-hidden">
+    <section
+      id="about"
+      className="py-24 sm:py-32 bg-white relative overflow-hidden"
+    >
       {/* Background decorative elements */}
       <div className="absolute top-20 right-10 opacity-10">
         <PulsingOrb color="#3B82F6" size={120} />

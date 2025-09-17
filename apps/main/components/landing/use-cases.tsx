@@ -92,7 +92,10 @@ const stats = [
 
 export function UseCases() {
   return (
-    <section className="py-24 sm:py-32 bg-gray-50 relative overflow-hidden">
+    <section
+      id="use-cases"
+      className="py-24 sm:py-32 bg-gray-50 relative overflow-hidden"
+    >
       {/* Background elements */}
       <GeometricPattern />
       <FloatingElements />

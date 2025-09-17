@@ -4,10 +4,30 @@ import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card } from "@workspace/ui/components/card";
 import { PulsingOrb } from "./animated-icons";
-import { CheckCircle, Star, Zap, Users, Building2 } from "lucide-react";
+import {
+  CheckCircle,
+  Star,
+  Zap,
+  Users,
+  Building2,
+  ArrowRight,
+} from "lucide-react";
 import { motion } from "framer-motion";
 
-const pricingPlans = [
+// Define the type for pricing plans
+interface PricingPlan {
+  name: string;
+  price: number | null;
+  period: string;
+  description: string;
+  features: string[];
+  popular: boolean;
+  cta: string;
+  customPricing?: boolean;
+  enterprise?: boolean;
+}
+
+const pricingPlans: PricingPlan[] = [
   {
     name: "Free",
     price: 0,
@@ -62,7 +82,7 @@ const pricingPlans = [
   },
   {
     name: "Enterprise",
-    price: null, // Custom pricing
+    price: null,
     period: "month",
     description: "For organizations with complex requirements",
     features: [
@@ -79,12 +99,16 @@ const pricingPlans = [
     popular: false,
     cta: "Contact Sales",
     customPricing: true,
+    enterprise: true,
   },
 ];
 
 export function Pricing() {
+  // Safely get the enterprise plan
+  const enterprisePlan = pricingPlans.find((plan) => plan.enterprise);
+
   return (
-    <section className="py-24 sm:py-32 bg-white">
+    <section id="pricing" className="py-24 sm:py-32 bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -113,155 +137,210 @@ export function Pricing() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 space-y-5">
-          {pricingPlans.map((plan, index) => (
-            <motion.div
-              key={plan.name}
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className={`
-                ${index === 3 ? "md:col-span-2 xl:col-span-1 xl:col-start-2" : ""}
-              `}
-            >
-              <Card
-                className={`relative p-8 h-full ${
-                  plan.popular
-                    ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
-                    : plan.name === "Enterprise"
-                      ? "border-purple-300 dark:border-purple-300 shadow-lg ring-1 dark:ring-purple-100 ring-purple-100"
-                      : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
-                } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {pricingPlans
+            .filter((plan) => !plan.enterprise)
+            .map((plan, index) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
               >
-                {/* Animated background for popular plan */}
-                {plan.popular && (
-                  <div className="absolute top-4 right-4 opacity-20">
-                    <PulsingOrb color="#3B82F6" size={40} />
-                  </div>
-                )}
-
-                {/* Special orb for Enterprise */}
-                {plan.name === "Enterprise" && (
-                  <div className="absolute top-4 right-4 opacity-20">
-                    <PulsingOrb color="#8B5CF6" size={40} />
-                  </div>
-                )}
-
-                {/* Corner orbs for all plans */}
-                <div className="absolute bottom-4 left-4 opacity-0 hover:opacity-30 transition-opacity duration-300">
-                  <PulsingOrb color="#10B981" size={25} />
-                </div>
-
-                {plan.popular && (
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
-                    <motion.div
-                      animate={{ y: [0, -2, 0] }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 dark:bg-gradient-to-r dark:from-blue-600 dark:to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
-                        <Star className="w-4 h-4 mr-1 fill-current" />
-                        Most Popular
-                      </Badge>
-                    </motion.div>
-                  </div>
-                )}
-
-                {plan.name === "Enterprise" && (
-                  <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
-                    <motion.div
-                      animate={{ scale: [1, 1.02, 1] }}
-                      transition={{
-                        duration: 3,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    >
-                      <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 dark:bg-gradient-to-r dark:from-purple-600 dark:to-pink-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
-                        <Building2 className="w-4 h-4 mr-1" />
-                        Enterprise Grade
-                      </Badge>
-                    </motion.div>
-                  </div>
-                )}
-
-                <div className="text-center mb-8">
-                  <h3
-                    className={`text-2xl font-bold text-gray-900 mb-2 ${
-                      plan.popular || plan.name === "Enterprise" ? "mt-2" : ""
-                    }`}
-                  >
-                    {plan.name}
-                  </h3>
-                  <p className="text-gray-600 mb-4">{plan.description}</p>
-
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    {plan.customPricing ? (
-                      <div className="flex flex-col items-center">
-                        <span className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                          Custom Pricing
-                        </span>
-                        <span className="text-gray-600 text-sm mt-1">
-                          Tailored to your needs
-                        </span>
-                      </div>
-                    ) : (
-                      <>
-                        <span className="text-5xl font-bold text-gray-900">
-                          ${plan.price}
-                        </span>
-                        <div className="text-left flex flex-row gap-1">
-                          <div className="text-gray-600">/per</div>
-                          <div className="text-gray-600">{plan.period}</div>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                <ul className="space-y-4 mb-8">
-                  {plan.features.map((feature) => (
-                    <motion.li
-                      key={feature}
-                      className="flex items-start gap-3"
-                      whileHover={{ x: 5 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                      <span className="text-gray-700">{feature}</span>
-                    </motion.li>
-                  ))}
-                </ul>
-
-                <Button
-                  size="lg"
-                  className={`w-full ${
+                <Card
+                  className={`relative p-8 h-full ${
                     plan.popular
-                      ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
-                      : plan.name === "Enterprise"
-                        ? "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg"
-                        : "bg-gray-900 hover:bg-gray-800 text-white"
-                  } transition-all duration-300`}
+                      ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
+                      : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
+                  } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
                 >
-                  {plan.popular && <Zap className="w-4 h-4 mr-2" />}
-                  {plan.name === "Enterprise" && (
-                    <Users className="w-4 h-4 mr-2" />
+                  {/* Animated background for popular plan */}
+                  {plan.popular && (
+                    <div className="absolute top-4 right-4 opacity-20">
+                      <PulsingOrb color="#3B82F6" size={40} />
+                    </div>
                   )}
-                  {plan.cta}
-                </Button>
-              </Card>
-            </motion.div>
-          ))}
+
+                  {/* Corner orbs for all plans */}
+                  <div className="absolute bottom-4 left-4 opacity-0 hover:opacity-30 transition-opacity duration-300">
+                    <PulsingOrb color="#10B981" size={25} />
+                  </div>
+
+                  {plan.popular && (
+                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
+                      <motion.div
+                        animate={{ y: [0, -2, 0] }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }}
+                      >
+                        <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 dark:bg-gradient-to-r dark:from-blue-600 dark:to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
+                          <Star className="w-4 h-4 mr-1 fill-current" />
+                          Most Popular
+                        </Badge>
+                      </motion.div>
+                    </div>
+                  )}
+
+                  <div className="text-center mb-8">
+                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                      {plan.name}
+                    </h3>
+                    <p className="text-gray-600 mb-4">{plan.description}</p>
+
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <span className="text-5xl font-bold text-gray-900">
+                        ${plan.price}
+                      </span>
+                      <div className="text-left flex flex-row gap-1">
+                        <div className="text-gray-600">/per</div>
+                        <div className="text-gray-600">{plan.period}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <ul className="space-y-4 mb-8">
+                    {plan.features.map((feature) => (
+                      <motion.li
+                        key={feature}
+                        className="flex items-start gap-3"
+                        whileHover={{ x: 5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">{feature}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+
+                  <Button
+                    size="lg"
+                    className={`w-full ${
+                      plan.popular
+                        ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+                        : "bg-gray-900 hover:bg-gray-800 text-white"
+                    } transition-all duration-300`}
+                  >
+                    {plan.popular && <Zap className="w-4 h-4 mr-2" />}
+                    {plan.cta}
+                  </Button>
+                </Card>
+              </motion.div>
+            ))}
+
+          {/* Enterprise Card - Full Width */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            viewport={{ once: true }}
+            className="md:col-span-2 xl:col-span-3"
+          >
+            <Card className="relative p-10 border-0 bg-gradient-to-r from-purple-50 to-blue-50 overflow-hidden">
+              {/* Background elements */}
+              <div className="absolute top-0 right-0 opacity-10">
+                <PulsingOrb color="#8B5CF6" size={120} />
+              </div>
+              <div className="absolute bottom-0 left-0 opacity-10">
+                <PulsingOrb color="#3B82F6" size={100} />
+              </div>
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 relative z-10">
+                {/* Left side - Header and description */}
+                <div>
+                  <div className="flex items-center mb-6">
+                    <Badge className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 mr-4">
+                      <Building2 className="w-4 h-4 mr-1" />
+                      Enterprise Grade
+                    </Badge>
+                    <Badge
+                      variant="outline"
+                      className="border-purple-300 text-purple-700 bg-white/80"
+                    >
+                      Custom Pricing
+                    </Badge>
+                  </div>
+
+                  <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                    Enterprise Solution
+                  </h2>
+                  <h3 className="text-xl text-purple-700 font-semibold mb-2">
+                    For organizations with complex requirements
+                  </h3>
+
+                  <p className="text-gray-600 mb-8 text-lg">
+                    Tailored solutions for large enterprises with custom needs
+                    and advanced requirements.
+                  </p>
+
+                  <div className="bg-white p-6 rounded-lg shadow-sm border border-purple-100 mb-8">
+                    <div className="text-center">
+                      <div className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent mb-2">
+                        Custom Pricing
+                      </div>
+                      <p className="text-gray-600">
+                        Tailored to your specific needs
+                      </p>
+                    </div>
+                  </div>
+
+                  <Button
+                    size="lg"
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  >
+                    Contact Sales
+                    <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+
+                {/* Right side - Features */}
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 mb-6 border-b border-gray-200 pb-2">
+                    Everything Included:
+                  </h4>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {enterprisePlan?.features.map((feature) => (
+                      <motion.div
+                        key={feature}
+                        className="flex items-start p-3 bg-white rounded-lg border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+                        whileHover={{ x: 5 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5 mr-3" />
+                        <span className="text-gray-700">{feature}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+
+                  <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0">
+                        <Users className="h-5 w-5 text-blue-600" />
+                      </div>
+                      <div className="ml-3">
+                        <p className="text-sm text-blue-700">
+                          <span className="font-medium">
+                            Dedicated account manager
+                          </span>{" "}
+                          and personalized onboarding included
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </motion.div>
         </div>
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
           viewport={{ once: true }}
           className="text-center mt-12"
         >

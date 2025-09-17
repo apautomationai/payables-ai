@@ -21,15 +21,9 @@ const navigation = [
   {
     name: "Features",
     href: "#features",
-    submenu: [
-      { name: "AI-Powered Processing", href: "#ai-processing", icon: Zap },
-      { name: "Team Collaboration", href: "#collaboration", icon: Users },
-      { name: "Analytics & Reporting", href: "#analytics", icon: BarChart3 },
-      { name: "Security & Compliance", href: "#security", icon: Shield },
-    ],
   },
   { name: "Pricing", href: "#pricing" },
-  { name: "Use Cases", href: "#usecases" },
+  { name: "Use Cases", href: "#use-cases" },
   { name: "About", href: "#about" },
 ];
 
@@ -67,9 +61,12 @@ export function Header() {
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-emerald-400 to-blue-400 rounded-full animate-pulse" />
             </div>
             <div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+              <a
+                href="/"
+                className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent"
+              >
                 Payables.ai
-              </span>
+              </a>
               <Badge
                 variant="outline"
                 className="ml-2 text-xs font-medium border-emerald-200 bg-emerald-50/50 text-emerald-700 px-2 py-0.5"
@@ -82,53 +79,13 @@ export function Header() {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex lg:items-center lg:gap-8">
             {navigation.map((item) => (
-              <div
-                key={item.name}
-                className="relative"
-                onMouseEnter={() =>
-                  item.submenu && setActiveDropdown(item.name)
-                }
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
+              <div key={item.name} className="relative">
                 <a
                   href={item.href}
                   className="flex items-center gap-1 text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300 py-2"
                 >
                   {item.name}
-                  {item.submenu && (
-                    <ChevronDown
-                      className={`w-4 h-4 transition-transform duration-300 ${
-                        activeDropdown === item.name ? "rotate-180" : ""
-                      }`}
-                    />
-                  )}
                 </a>
-
-                {/* Dropdown Menu */}
-                <AnimatePresence>
-                  {item.submenu && activeDropdown === item.name && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-2 w-64 bg-white rounded-xl shadow-xl border border-gray-200 py-2 z-50"
-                    >
-                      {item.submenu.map((subItem) => (
-                        <a
-                          key={subItem.name}
-                          href={subItem.href}
-                          className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300 group"
-                        >
-                          <subItem.icon className="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors duration-300" />
-                          <div>
-                            <div className="font-medium">{subItem.name}</div>
-                          </div>
-                        </a>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             ))}
           </div>
@@ -209,21 +166,6 @@ export function Header() {
                         >
                           {item.name}
                         </a>
-                        {item.submenu && (
-                          <div className="ml-4 space-y-1">
-                            {item.submenu.map((subItem) => (
-                              <a
-                                key={subItem.name}
-                                href={subItem.href}
-                                className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-all duration-300"
-                                onClick={() => setMobileMenuOpen(false)}
-                              >
-                                <subItem.icon className="w-4 h-4" />
-                                {subItem.name}
-                              </a>
-                            ))}
-                          </div>
-                        )}
                       </div>
                     ))}
                   </div>

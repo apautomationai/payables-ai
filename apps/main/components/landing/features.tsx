@@ -77,29 +77,29 @@ const features = [
       "Automated routing",
     ],
   },
-  {
-    icon: Database,
-    animatedIcon: AnimatedShield,
-    title: "Vendor Management",
-    description:
-      "Centralize vendor information and maintain accurate contact details and payment terms.",
-    highlight: "Centralized",
-    benefits: ["Vendor information", "Contact details", "Payment terms"],
-  },
-  {
-    icon: Upload,
-    animatedIcon: AnimatedClock,
-    title: "Bulk Import",
-    description:
-      "Import vendors, customers, and cost codes from Excel or CSV files with ease.",
-    highlight: "Easy Import",
-    benefits: ["Excel/CSV import", "Bulk operations", "Data validation"],
-  },
+  // {
+  //   icon: Database,
+  //   animatedIcon: AnimatedShield,
+  //   title: "Vendor Management",
+  //   description:
+  //     "Centralize vendor information and maintain accurate contact details and payment terms.",
+  //   highlight: "Centralized",
+  //   benefits: ["Vendor information", "Contact details", "Payment terms"],
+  // },
+  // {
+  //   icon: Upload,
+  //   animatedIcon: AnimatedClock,
+  //   title: "Bulk Import",
+  //   description:
+  //     "Import vendors, customers, and cost codes from Excel or CSV files with ease.",
+  //   highlight: "Easy Import",
+  //   benefits: ["Excel/CSV import", "Bulk operations", "Data validation"],
+  // },
 ];
 
 export function Features() {
   return (
-    <section className="py-24 sm:py-32 relative overflow-hidden">
+    <section id="features" className="py-24 sm:py-32 relative overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50" />
       <GeometricPattern />
 

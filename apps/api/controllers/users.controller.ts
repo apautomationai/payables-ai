@@ -96,6 +96,9 @@ export class UserController {
     if (!email || !password) {
       throw new BadRequestError("Email, and Password are required");
     }
+    if(password?.length < 6){
+      throw new BadRequestError("Password must be at least 6 characters")
+    }
     const newPassword = await userServices.resetPassword(email, password);
 
     res.status(200).send(newPassword);

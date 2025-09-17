@@ -1,0 +1,65 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: payables-postgres
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  api:
+    build: ./apps/api       # path to your Dockerfile folder
+    container_name: payables-api
+    environment:
+      DATABASE_URL: postgres://myuser:mypassword@postgres:5432/mydatabase
+    ports:
+      - "4000:4000"
+    depends_on:
+      - postgres
+    command: npm run dev    # or "npm start"
+
+volumes:
+  postgres_data:
+
+
+# services:
+#   postgres:
+#     image: postgres:15
+#     container_name: payables-postgres
+#     environment:
+#       POSTGRES_USER: myuser
+#       POSTGRES_PASSWORD: mypassword
+#       POSTGRES_DB: mydatabase
+#     ports:
+#       - "5432:5432"
+#     volumes:
+#       - postgres_data:/var/lib/postgresql/data
+
+#   api:
+#     build: ./apps/api       # path to your Dockerfile folder
+#     container_name: payables-api
+#     environment:
+#       DATABASE_URL: postgres://myuser:mypassword@postgres:5432/mydatabase
+#     ports:
+#       - "4000:5000"
+#     depends_on:
+#       - postgres
+#     command: npm run dev    # or "npm start"
+
+#   pgadmin:
+#     image: dpage/pgadmin4
+#     container_name: payables-pgadmin
+#     environment:
+#       PGADMIN_DEFAULT_EMAIL: admin@example.com
+#       PGADMIN_DEFAULT_PASSWORD: admin
+#     ports:
+#       - "8080:80"
+#     depends_on:
+#       - postgres
+
+# volumes:
+#   postgres_data:

@@ -1,9 +1,17 @@
 import db from "@/lib/db";
 import { hashPassword } from "@/lib/utils/hash";
-import { eq } from "drizzle-orm";
+import { eq, InferSelectModel } from "drizzle-orm";
 import { usersTable } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
-import { BadRequestError, ConflictError } from "@/helpers/errors";
+import {
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+} from "@/helpers/errors";
+
+type User = InferSelectModel<typeof usersTable>;
+
+type UpdateUser = Partial<User>;
 
 export class UserServices {
   registerUser = async (name: string, email: string, password: string) => {
@@ -47,6 +55,49 @@ export class UserServices {
       };
     } catch (error) {
       throw new BadRequestError("Registration failed");
+    }
+  };
+  getUsers = async () => {
+    try {
+      const allUsers = await db.select().from(usersTable);
+
+      return allUsers;
+      
+    } catch (error) {
+      return [];
+    }
+  };
+  updateUser = async (email: string, userData: UpdateUser) => {
+    try {
+      const updatedUser = await db
+        .update(usersTable)
+        .set(userData)
+        .where(eq(usersTable.email, email))
+        .returning();
+      return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  resetPassword = async (email: string, password: string) => {
+    // Hash the password
+    const passwordHash = await hashPassword(password);
+
+    try {
+      const newPassword = await db
+        .update(usersTable)
+        .set({ passwordHash })
+        .where(eq(usersTable.email, email))
+        .returning();
+
+      return newPassword;
+    } catch (error: any) {
+      console.log("error -", error.message);
+      if (error.message.includes("users")) {
+        throw new InternalServerError("Users table not found in the database");
+      }
+      throw error;
     }
   };
 }

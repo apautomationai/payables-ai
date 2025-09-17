@@ -21,3 +21,5 @@ export const loginUserTable = pgTable("login", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password_hash").notNull(),
 });
+
+

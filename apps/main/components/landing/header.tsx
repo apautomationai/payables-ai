@@ -176,13 +176,14 @@ export function Header() {
                       className="w-full justify-center font-medium"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Sign In
+                      <Link href={"/sign-in"}>Sign In</Link>
                     </Button>
                     <Button
                       className="w-full justify-center bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white font-medium shadow-lg"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Start Free Trial
+                      <Link href={"/dashboard"}> Start Free Trial</Link>
+
                       <ArrowRight className="ml-2 w-4 h-4" />
                     </Button>
                   </div>

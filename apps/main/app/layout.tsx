@@ -21,7 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+<<<<<<< HEAD
+        className={cn("bg-background font-sans antialiased", inter.variable)}
+=======
         className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
+>>>>>>> main
       >
         <Providers>{children}</Providers>
       </body>

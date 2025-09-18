@@ -1,6 +1,23 @@
 import * as React from "react"
 
+<<<<<<< HEAD
+const Card = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "rounded-lg border bg-card text-card-foreground shadow-sm dark:bg-gray-900 dark:border-gray-800 ",
+      className
+    )}
+    {...props}
+  />
+));
+Card.displayName = "Card";
+=======
 import { cn } from "@workspace/ui/lib/utils"
+>>>>>>> main
 
 function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (

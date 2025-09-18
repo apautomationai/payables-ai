@@ -11,9 +11,9 @@
     "lint:fix": "eslint . --ext .ts --fix",
     "type-check": "tsc --noEmit",
     "drizzle": "drizzle-kit",
-    "db:generate": "drizzle-kit generate:pg",
-    "db:migrate": "drizzle-kit migrate:pg",
-    "db:push": "drizzle-kit push:pg",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "keywords": [
@@ -26,16 +26,27 @@
   "license": "ISC",
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
+    "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.2",
+    "dotenv-cli": "^10.0.0",
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
-    "pg": "^8.16.3"
+    "jsonwebtoken": "^9.0.2",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "passport-local": "^1.0.0",
+    "pg": "^8.16.3",
+    "postgres": "^3.4.7"
   },
   "devDependencies": {
     "@types/express": "^5.0.3",
     "@types/express-serve-static-core": "^5.0.7",
     "@types/express-validator": "^3.0.2",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.19.9",
+    "@types/passport": "^1.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/passport-local": "^1.0.38",
     "@types/pg": "^8.15.5",
     "@types/pino": "^7.0.5",
     "@typescript-eslint/eslint-plugin": "^6.19.1",

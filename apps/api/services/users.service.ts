@@ -78,6 +78,9 @@ export class UserServices {
     }
   };
   updateUser = async (email: string, userData: UpdateUser) => {
+    if (!email) {
+      throw new BadRequestError("Email is required");
+    }
     try {
       const updatedUser = await db
         .update(usersTable)
@@ -85,7 +88,10 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .returning();
       return updatedUser;
-    } catch (error) {
+    } catch (error: any) {
+      if (error.message) {
+        throw new BadRequestError(error.message);
+      }
       throw error;
     }
   };
@@ -97,14 +103,18 @@ export class UserServices {
         .set({ lastLogin: new Date() })
         .where(eq(usersTable.email, email))
         .returning();
-        console.log(updatedLogin)
+      console.log(updatedLogin);
       return updatedLogin;
-    } catch (error) {
+    } catch (error: any) {
       throw error;
     }
   };
 
   resetPassword = async (email: string, password: string) => {
+    if (!password) {
+      throw new BadRequestError("Enter a valid password");
+    }
+
     // Hash the password
     const passwordHash = await hashPassword(password);
 
@@ -117,7 +127,6 @@ export class UserServices {
 
       return newPassword;
     } catch (error: any) {
-      console.log("error -", error.message);
       if (error.message.includes("users")) {
         throw new InternalServerError("Users table not found in the database");
       }

@@ -13,9 +13,15 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { name, email, password } = req.body;
+      const { firstName, lastName, profileImage, email, password } = req.body;
 
-      const result = await userServices.registerUser(name, email, password);
+      const result = await userServices.registerUser(
+        firstName,
+        lastName,
+        profileImage,
+        email,
+        password
+      );
 
       return res.status(200).json({
         success: true,
@@ -31,7 +37,7 @@ export class UserController {
     passport.authenticate(
       "local",
       { session: false },
-      (err: any, user: any, info: any) => {
+      async (err: any, user: any, info: any) => {
         if (err) {
           // Catch DB "relation does not exist" error
           if (err.message.includes("users")) {
@@ -54,6 +60,10 @@ export class UserController {
           sub: (user as any).id,
           email: (user as any).email,
         });
+        if (token) {
+          await userServices.updateLastLogin(user.email);
+        }
+
         return res.json({ user, token });
       }
     )(req, res, next);
@@ -96,8 +106,8 @@ export class UserController {
     if (!email || !password) {
       throw new BadRequestError("Email, and Password are required");
     }
-    if(password?.length < 6){
-      throw new BadRequestError("Password must be at least 6 characters")
+    if (password?.length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters");
     }
     const newPassword = await userServices.resetPassword(email, password);
 

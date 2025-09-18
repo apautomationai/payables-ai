@@ -1,25 +1,26 @@
-
-
-import { integer, pgTable, varchar, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgTable,
+  varchar,
+  text,
+  timestamp,
+  boolean,
+} from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
-  name: varchar("name", { length: 255 }).notNull(),
+  firstName: varchar("first_name", { length: 255 }).notNull(),
+  lastName: varchar("last_name", { length: 255 }).notNull(),
+  profileImage: varchar("profile_image", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),
-});
-
-
-
-export const registerUserTable = pgTable("register", {
-  name: varchar("name", { length: 255 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  password: text("password_hash").notNull(),
-});
-export const loginUserTable = pgTable("login", {
-  email: varchar("email", { length: 255 }).notNull().unique(),
-  password: text("password_hash").notNull(),
+  phone: varchar("phone", { length: 20 }).unique(),
+  createdAt: timestamp("created_at", { withTimezone: false })
+    .defaultNow()
+    .notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  isBanned: boolean("is_banned").default(false).notNull(),
+  lastLogin: timestamp("last_login").defaultNow(),
 });
 
 

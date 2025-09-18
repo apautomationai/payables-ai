@@ -14,10 +14,18 @@ type User = InferSelectModel<typeof usersTable>;
 type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async (name: string, email: string, password: string) => {
+  registerUser = async (
+    firstName: string,
+    lastName: string,
+    profileImage: string,
+    email: string,
+    password: string
+  ) => {
     try {
-      if (!name || !email || !password) {
-        throw new BadRequestError("Name, email, and password are required");
+      if (!firstName || !email || !password) {
+        throw new BadRequestError(
+          "First name, email, and password are required"
+        );
       }
 
       // Check if email already exists
@@ -27,9 +35,9 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .limit(1)
         .then((r) => r[0]);
-        console.log("use exists", existingUser)
+      console.log("use exists", existingUser);
       if (existingUser) {
-        throw new  ConflictError("Email already in use");
+        throw new ConflictError("Email already in use");
       }
 
       // Hash the password
@@ -38,7 +46,7 @@ export class UserServices {
       // Insert the new user
       const inserted = await db
         .insert(usersTable)
-        .values({ name, email, passwordHash })
+        .values({ firstName, lastName, profileImage, email, passwordHash })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -49,13 +57,15 @@ export class UserServices {
       return {
         user: {
           id: createdUser.id,
-          name: createdUser.name,
+          firstName: createdUser.firstName,
+          lastName: createdUser.lastName,
+          profileImage: createdUser.profileImage,
           email: createdUser.email,
         },
         token,
       };
-    } catch (error:any) {
-      throw new BadRequestError( error.message || "Registration failed");
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Registration failed");
     }
   };
   getUsers = async () => {
@@ -63,7 +73,6 @@ export class UserServices {
       const allUsers = await db.select().from(usersTable);
 
       return allUsers;
-      
     } catch (error) {
       return [];
     }
@@ -76,6 +85,20 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .returning();
       return updatedUser;
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  updateLastLogin = async (email: string) => {
+    try {
+      const updatedLogin = await db
+        .update(usersTable)
+        .set({ lastLogin: new Date() })
+        .where(eq(usersTable.email, email))
+        .returning();
+        console.log(updatedLogin)
+      return updatedLogin;
     } catch (error) {
       throw error;
     }

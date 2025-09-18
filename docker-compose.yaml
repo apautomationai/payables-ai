@@ -12,7 +12,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
   api:
-    build: ./apps/api       # path to your Dockerfile folder
+    build: ./apps/api # path to your Dockerfile folder
     container_name: payables-api
     environment:
       DATABASE_URL: postgres://myuser:mypassword@postgres:5432/mydatabase
@@ -20,12 +20,10 @@ services:
       - "4000:4000"
     depends_on:
       - postgres
-    command: npm run dev    # or "npm start"
+    command: npm run dev # or "npm start"
 
 volumes:
   postgres_data:
-
-
 # services:
 #   postgres:
 #     image: postgres:15

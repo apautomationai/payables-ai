@@ -1,15 +1,31 @@
 import db from "@/lib/db";
 import { hashPassword } from "@/lib/utils/hash";
-import { eq } from "drizzle-orm";
+import { eq, InferSelectModel } from "drizzle-orm";
 import { usersTable } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
-import { BadRequestError, ConflictError } from "@/helpers/errors";
+import {
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+} from "@/helpers/errors";
+
+type User = InferSelectModel<typeof usersTable>;
+
+type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async (name: string, email: string, password: string) => {
+  registerUser = async (
+    firstName: string,
+    lastName: string,
+    profileImage: string,
+    email: string,
+    password: string
+  ) => {
     try {
-      if (!name || !email || !password) {
-        throw new BadRequestError("Name, email, and password are required");
+      if (!firstName || !email || !password) {
+        throw new BadRequestError(
+          "First name, email, and password are required"
+        );
       }
 
       // Check if email already exists
@@ -19,6 +35,7 @@ export class UserServices {
         .where(eq(usersTable.email, email))
         .limit(1)
         .then((r) => r[0]);
+      console.log("use exists", existingUser);
       if (existingUser) {
         throw new ConflictError("Email already in use");
       }
@@ -29,7 +46,7 @@ export class UserServices {
       // Insert the new user
       const inserted = await db
         .insert(usersTable)
-        .values({ name, email, passwordHash })
+        .values({ firstName, lastName, profileImage, email, passwordHash })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -40,13 +57,80 @@ export class UserServices {
       return {
         user: {
           id: createdUser.id,
-          name: createdUser.name,
+          firstName: createdUser.firstName,
+          lastName: createdUser.lastName,
+          profileImage: createdUser.profileImage,
           email: createdUser.email,
         },
         token,
       };
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Registration failed");
+    }
+  };
+  getUsers = async () => {
+    try {
+      const allUsers = await db.select().from(usersTable);
+
+      return allUsers;
     } catch (error) {
-      throw new BadRequestError("Registration failed");
+      return [];
+    }
+  };
+  updateUser = async (email: string, userData: UpdateUser) => {
+    if (!email) {
+      throw new BadRequestError("Email is required");
+    }
+    try {
+      const updatedUser = await db
+        .update(usersTable)
+        .set(userData)
+        .where(eq(usersTable.email, email))
+        .returning();
+      return updatedUser;
+    } catch (error: any) {
+      if (error.message) {
+        throw new BadRequestError(error.message);
+      }
+      throw error;
+    }
+  };
+
+  updateLastLogin = async (email: string) => {
+    try {
+      const updatedLogin = await db
+        .update(usersTable)
+        .set({ lastLogin: new Date() })
+        .where(eq(usersTable.email, email))
+        .returning();
+      console.log(updatedLogin);
+      return updatedLogin;
+    } catch (error: any) {
+      throw error;
+    }
+  };
+
+  resetPassword = async (email: string, password: string) => {
+    if (!password) {
+      throw new BadRequestError("Enter a valid password");
+    }
+
+    // Hash the password
+    const passwordHash = await hashPassword(password);
+
+    try {
+      const newPassword = await db
+        .update(usersTable)
+        .set({ passwordHash })
+        .where(eq(usersTable.email, email))
+        .returning();
+
+      return newPassword;
+    } catch (error: any) {
+      if (error.message.includes("users")) {
+        throw new InternalServerError("Users table not found in the database");
+      }
+      throw error;
     }
   };
 }

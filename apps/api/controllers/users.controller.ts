@@ -4,22 +4,32 @@ import { userServices } from "@/services/users.service";
 
 import { NextFunction, Request, Response } from "express";
 import passport from "@/lib/passport";
-import { ConflictError } from "@/helpers/errors";
+import {
+  BadRequestError,
+  ConflictError,
+  InternalServerError,
+} from "@/helpers/errors";
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { name, email, password } = req.body;
+      const { firstName, lastName, profileImage, email, password } = req.body;
 
-      const result = await userServices.registerUser(name, email, password);
+      const result = await userServices.registerUser(
+        firstName,
+        lastName,
+        profileImage,
+        email,
+        password
+      );
 
       return res.status(200).json({
         success: true,
         data: result,
         timestamp: new Date().toISOString(),
       });
-    } catch (err) {
-      throw new ConflictError("Email already in use");
+    } catch (err: any) {
+      throw new ConflictError(err.message || "Unable to connect to the server");
     }
   };
 
@@ -27,8 +37,20 @@ export class UserController {
     passport.authenticate(
       "local",
       { session: false },
-      (err: any, user: any, info: any) => {
-        if (err) return next(err);
+      async (err: any, user: any, info: any) => {
+        if (err) {
+          // Catch DB "relation does not exist" error
+          if (err.message.includes("users")) {
+            return res.status(500).json({
+              success: false,
+              error: {
+                code: "INTERNAL_SERVER_ERROR",
+                message: "Users table not found in the database",
+              },
+            });
+          }
+          return next(err);
+        }
         if (!user)
           return res
             .status(401)
@@ -38,9 +60,58 @@ export class UserController {
           sub: (user as any).id,
           email: (user as any).email,
         });
+        if (token) {
+          await userServices.updateLastLogin(user.email);
+        }
+
         return res.json({ user, token });
       }
     )(req, res, next);
+  };
+
+  //@ts-ignore
+  getUsers = async (req: Request, res: Response) => {
+    try {
+      const allUsers = await userServices.getUsers();
+
+      return res.status(200).send(allUsers);
+    } catch (error) {
+      return new InternalServerError("Unable to connect to the server");
+    }
+  };
+  updateUser = async (req: Request, res: Response) => {
+    const { email } = req.body;
+    const userData = req.body;
+
+    if (!email) {
+      throw new BadRequestError("Email is required");
+    }
+
+    try {
+      const updatedUser = await userServices.updateUser(email, userData);
+
+      if (updatedUser) {
+        return res.status(200).send(updatedUser);
+      }
+      throw new BadRequestError("User has not updated");
+    } catch (err: any) {
+      throw new InternalServerError(
+        err.message || "Unable to connect the server"
+      );
+    }
+  };
+  resetPassword = async (req: Request, res: Response) => {
+    const { email, password } = req.body;
+    // const password = req.body;
+    if (!email || !password) {
+      throw new BadRequestError("Email, and Password are required");
+    }
+    if (password?.length < 6) {
+      throw new BadRequestError("Password must be at least 6 characters");
+    }
+    const newPassword = await userServices.resetPassword(email, password);
+
+    res.status(200).send(newPassword);
   };
 }
 

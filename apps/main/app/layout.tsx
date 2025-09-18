@@ -1,33 +1,34 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google"
 
-import "@workspace/ui/globals.css";
-import { cn } from "@workspace/ui/lib/utils";
-import { Toaster } from "@/components/layout/toaster";
-import { Providers } from "@/components/providers";
+import "@workspace/ui/globals.css"
+import { Providers } from "@/components/providers"
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const fontSans = Geist({
+  subsets: ["latin"],
+  variable: "--font-sans",
+})
 
-export const metadata: Metadata = {
-  title: "PDF Data Extractor Dashboard",
-  description: "A modern dashboard to manage PDF data extraction.",
-};
+const fontMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+})
 
 export default function RootLayout({
   children,
 }: Readonly<{
-  children: React.ReactNode;
+  children: React.ReactNode
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
       <body
+<<<<<<< HEAD
         className={cn("bg-background font-sans antialiased", inter.variable)}
+=======
+        className={`${fontSans.variable} ${fontMono.variable} font-sans antialiased `}
+>>>>>>> main
       >
-        <Providers>
-          {children}
-          <Toaster />
-        </Providers>
+        <Providers>{children}</Providers>
       </body>
     </html>
-  );
+  )
 }

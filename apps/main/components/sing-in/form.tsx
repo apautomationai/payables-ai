@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useActionState } from "react";
+import React, { useEffect, Suspense, useActionState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
-import { AtSign, Lock, Loader2, User } from "lucide-react";
+import { AtSign, Lock, Loader2 } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -16,9 +17,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { signUpAction, SignUpFormState } from "@/app/(auth)/sign-up/actions";
+import { signInAction, SignInFormState } from "@/app/(auth)/sign-in/actions";
 
-const initialState: SignUpFormState = {
+const initialState: SignInFormState = {
   message: "",
   success: false,
 };
@@ -43,6 +44,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />
   </svg>
 );
+
 const OutlookIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
     <path
@@ -63,28 +65,29 @@ const OutlookIcon = (props: React.SVGProps<SVGSVGElement>) => (
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button type="submit" className="w-full" disabled={pending}>
-      {pending ? (
-        <>
-          <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating Account...
-        </>
-      ) : (
-        "Create an Account"
-      )}
+    <Button className="w-full" type="submit" disabled={pending}>
+      {pending ? <Loader2 className="animate-spin" /> : "Sign In"}
     </Button>
   );
 }
 
-export default function SignUpPage() {
-  const [state, formAction] = useActionState(signUpAction, initialState);
+function SignInFormComponent() {
+  const [state, formAction] = useActionState(signInAction, initialState);
+  const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (!state.success && state.message) {
-      toast.error("Sign-Up Failed", {
-        description: state.errors?._form
-          ? state.errors._form[0]
-          : state.message,
+    if (searchParams.get("signup") === "success") {
+      toast.success("Account created successfully!", {
+        description: "You can now sign in with your new credentials.",
       });
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (state.success) {
+      toast.success(state.message);
+    } else if (state.message) {
+      toast.error("Sign-In Failed", { description: state.message });
     }
   }, [state]);
 
@@ -92,23 +95,19 @@ export default function SignUpPage() {
     <Card className="w-full max-w-md animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
       <CardHeader className="text-center">
         <CardTitle className="text-3xl font-bold tracking-tight">
-          Create an Account
+          Sign In
         </CardTitle>
-        <CardDescription>Get started with Payable.ai today.</CardDescription>
+        <CardDescription>
+          Enter your credentials to access your account.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <Button
-            variant="outline"
-            onClick={() => console.log("Sign up with Google")}
-          >
-            <GoogleIcon className="mr-2 h-4 w-4" /> Google
+          <Button variant="outline">
+            <GoogleIcon className="mr-2 h-5 w-5" /> Google
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => console.log("Sign up with Outlook")}
-          >
-            <OutlookIcon className="mr-2 h-4 w-4" /> Outlook
+          <Button variant="outline">
+            <OutlookIcon className="mr-2 h-5 w-5" /> Outlook
           </Button>
         </div>
         <div className="relative">
@@ -116,52 +115,47 @@ export default function SignUpPage() {
             <span className="w-full border-t" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or sign up with email
+            <span className="dark:bg-gray-900 bg-background px-2 text-muted-foreground">
+              Or continue with
             </span>
           </div>
         </div>
         <form action={formAction} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First Name</Label>
-              <Input id="firstName" name="firstName" placeholder="John" />
-              {state.errors?.firstName && (
-                <p className="text-sm text-red-500">
-                  {state.errors.firstName[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last Name</Label>
-              <Input id="lastName" name="lastName" placeholder="Doe" />
-              {state.errors?.lastName && (
-                <p className="text-sm text-red-500">
-                  {state.errors.lastName[0]}
-                </p>
-              )}
-            </div>
-          </div>
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="you@example.com"
-            />
+            <Label htmlFor="email">Email</Label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                className="pl-10"
+              />
+            </div>
             {state.errors?.email && (
               <p className="text-sm text-red-500">{state.errors.email[0]}</p>
             )}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="8+ characters"
-            />
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password">Password</Label>
+              <Link
+                href="/forget-password"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+            <div className="relative">
+              <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                className="pl-10"
+              />
+            </div>
             {state.errors?.password && (
               <p className="text-sm text-red-500">{state.errors.password[0]}</p>
             )}
@@ -172,17 +166,25 @@ export default function SignUpPage() {
           <SubmitButton />
         </form>
       </CardContent>
-      <CardFooter className="flex justify-center">
-        <p className="text-sm text-muted-foreground">
-          Already have an account?{" "}
+      <CardFooter className="flex-col gap-4">
+        <div className="text-sm text-muted-foreground">
+          Don't have an account?{" "}
           <Link
-            href="/sign-in"
+            href="/sign-up"
             className="font-medium text-primary hover:underline"
           >
-            Sign In
+            Sign Up
           </Link>
-        </p>
+        </div>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function SignInForm() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInFormComponent />
+    </Suspense>
   );
 }

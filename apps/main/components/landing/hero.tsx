@@ -1,5 +1,5 @@
 "use client";
-
+import { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import {
@@ -20,8 +20,19 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { checkSession } from "./action";
+import Link from "next/link";
 
 export function Hero() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const verifySession = async () => {
+      const { isLoggedIn } = await checkSession();
+      setIsLoggedIn(isLoggedIn);
+    };
+    verifySession();
+  }, []);
   return (
     <section className="relative overflow-hidden pt-16 pb-32 sm:pt-24 sm:pb-40">
       {/* Background Elements */}
@@ -97,21 +108,43 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
-            <Button
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-            >
-              Start Free Trial
-              <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-            </Button>
-            <Button
-              variant="outline"
-              size="lg"
-              className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
-            >
-              <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-              Watch Demo
-            </Button>
+            {isLoggedIn ? (
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
+              >
+                <Link href="#demo">
+                  <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                  Watch Demo
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button
+                  asChild
+                  size="lg"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                >
+                  <Link href="/sign-up">
+                    Start Free Trial
+                    <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="outline"
+                  size="lg"
+                  className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
+                >
+                  <Link href="#demo">
+                    <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                    Watch Demo
+                  </Link>
+                </Button>
+              </>
+            )}
           </motion.div>
 
           <motion.div
@@ -155,15 +188,6 @@ export function Hero() {
 
             <div className="relative rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-2xl p-4 sm:p-3">
               <div className="aspect-video rounded-xl bg-gradient-to-br from-blue-100 to-emerald-100 flex items-center justify-center sm:p-8">
-                {/* <div className="text-center p-5">
-                  <p className="text-lg font-bold text-gray-700">
-                    Interactive Product Demo
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Click to see our platform in action
-                  </p>
-                </div> */}
-
                 {/* Floating orbs inside the demo area */}
                 <div className="absolute top-4 left-4">
                   <PulsingOrb color="#3B82F6" size={30} />

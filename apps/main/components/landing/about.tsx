@@ -69,28 +69,15 @@ export function About() {
             </Badge>
 
             <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
-              Revolutionizing{" "}
+            Why We Built{" "}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                AP Automation
-              </span>{" "}
-              Through AI
+              Payables
+              </span>
             </h2>
 
             <p className="text-xl text-gray-600 mb-6 leading-8">
-              We're on a mission to revolutionize accounts payable automation
-              through intelligent technology. Our AI-powered platform helps
-              businesses of all sizes streamline their financial operations,
-              reduce errors, and gain valuable insights into their spending
-              patterns.
+            We’ve all been there — chasing down invoices, juggling emails, and trying to keep projects moving while paperwork slows everything down. In construction and small business especially, missed invoices or late payments can kill cash flow and damage relationships. We built Payables because we were tired of watching businesses lose time and money on something that should be simple.
             </p>
-
-            <p className="text-xl text-gray-600 mb-8 leading-8">
-              Founded by a team of finance and technology experts, Payables.ai
-              combines cutting-edge machine learning with deep industry
-              knowledge to deliver a solution that actually works for real-world
-              AP challenges.
-            </p>
-
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -146,25 +133,6 @@ export function About() {
           </motion.div>
         </div>
 
-        {/* Mission Statement */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="mt-24 text-center"
-        >
-          <div className="bg-gradient-to-r from-blue-600/5 to-purple-600/5 p-8 rounded-2xl border border-blue-100">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-              Our Mission
-            </h3>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-              To transform accounts payable from a cost center into a strategic
-              function through intelligent automation, actionable insights, and
-              seamless integration with existing business systems.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

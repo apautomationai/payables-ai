@@ -83,12 +83,12 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.1 }}
             className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl lg:text-8xl"
           >
-            Transform Your
+            AI-Powered
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
               {" "}
               Accounts Payable{" "}
             </span>
-            with AI
+        
           </motion.h1>
 
           <motion.p
@@ -97,9 +97,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-8 text-xl leading-8 text-gray-600 max-w-3xl mx-auto"
           >
-            Automate invoice processing, streamline approvals, and gain
-            real-time insights into your financial operations with our
-            intelligent AP platform.
+           Stop wasting time on manual invoice handling. Automatically capture, track, and pay your invoices — all in one streamlined platform.
           </motion.p>
 
           <motion.div
@@ -117,7 +115,7 @@ export function Hero() {
               >
                 <Link href="#demo">
                   <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                  Watch Demo
+                  Watch Demo Video
                 </Link>
               </Button>
             ) : (
@@ -128,7 +126,7 @@ export function Hero() {
                   className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
                 >
                   <Link href="/sign-up">
-                    Start Free Trial
+                  Try for Free
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </Link>
                 </Button>
@@ -140,7 +138,7 @@ export function Hero() {
                 >
                   <Link href="#demo">
                     <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                    Watch Demo
+                    Watch Demo Video
                   </Link>
                 </Button>
               </>

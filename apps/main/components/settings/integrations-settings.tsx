@@ -29,16 +29,7 @@ const integrations = [
     category: "Email Processing & Automation",
     connected: false,
   },
-  {
-    name: "AWS Services",
-    category: "Textract, S3, Cloud Storage",
-    connected: true,
-  },
-  {
-    name: "OpenAI",
-    category: "AI-Powered Invoice Processing",
-    connected: true,
-  },
+
 ];
 
 const IntegrationCard = ({

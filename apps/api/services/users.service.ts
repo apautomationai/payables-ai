@@ -83,7 +83,7 @@ export class UserServices {
     }
     try {
       const updatedUser = await db
-        .update(usersTable)
+        .update(usersTable) 
         .set(userData)
         .where(eq(usersTable.email, email))
         .returning();

@@ -23,12 +23,12 @@ const navigation = {
     { name: "Features", href: "#" },
     { name: "Pricing", href: "#" },
     { name: "Use Cases", href: "#" },
-    { name: "Sign In", href: "#" },
+    
   ],
   company: [
     { name: "About", href: "#" },
     { name: "Contact", href: "#" },
-    { name: "Sign Up", href: "#" },
+   
   ],
   support: [
     { name: "Help Center", href: "#" },

@@ -123,7 +123,7 @@ export function Hero() {
                 <Button
                   asChild
                   size="lg"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
+                  className="bg-gradient-to-r from-blue-600 from-10% via-sky-600 via-30% to-emerald-500 to-90% hover:from-blue-700 not-[]:hover:via-sky-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
                 >
                   <Link href="/sign-up">
                   Try for Free

@@ -1,6 +1,7 @@
 import { Header } from "@/components/landing/header";
 import { Hero } from "@/components/landing/hero";
 import { Features } from "@/components/landing/features";
+import { ComingSoon } from "@/components/landing/upcoming";
 import { SocialProof } from "@/components/landing/social-proof";
 import { Pricing } from "@/components/landing/pricing";
 import { UseCases } from "@/components/landing/use-cases";
@@ -16,6 +17,7 @@ export default function Home() {
       <Header />
       <Hero />
       <Features />
+      <ComingSoon />
       <SocialProof />
       <Pricing />
       <UseCases />

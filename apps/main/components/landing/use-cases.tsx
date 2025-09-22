@@ -4,12 +4,14 @@ import { motion } from "framer-motion";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card } from "@workspace/ui/components/card";
 import {
-  Building2,
-  School,
-  Factory,
-  HeartPulse,
-  Zap,
+  Building,
+  HardHat,
+  Paintbrush,
+  Construction,
+  Trees,
+  Store,
   Clock,
+  Zap,
   BarChart3,
   Shield,
 } from "lucide-react";
@@ -26,60 +28,82 @@ import {
 
 const useCases = [
   {
-    category: "Mid-Size Companies",
-    icon: Building2,
-    description:
-      "Streamline invoice processing for growing businesses with 100-1000 monthly invoices. Reduce manual data entry by 90% and process invoices 5x faster.",
+    category: "General Contractors",
+    icon: Building,
+    description: "Handle invoices from multiple subs and suppliers, keep project costs organized, and pay out directly.",
     highlights: [
-      "100-1000 monthly invoices",
-      "90% less manual data entry",
-      "5x faster processing",
+      "Multiple subcontractor invoices",
+      "Project cost organization",
+      "Direct payment processing",
     ],
     iconColor: "text-blue-600",
     bgColor: "bg-blue-50",
     borderColor: "border-blue-200",
   },
   {
-    category: "Education",
-    icon: School,
-    description:
-      "Manage vendor payments for educational institutions. Handle seasonal invoice spikes and maintain transparency in financial operations.",
+    category: "Specialty Trades",
+    icon: HardHat,
+    description: "Electricians, plumbers, roofers, HVAC, framers, and carpenters — track supplier invoices and tie costs to specific jobs.",
     highlights: [
-      "Educational institutions",
-      "Seasonal invoice spikes",
-      "Financial transparency",
-    ],
-    iconColor: "text-purple-600",
-    bgColor: "bg-purple-50",
-    borderColor: "border-purple-200",
-  },
-  {
-    category: "Manufacturing",
-    icon: Factory,
-    description:
-      "Handle complex vendor relationships and high-volume invoice processing. Automate approval workflows and maintain compliance with industry standards.",
-    highlights: [
-      "Complex vendor relationships",
-      "High-volume processing",
-      "Industry compliance",
+      "Trade-specific invoicing",
+      "Job cost tracking",
+      "Supplier management",
     ],
     iconColor: "text-amber-600",
     bgColor: "bg-amber-50",
     borderColor: "border-amber-200",
   },
   {
-    category: "Healthcare",
-    icon: HeartPulse,
-    description:
-      "Ensure HIPAA compliance while processing medical invoices. Maintain accurate vendor records and streamline payment approvals for healthcare providers.",
+    category: "Finishing & Interiors",
+    icon: Paintbrush,
+    description: "Drywall crews, painters, flooring installers, cabinet makers, and glaziers — keep material and labor invoices clean and project-ready.",
     highlights: [
-      "HIPAA compliance",
-      "Medical invoices",
-      "Healthcare providers",
+      "Material & labor invoices",
+      "Project-ready documentation",
+      "Clean record keeping",
+    ],
+    iconColor: "text-purple-600",
+    bgColor: "bg-purple-50",
+    borderColor: "border-purple-200",
+  },
+  {
+    category: "Heavy Work & Site Prep",
+    icon: Construction,
+    description: "Concrete, masonry, excavation, dirt work, welders, demolition, and paving contractors — log big-ticket invoices for equipment, materials, and crews.",
+    highlights: [
+      "Big-ticket invoice management",
+      "Equipment & material tracking",
+      "Crew cost documentation",
+    ],
+    iconColor: "text-orange-600",
+    bgColor: "bg-orange-50",
+    borderColor: "border-orange-200",
+  },
+  {
+    category: "Outdoor & Custom Builds",
+    icon: Trees,
+    description: "Landscapers, pool and spa installers, and outdoor contractors — manage recurring supplier invoices and job-specific costs.",
+    highlights: [
+      "Recurring supplier invoices",
+      "Job-specific cost tracking",
+      "Outdoor project management",
     ],
     iconColor: "text-emerald-600",
     bgColor: "bg-emerald-50",
     borderColor: "border-emerald-200",
+  },
+  {
+    category: "Shops & Small Businesses",
+    icon: Store,
+    description: "Millwork shops, smoke shops, nail salons, and other small businesses that run on supplier invoices — simplify recordkeeping and payouts.",
+    highlights: [
+      "Supplier invoice simplification",
+      "Streamlined recordkeeping",
+      "Easy payout processing",
+    ],
+    iconColor: "text-indigo-600",
+    bgColor: "bg-indigo-50",
+    borderColor: "border-indigo-200",
   },
 ];
 
@@ -111,13 +135,13 @@ export function UseCases() {
         >
           <Badge
             variant="outline"
-            className="mb-4 px-3 py-1 text-sm font-medium border-blue-200 bg-blue-50/50 text-blue-700"
+            className="mb-4 px-3 py-1 text-sm font-medium border-emerald-200 bg-emerald-50/50 text-emerald-700"
           >
             Use Cases
           </Badge>
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
             See how businesses are transforming their <br />
-            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
               AP Processes
             </span>
           </h2>
@@ -128,7 +152,7 @@ export function UseCases() {
         </motion.div>
 
         {/* Use Cases Grid with Lucide Icons */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {useCases.map((useCase, index) => (
             <motion.div
               key={useCase.category}

@@ -15,33 +15,33 @@ const testimonials = [
   {
     name: "Sarah Chen",
     role: "CTO at TechFlow",
-    company: "TechFlow",
+    company: "Ferrocrete Construction",
     image:
       "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400",
     content:
-      "This platform has completely transformed how we manage our operations. The automation features saved us 20+ hours per week.",
+      "Before Payables, we were drowning in invoices from subs and suppliers. Now everything flows straight from email into our accounting system — no more lost paperwork, no more late payments.",
     rating: 5,
     metrics: "20+ hours saved weekly",
   },
   {
     name: "Michael Rodriguez",
     role: "VP of Operations",
-    company: "ScaleUp Inc",
+    company: "King Genomics",
     image:
       "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400",
     content:
-      "The analytics dashboard gives us insights we never had before. Our decision-making has become much more data-driven.",
+      "We handle dozens of specialized vendor invoices each month. Payables makes it effortless to log, track, and pay — our finance team saves hours every week",
     rating: 5,
     metrics: "40% better decisions",
   },
   {
     name: "Emily Johnson",
     role: "Product Manager",
-    company: "InnovateLab",
+    company: "Emily Delgado’s Nails",
     image:
       "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400",
     content:
-      "The collaboration features are incredible. Our remote team feels more connected than ever before.",
+      "Running a salon means juggling clients and suppliers. Payables keeps all my product invoices organized, and I can see exactly what’s due without the stress.",
     rating: 5,
     metrics: "60% better collaboration",
   },
@@ -61,7 +61,7 @@ export function SocialProof() {
     <section className="py-24 sm:py-32 bg-gray-50">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         {/* Company Logos */}
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
@@ -91,7 +91,7 @@ export function SocialProof() {
               </motion.div>
             ))}
           </div>
-        </motion.div>
+        </motion.div> */}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -184,12 +184,12 @@ export function SocialProof() {
                   </div>
                 </div>
 
-                <Badge
+                {/* <Badge
                   variant="secondary"
                   className="text-xs font-medium bg-emerald-100 dark:hover:bg-gray-50 text-emerald-700 border-emerald-200"
                 >
                   {testimonial.metrics}
-                </Badge>
+                </Badge> */}
               </Card>
             </motion.div>
           ))}

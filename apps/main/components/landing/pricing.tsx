@@ -149,85 +149,96 @@ export function Pricing() {
                 viewport={{ once: true }}
               >
                 <Card
-                  className={`relative p-8 h-full ${
-                    plan.popular
-                      ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
-                      : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
-                  } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
-                >
-                  {/* Animated background for popular plan */}
-                  {plan.popular && (
-                    <div className="absolute top-4 right-4 opacity-20">
-                      <PulsingOrb color="#3B82F6" size={40} />
-                    </div>
-                  )}
+  className={`relative p-8 h-full flex flex-col ${
+    plan.popular
+      ? "border-blue-200 dark:border-blue-200 shadow-xl ring-1 dark:ring-blue-100 ring-blue-100 scale-105"
+      : "border-gray-200 dark:border-gray-200 hover:shadow-lg"
+  } transition-all duration-300 dark:bg-white bg-white relative overflow-hidden`}
+>
+  {/* Animated background for popular plan */}
+  {plan.popular && (
+    <div className="absolute top-4 right-4 opacity-20">
+      <PulsingOrb color="#3B82F6" size={40} />
+    </div>
+  )}
 
-                  {/* Corner orbs for all plans */}
-                  <div className="absolute bottom-4 left-4 opacity-0 hover:opacity-30 transition-opacity duration-300">
-                    <PulsingOrb color="#10B981" size={25} />
-                  </div>
+  {/* Corner orbs for all plans */}
+  <div className="absolute bottom-4 left-4 opacity-0 hover:opacity-30 transition-opacity duration-300">
+    <PulsingOrb color="#10B981" size={25} />
+  </div>
 
-                  {plan.popular && (
-                    <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
-                      <motion.div
-                        animate={{ y: [0, -2, 0] }}
-                        transition={{
-                          duration: 2,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }}
-                      >
-                        <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 dark:bg-gradient-to-r dark:from-blue-600 dark:to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
-                          <Star className="w-4 h-4 mr-1 fill-current" />
-                          Most Popular
-                        </Badge>
-                      </motion.div>
-                    </div>
-                  )}
+  {plan.popular && (
+    <div className="absolute -top-1 left-1/2 -translate-x-1/2 z-50">
+      <motion.div
+        animate={{ y: [0, -2, 0] }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          ease: "easeInOut",
+        }}
+      >
+        <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 dark:bg-gradient-to-r dark:from-blue-600 dark:to-purple-600 text-white px-4 py-2 text-sm font-medium shadow-lg border-0 whitespace-nowrap">
+          <Star className="w-4 h-4 mr-1 fill-current" />
+          Most Popular
+        </Badge>
+      </motion.div>
+    </div>
+  )}
 
-                  <div className="text-center mb-8">
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                      {plan.name}
-                    </h3>
-                    <p className="text-gray-600 mb-4">{plan.description}</p>
+  {/* Content wrapper that grows to fill available space */}
+  <div className="flex-grow">
+    <div className="text-center mb-8">
+      <h3 className="text-2xl font-bold text-gray-900 mb-2">
+        {plan.name}
+      </h3>
+      <p className="text-gray-600 mb-4">{plan.description}</p>
 
-                    <div className="flex items-center justify-center gap-2 mb-2">
-                      <span className="text-5xl font-bold text-gray-900">
-                        ${plan.price}
-                      </span>
-                      <div className="text-left flex flex-row gap-1">
-                        <div className="text-gray-600">/per</div>
-                        <div className="text-gray-600">{plan.period}</div>
-                      </div>
-                    </div>
-                  </div>
+      <div className="flex items-center justify-center gap-2 mb-2">
+        <ul>
+          <li>
+            <span className="text-5xl font-bold text-gray-900">
+              ${plan.price}
+            </span>
+            <div className="text-left flex flex-row gap-1">
+              <div className="text-gray-600">/per</div>
+              <div className="text-gray-600">{plan.period}</div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
 
-                  <ul className="space-y-4 mb-8">
-                    {plan.features.map((feature) => (
-                      <motion.li
-                        key={feature}
-                        className="flex items-start gap-3"
-                        whileHover={{ x: 5 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
-                      </motion.li>
-                    ))}
-                  </ul>
+    <ul className="space-y-4 mb-8">
+      {plan.features.map((feature) => (
+        <li key={feature}>
+          <motion.div
+            className="flex items-start gap-3"
+            whileHover={{ x: 5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <span className="text-gray-700">{feature}</span>
+          </motion.div>
+        </li>
+      ))}
+    </ul>
+  </div>
 
-                  <Button
-                    size="lg"
-                    className={`w-full ${
-                      plan.popular
-                        ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
-                        : "bg-gray-900 hover:bg-gray-800 text-white"
-                    } transition-all duration-300`}
-                  >
-                    {plan.popular && <Zap className="w-4 h-4 mr-2" />}
-                    {plan.cta}
-                  </Button>
-                </Card>
+  {/* Button container that stays at the bottom */}
+  <div className="mt-auto">
+    <Button
+      size="lg"
+      className={`w-full ${
+        plan.popular
+          ? "bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg"
+          : "bg-gray-900 hover:bg-gray-800 text-white"
+      } transition-all duration-300`}
+    >
+      {plan.popular && <Zap className="w-4 h-4 mr-2" />}
+      {plan.cta}
+    </Button>
+  </div>
+</Card>
               </motion.div>
             ))}
 

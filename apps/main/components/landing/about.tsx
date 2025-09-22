@@ -10,6 +10,7 @@ import {
   Brain,
   ArrowRight,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { PulsingOrb } from "./animated-icons";
 import Image from "next/image";
@@ -69,28 +70,15 @@ export function About() {
             </Badge>
 
             <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
-              Revolutionizing{" "}
+              Why We Built{" "}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                AP Automation
-              </span>{" "}
-              Through AI
+                Payables
+              </span>
             </h2>
 
             <p className="text-xl text-gray-600 mb-6 leading-8">
-              We're on a mission to revolutionize accounts payable automation
-              through intelligent technology. Our AI-powered platform helps
-              businesses of all sizes streamline their financial operations,
-              reduce errors, and gain valuable insights into their spending
-              patterns.
+              We've all been there — chasing down invoices, juggling emails, and trying to keep projects moving while paperwork slows everything down. In construction and small business especially, missed invoices or late payments can kill cash flow and damage relationships. We built Payables because we were tired of watching businesses lose time and money on something that should be simple.
             </p>
-
-            <p className="text-xl text-gray-600 mb-8 leading-8">
-              Founded by a team of finance and technology experts, Payables.ai
-              combines cutting-edge machine learning with deep industry
-              knowledge to deliver a solution that actually works for real-world
-              AP challenges.
-            </p>
-
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -117,54 +105,50 @@ export function About() {
               className="w-full h-auto rounded-xl shadow-lg border border-gray-200 dark:border-gray-200"
             />
 
-            {/* AI Expertise Highlight */}
+            {/* Mission and Vision Cards */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.4 }}
               viewport={{ once: true }}
-              className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-xl border border-blue-100"
+              className="grid grid-cols-1 md:grid-cols-1 gap-6"
             >
-              <div className="flex items-center">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                  <Brain className="h-6 w-6 text-blue-600" />
+              {/* Mission Card */}
+              <Card className="p-6 dark:border-blue-100 border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:shadow-lg transition-shadow duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
+                    <Target className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Our Mission
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-6">
+                      To take the headache out of accounts payable by giving builders, contractors, and small businesses the tools to manage invoices effortlessly, pay vendors on time, and keep every project moving forward.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-5">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    AI-Powered Technology
-                  </h3>
-                  <p className="text-gray-600 mt-1">
-                    Leveraging cutting-edge machine learning for intelligent
-                    invoice processing
-                  </p>
+              </Card>
+
+              {/* Vision Card */}
+              <Card className="p-6 dark:border-purple-100 border-purple-100 bg-gradient-to-br from-purple-50 to-white hover:shadow-lg transition-shadow duration-300">
+                <div className="flex items-start space-x-4">
+                  <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100">
+                    <Eye className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                      Our Vision
+                    </h3>
+                    <p className="text-gray-600 text-sm leading-6">
+                      A world where no business loses time, money, or opportunities because of messy invoice processes. We're building the future of accounts payable — faster, smarter, and built for the trades.
+                    </p>
+                  </div>
                 </div>
-                <div className="ml-auto">
-                  <Sparkles className="h-8 w-8 text-blue-400" />
-                </div>
-              </div>
+              </Card>
             </motion.div>
           </motion.div>
         </div>
-
-        {/* Mission Statement */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-          viewport={{ once: true }}
-          className="mt-24 text-center"
-        >
-          <div className="bg-gradient-to-r from-blue-600/5 to-purple-600/5 p-8 rounded-2xl border border-blue-100">
-            <h3 className="text-2xl font-semibold text-gray-900 mb-4">
-              Our Mission
-            </h3>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-              To transform accounts payable from a cost center into a strategic
-              function through intelligent automation, actionable insights, and
-              seamless integration with existing business systems.
-            </p>
-          </div>
-        </motion.div>
       </div>
     </section>
   );

@@ -6,7 +6,7 @@ export const signUpSchema = z.object({
   firstName: z.string().min(2, { message: "First name is required." }),
   lastName: z.string().min(2, { message: "Last name is required." }),
   email: z.string().email({ message: "Please enter a valid email." }),
-  // phone: z.string().min(10, { message: "Please enter a valid phone number." }),
+  // phone: z.string().min(20, { message: "Please enter a valid phone number." }),
   password: z
     .string()
     .min(8, { message: "Password must be at least 8 characters." }),
@@ -21,4 +21,9 @@ export const SignInSchema = z.object({
 // For Forgot Password
 export const ForgotPasswordSchema = z.object({
   email: z.string().email({ message: "Please enter a valid email address." }),
+});
+
+// --- Forgot Password ---
+export const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: "Please enter a valid email." }),
 });

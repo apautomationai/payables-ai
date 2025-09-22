@@ -11,34 +11,46 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "How does the 14-day free trial work?",
+    question: "How much does Payables cost?",
     answer:
-      "Start with any plan completely free for 14 days. No credit card required. You'll have full access to all features of your chosen plan. After the trial, you can continue with a paid subscription or downgrade to our free tier.",
+      "We offer flexible pricing tiers. Our Free plan gets you started, Pro is $299/month, Teams is $699/month, and Enterprise pricing is custom. You only pay for what your business needs.",
   },
   {
-    question: "Can I change my plan anytime?",
+    question:
+      "Does Payables integrate with QuickBooks and other accounting platforms?",
     answer:
-      "Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate any billing adjustments. There are no penalties for changing plans.",
+      "Yes. Payables integrates seamlessly with QuickBooks, and we’re adding support for more platforms like Xero and Sage soon.",
   },
   {
-    question: "What kind of support do you provide?",
+    question: "Can I pay vendors directly through Payables?",
     answer:
-      "We offer email support for all plans, priority support for Professional plans, and 24/7 dedicated support for Enterprise customers. We also have comprehensive documentation, video tutorials, and a community forum.",
+      "Yes. Once invoices are logged, you can pay vendors securely from the platform — no extra steps or tools required.",
   },
   {
-    question: "Is my data secure?",
+    question: "Who should use Payables?",
     answer:
-      "Yes, we take security very seriously. We use bank-grade encryption, are SOC 2 compliant, and regularly undergo security audits. Your data is encrypted in transit and at rest, and we never share it with third parties.",
+      "Payables is built for builders, contractors, subcontractors, and small businesses who want to save time and reduce errors in handling invoices.",
   },
   {
-    question: "Do you offer integrations with other tools?",
+    question: "How does Payables capture invoices from email?",
     answer:
-      "We integrate with over 100+ popular tools including Slack, Google Workspace, Microsoft 365, Salesforce, and many more. Professional and Enterprise plans also include custom integration capabilities.",
+      "Our AI email scanner connects to Gmail and Outlook to automatically pull invoices from your inbox — no more manual uploads.",
   },
   {
-    question: "What happens if I exceed my plan limits?",
+    question:
+      "What makes Payables different from other accounts payable software?",
     answer:
-      "We'll notify you when you're approaching your limits. For storage and users, you can easily upgrade your plan. For API calls, we offer flexible add-on packages. We'll never cut off your service without notice.",
+      "Payables is built specifically for trades and small businesses. We combine AI invoice capture, auto-parsing, and direct payouts in one simple tool.",
+  },
+  {
+    question: "Is Payables secure?",
+    answer:
+      "Yes. We use enterprise-grade encryption, and your data is never shared with third parties.",
+  },
+  {
+    question: "What if my business grows or I add more team members?",
+    answer:
+      "Payables scales with your needs. You can upgrade tiers anytime and invite your team or subcontractors to collaborate with proper permissions.",
   },
 ];
 

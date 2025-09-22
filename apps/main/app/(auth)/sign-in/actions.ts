@@ -1,53 +1,67 @@
 "use server";
 
-import { z } from "zod";
 import { SignInSchema } from "@/lib/validators";
+import { login } from "@/lib/session";
+import { redirect } from "next/navigation";
 
-// This is the shape of the state that will be returned from our server action
 export type SignInFormState = {
   message: string;
   errors?: {
     email?: string[];
     password?: string[];
+    _form?: string[];
   };
   success: boolean;
 };
 
-// The server action itself
 export async function signInAction(
   prevState: SignInFormState,
   formData: FormData
 ): Promise<SignInFormState> {
-  // 1. Convert FormData to a plain object
-  const rawFormData = Object.fromEntries(formData.entries());
+  const validatedFields = SignInSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
 
-  // 2. Validate the data on the server using your Zod schema
-  const validatedFields = SignInSchema.safeParse(rawFormData);
-
-  // 3. If validation fails, return the errors
   if (!validatedFields.success) {
     return {
-      message: "Validation failed. Please check the fields.",
+      message: "Form submission failed.",
       errors: validatedFields.error.flatten().fieldErrors,
       success: false,
     };
   }
 
-  // 4. If validation succeeds, process the data
   const { email, password } = validatedFields.data;
 
-  // The output will now appear in your terminal's server console, not the browser console.
-  console.log("Server Action: Successfully validated sign-in data:", {
-    email,
-    password,
-  });
+  try {
+    // Call your backend login endpoint
+    const response = await fetch("http://localhost:5000/api/v1/users/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
 
-  // In a real application, you would handle the actual authentication here.
-  // For example, querying your database or calling an auth service.
+    const data = await response.json();
 
-  // 5. Return a success message
-  return {
-    message: "Sign-in successful! Data logged on the server.",
-    success: true,
-  };
+    if (!response.ok) {
+      return {
+        message: data.message || "Invalid email or password.",
+        errors: { _form: [data.message || "Invalid email or password."] },
+        success: false,
+      };
+    }
+
+    // If login is successful, the backend should return the user and a token
+    // We'll use the user data to create a secure session cookie
+    await login(data.user);
+  } catch (error) {
+    console.error("Sign-in error:", error);
+    return {
+      message: "Could not connect to the server. Please try again.",
+      errors: { _form: ["An unexpected error occurred."] },
+      success: false,
+    };
+  }
+
+  // On successful sign-in, redirect to the dashboard
+  redirect("/dashboard");
 }

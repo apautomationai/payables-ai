@@ -166,7 +166,7 @@ export function ComingSoon() {
         >
           <div className="relative">
             {/* Animated illustration */}
-            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-2xl border border-blue-200">
+            <div className="bg-gradient-to-br from-blue-100 to-emerald-100 p-8 rounded-2xl border border-blue-200">
               <div className="flex justify-center mb-6">
                 <AnimatedWorkflow />
               </div>

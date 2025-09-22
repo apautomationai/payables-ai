@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { Menu, X, CreditCard, ArrowRight } from "lucide-react";
@@ -19,6 +19,7 @@ export function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const bodyRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,25 +33,44 @@ export function Header() {
     };
     verifySession();
 
+    // Get the body element
+    bodyRef.current = document.body;
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Prevent body scroll and manage z-index conflicts
+  // Prevent body scroll without causing jump to top
   useEffect(() => {
+    if (!bodyRef.current) return;
+
     if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
+      // Save the current scroll position
+      const scrollY = window.scrollY;
+      
+      // Add a class to body that prevents scrolling
+      bodyRef.current.classList.add('no-scroll');
+      
+      // Set the top position to maintain scroll position visually
+      bodyRef.current.style.top = `-${scrollY}px`;
     } else {
-      document.body.style.overflow = 'unset';
-      document.body.style.position = 'unset';
-      document.body.style.width = 'unset';
+      // Get the saved scroll position from the top style
+      const scrollY = Math.abs(parseInt(bodyRef.current.style.top || '0'));
+      
+      // Remove the no-scroll class
+      bodyRef.current.classList.remove('no-scroll');
+      
+      // Reset the top style
+      bodyRef.current.style.top = '';
+      
+      // Restore the scroll position
+      window.scrollTo(0, scrollY);
     }
 
     return () => {
-      document.body.style.overflow = 'unset';
-      document.body.style.position = 'unset';
-      document.body.style.width = 'unset';
+      if (bodyRef.current) {
+        bodyRef.current.classList.remove('no-scroll');
+        bodyRef.current.style.top = '';
+      }
     };
   }, [mobileMenuOpen]);
 
@@ -136,24 +156,22 @@ export function Header() {
         </nav>
       </header>
 
-      {/* Mobile Menu - Rendered outside the header to avoid z-index conflicts */}
+      {/* Mobile Menu */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
-            {/* High z-index overlay */}
+            {/* Overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="fixed inset-0 z-40 lg:hidden"
+              onClick={() => setMobileMenuOpen(false)}
             >
-              <div
-                className="fixed inset-0 bg-black/50 backdrop-blur-sm"
-                onClick={() => setMobileMenuOpen(false)}
-              />
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
             </motion.div>
             
-            {/* Mobile menu panel with highest z-index */}
+            {/* Mobile menu panel */}
             <motion.div
               initial={{ x: "100%" }}
               animate={{ x: 0 }}
@@ -188,14 +206,24 @@ export function Header() {
                 <div className="flex-1 overflow-y-auto py-6">
                   <div className="px-6 space-y-2">
                     {navigation.map((item) => (
-                      <Link
+                      <a
                         key={item.name}
                         href={item.href}
                         className="block rounded-lg px-4 py-3 text-lg font-semibold text-gray-900 hover:bg-gray-50 transition-colors duration-200"
-                        onClick={() => setMobileMenuOpen(false)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setMobileMenuOpen(false);
+                          // Wait for menu to close before scrolling
+                          setTimeout(() => {
+                            const target = document.querySelector(item.href);
+                            if (target) {
+                              target.scrollIntoView({ behavior: 'smooth' });
+                            }
+                          }, 300);
+                        }}
                       >
                         {item.name}
-                      </Link>
+                      </a>
                     ))}
                   </div>
                 </div>
@@ -211,6 +239,15 @@ export function Header() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Add this CSS to your global styles */}
+      <style jsx global>{`
+        body.no-scroll {
+          position: fixed;
+          width: 100%;
+          overflow-y: scroll;
+        }
+      `}</style>
     </>
   );
 }

@@ -115,24 +115,23 @@ export function Footer() {
               </Badge>
             </div>
             <div className="flex gap-4">
-              <a
+              <Link
                 href="#"
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
                 <Twitter className="w-5 h-5" />
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link                href="#"
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
                 <Linkedin className="w-5 h-5" />
-              </a>
-              <a
+              </Link>
+              <Link
                 href="#"
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
                 <Github className="w-5 h-5" />
-              </a>
+              </Link>
             </div>
           </div>
 

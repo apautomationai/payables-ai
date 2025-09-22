@@ -151,8 +151,10 @@ export default function Header({
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem>
-                <LifeBuoy className="mr-2 h-4 w-4" />
-                <span>Support</span>
+                  <Settings className="mr-2 h-4 w-4" />
+                <Link href="/settings">
+                  <span>Settings</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

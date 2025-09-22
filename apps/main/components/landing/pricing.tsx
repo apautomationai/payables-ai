@@ -192,27 +192,32 @@ export function Pricing() {
                     <p className="text-gray-600 mb-4">{plan.description}</p>
 
                     <div className="flex items-center justify-center gap-2 mb-2">
-                      <span className="text-5xl font-bold text-gray-900">
-                        ${plan.price}
-                      </span>
-                      <div className="text-left flex flex-row gap-1">
-                        <div className="text-gray-600">/per</div>
-                        <div className="text-gray-600">{plan.period}</div>
-                      </div>
+                      <ul>
+                        <li>
+                          <span className="text-5xl font-bold text-gray-900">
+                            ${plan.price}
+                          </span>
+                          <div className="text-left flex flex-row gap-1">
+                            <div className="text-gray-600">/per</div>
+                            <div className="text-gray-600">{plan.period}</div>
+                          </div>
+                        </li>
+                      </ul>
                     </div>
                   </div>
 
                   <ul className="space-y-4 mb-8">
                     {plan.features.map((feature) => (
-                      <motion.li
-                        key={feature}
-                        className="flex items-start gap-3"
-                        whileHover={{ x: 5 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-                        <span className="text-gray-700">{feature}</span>
-                      </motion.li>
+                      <li key={feature}>
+                        <motion.div
+                          className="flex items-start gap-3"
+                          whileHover={{ x: 5 }}
+                          transition={{ duration: 0.2 }}
+                        >
+                          <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0 mt-0.5" />
+                          <span className="text-gray-700">{feature}</span>
+                        </motion.div>
+                      </li>
                     ))}
                   </ul>
 

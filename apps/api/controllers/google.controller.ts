@@ -1,11 +1,12 @@
-// src/controllers/google.controller.ts
 import { Request, Response, NextFunction } from "express";
 import * as googleService from "../services/google.services";
+import { BadRequestError } from "@/helpers/errors";
 
 //@ts-ignore
 export const authRedirect = async (req: Request, res: Response) => {
   const url = googleService.generateAuthUrl();
-  res.json({ url });
+  res.redirect(url);
+  // res.json({ url });
 };
 
 export const oauthCallback = async (
@@ -30,5 +31,19 @@ export const oauthCallback = async (
     });
   } catch (error) {
     return next(error);
+  }
+};
+
+export const readEmails = async (req: Request, res: Response) => {
+  try {
+    const tokens = req.body.tokens;
+
+    if (!tokens) {
+      throw new BadRequestError("Need valid tokens");
+    }
+    const attachments = await googleService.getEmailsWithAttachments(tokens);
+    res.status(200).send(attachments);
+  } catch (error: any) {
+    throw new BadRequestError(error.message || "Unable to get the attachments");
   }
 };

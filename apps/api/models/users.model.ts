@@ -24,3 +24,14 @@ export const usersTable = pgTable("users", {
 });
 
 
+
+export const attachments = pgTable("attachments", {
+  id: text("id").primaryKey(), 
+  emailId: text("email_id").notNull(),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  sender: text("sender").notNull(),
+  receiver: text("receiver").notNull(),
+  s3Url: text("key").default(""),   
+  created_at: timestamp("created_at").defaultNow(),
+});

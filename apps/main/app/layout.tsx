@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
 import "@workspace/ui/globals.css";
+import { cn } from "@workspace/ui/lib/utils";
+import { Toaster } from "@/components/layout/toaster";
 import { Providers } from "@/components/providers";
-import AppShell from "@/components/app-shell";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "PDF Data Extractor Dashboard",
@@ -19,9 +20,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body
+        className={cn("bg-background font-sans antialiased", inter.variable)}
+      >
         <Providers>
-          <AppShell>{children}</AppShell>
+          {children}
+          <Toaster />
         </Providers>
       </body>
     </html>

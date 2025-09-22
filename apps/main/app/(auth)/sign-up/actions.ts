@@ -1,54 +1,91 @@
 "use server";
 
-import { z } from "zod";
+import { signUpSchema } from "@/lib/validators";
+import { redirect } from "next/navigation";
 
-export interface SignUpState {
-  message: string | null;
+export type SignUpFormState = {
+  message: string;
   errors?: {
     firstName?: string[];
     lastName?: string[];
     email?: string[];
     password?: string[];
+    _form?: string[];
   };
-}
-
-const SignUpSchema = z.object({
-  firstName: z
-    .string()
-    .min(2, { message: "First name must be at least 2 characters." }),
-  lastName: z
-    .string()
-    .min(2, { message: "Last name must be at least 2 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
-  password: z
-    .string()
-    .min(8, { message: "Password must be at least 8 characters." }),
-});
+  success: boolean;
+};
 
 export async function signUpAction(
-  prevState: SignUpState,
+  prevState: SignUpFormState,
   formData: FormData
-): Promise<SignUpState> {
-  // Validate form fields
-  const validatedFields = SignUpSchema.safeParse(
+): Promise<SignUpFormState> {
+  const validatedFields = signUpSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
 
-  // If form validation fails, return errors
   if (!validatedFields.success) {
     return {
+      message: "Form submission failed.",
       errors: validatedFields.error.flatten().fieldErrors,
-      message: "Validation failed. Please check the fields.",
+      success: false,
     };
   }
 
-  // Here you would typically handle user creation in your database
-  // For this example, we'll just log the data and return a success message
-  console.log("Creating user with:", validatedFields.data);
+  const { firstName, lastName, email, password } = validatedFields.data;
 
-  // Return success state
-  return {
-    message: "Account created successfully!",
-    errors: {},
+  // This is the key change: The keys now match the camelCase format
+  // expected by your backend API's validation layer.
+  const requestBody = {
+    firstName: firstName,
+    lastName: lastName,
+    email: email,
+    password: password,
   };
+
+  try {
+    const response = await fetch(
+      "http://localhost:5000/api/v1/users/register",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Backend Error Response:", data);
+
+      if (response.status === 409) {
+        // Email already exists
+        return {
+          message: data.message || "An account with this email already exists.",
+          errors: {
+            email: [
+              data.message || "An account with this email already exists.",
+            ],
+          },
+          success: false,
+        };
+      }
+      return {
+        message: data.message || "An unexpected error occurred.",
+        errors: { _form: [data.message || "An unexpected error occurred."] },
+        success: false,
+      };
+    }
+
+    console.log("New user created successfully:", data);
+  } catch (error) {
+    console.error("Network or fetch error:", error);
+    return {
+      message:
+        "Could not connect to the server. Please check if your backend is running and accessible.",
+      errors: { _form: ["Could not connect to the server."] },
+      success: false,
+    };
+  }
+
+  redirect("/sign-in?signup=success");
 }

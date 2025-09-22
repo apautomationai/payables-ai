@@ -102,7 +102,7 @@ export function ComingSoon() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 group relative overflow-hidden">
+              <Card className="p-6 h-full dark:bg-white/80 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 group relative overflow-hidden">
                 {/* Background gradient on hover */}
                 <div className={`absolute inset-0 ${feature.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
                 

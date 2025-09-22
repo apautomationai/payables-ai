@@ -8,6 +8,7 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { Download, Printer, FileQuestion } from "lucide-react";
 import { InvoiceDetails } from "@/lib/types/invoice";
+import Link from "next/link";
 
 // A dedicated component for the placeholder to keep the main component clean
 const PdfPlaceholder = () => (
@@ -39,9 +40,9 @@ export default function PdfViewer({
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" asChild>
-            <a href={pdfUrl} download={`invoice-${invoice.invoiceNumber}.pdf`}>
+            <Link href={pdfUrl} download={`invoice-${invoice.invoiceNumber}.pdf`}>
               <Download className="h-4 w-4" />
-            </a>
+            </Link>
           </Button>
           <Button variant="ghost" size="icon" onClick={() => window.print()}>
             <Printer className="h-4 w-4" />

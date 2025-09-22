@@ -6,7 +6,6 @@ import { SocialProof } from "@/components/landing/social-proof";
 import { Pricing } from "@/components/landing/pricing";
 import { UseCases } from "@/components/landing/use-cases";
 import { About } from "@/components/landing/about";
-import { MissionVision } from "@/components/landing/mission-vision";
 import { Founders } from "@/components/landing/founders";
 import { FAQ } from "@/components/landing/faq";
 import { Footer } from "@/components/landing/footer";
@@ -22,7 +21,6 @@ export default function Home() {
       <Pricing />
       <UseCases />
       <About />
-      <MissionVision />
       <Founders />
       <FAQ />
       <Footer />

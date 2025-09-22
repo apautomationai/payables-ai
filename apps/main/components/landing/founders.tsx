@@ -5,15 +5,13 @@ import { Card } from "@workspace/ui/components/card";
 import { 
   Users, 
   Rocket, 
-  Building2, 
-  Brain, 
-  Code,
   Handshake,
   ArrowRight,
   Linkedin,
   Mail
 } from "lucide-react";
 import { PulsingOrb, AnimatedUsers, AnimatedWorkflow } from "./animated-icons";
+import Image from "next/image";
 
 export function Founders() {
   const founders = [
@@ -21,7 +19,7 @@ export function Founders() {
       name: "Davis Cannon",
       role: "Product Leader",
       description: "Years of experience building AI platforms and financial software",
-      icon: Brain,
+      image: "/images/Davis.jpg", // Replace with actual image path
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       linkedin: "#",
@@ -31,7 +29,7 @@ export function Founders() {
       name: "Matteo Miralaie",
       role: "Engineering Expert",
       description: "Passionate about creating tech that solves real business problems",
-      icon: Code,
+      image: "/images/Matteo.jpg", // Replace with actual image path
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       linkedin: "#",
@@ -41,7 +39,7 @@ export function Founders() {
       name: "Raz Danoukh",
       role: "Industry Specialist",
       description: "Deep relationships in construction, contracting, and business operations",
-      icon: Building2,
+      image: "/images/Raz.jpg", // Replace with actual image path
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       linkedin: "#",
@@ -101,7 +99,7 @@ export function Founders() {
           </motion.div>
         </motion.div>
 
-        {/* Founders Grid */}
+        {/* Founders Grid with Images */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {founders.map((founder, index) => (
             <motion.div
@@ -115,11 +113,24 @@ export function Founders() {
                 {/* Background gradient on hover */}
                 <div className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
                 
-                {/* Founder Image Placeholder */}
+                {/* Founder Image */}
                 <div className="relative mb-6">
                   <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-blue-100 via-purple-100 to-emerald-100 p-1">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                      <founder.icon className={`h-12 w-12 ${founder.color}`} />
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      {/* Placeholder for actual image - replace with Image component when images are available
+                      <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-400">
+                          {founder.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div> */}
+                      {/* Uncomment and use when you have actual images */}
+                       <Image
+                        src={founder.image}
+                        alt={founder.name}
+                        width={128}
+                        height={128}
+                        className="w-full h-full rounded-full object-cover"
+                      /> 
                     </div>
                   </div>
                   
@@ -234,8 +245,6 @@ export function Founders() {
             </motion.button>
           </div>
         </motion.div>
-
-        
       </div>
     </section>
   );

@@ -9,6 +9,7 @@ import {
 } from "@workspace/ui/components/tabs";
 import PlatformSettingsForm from "./platform-settings";
 import IntegrationsTab from "./integrations-settings";
+import BillingTab from "./billing"; // Import the new component
 
 // This is the main client component that manages the state for the tabs.
 export default function SettingsClient() {
@@ -17,6 +18,7 @@ export default function SettingsClient() {
       <TabsList>
         <TabsTrigger value="platform">Platform Settings</TabsTrigger>
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        <TabsTrigger value="billing">Billing</TabsTrigger>
       </TabsList>
       <TabsContent value="platform">
         <PlatformSettingsForm />
@@ -24,6 +26,10 @@ export default function SettingsClient() {
       <TabsContent value="integrations">
         <IntegrationsTab />
       </TabsContent>
+      <TabsContent value="billing">
+        <BillingTab />
+      </TabsContent>
     </Tabs>
   );
 }
+

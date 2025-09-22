@@ -13,13 +13,11 @@ import {
 import { InvoiceDetails, LineItem } from "@/lib/types/invoice";
 
 const formatLabel = (key: string) => {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
 };
 
 const renderValue = (value: string | number | LineItem[]) => {
-  if (Array.isArray(value)) {
+  if(Array.isArray(value)) {
     return `${value.length} item(s)`;
   }
   return String(value);
@@ -45,14 +43,14 @@ export default function ConfirmationModals({
     console.log("Cancelling edit...");
     setIsEditing(false);
   };
-
+  
   const handleReject = () => {
     console.log("Invoice rejected.");
     // Add logic for rejection here
   };
 
   return (
-    <div className="flex gap-2 justify-end">
+    <div className="flex gap-2 justify-end pt-4">
       {isEditing ? (
         <>
           <Button variant="outline" onClick={handleCancel}>
@@ -62,11 +60,15 @@ export default function ConfirmationModals({
         </>
       ) : (
         <>
+          <Button 
+            variant="outline" 
+            className="text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
+            onClick={handleReject}
+          >
+            Reject
+          </Button>
           <Button variant="outline" onClick={() => setIsEditing(true)}>
             Edit
-          </Button>
-          <Button variant="destructive" onClick={handleReject}>
-            Reject
           </Button>
           <Dialog>
             <DialogTrigger asChild>
@@ -80,23 +82,16 @@ export default function ConfirmationModals({
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-60 overflow-y-auto my-4 pr-2">
-                <div className="grid gap-2 text-sm">
-                  {selectedFields.map((key) => (
-                    <div
-                      key={key}
-                      className="grid grid-cols-2 gap-4 items-center"
-                    >
-                      <span className="text-muted-foreground">
-                        {formatLabel(key)}
-                      </span>
-                      <span className="font-semibold text-right truncate">
-                        {renderValue(
-                          invoiceDetails[key as keyof InvoiceDetails]
-                        )}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+                 <div className="grid gap-2 text-sm">
+                   {selectedFields.map(key => (
+                     <div key={key} className="grid grid-cols-2 gap-4 items-center">
+                        <span className="text-muted-foreground">{formatLabel(key)}</span>
+                        <span className="font-semibold text-right truncate">
+                          {renderValue(invoiceDetails[key as keyof InvoiceDetails])}
+                        </span>
+                     </div>
+                   ))}
+                 </div>
               </div>
               <DialogFooter>
                 <DialogClose asChild>
@@ -113,3 +108,4 @@ export default function ConfirmationModals({
     </div>
   );
 }
+

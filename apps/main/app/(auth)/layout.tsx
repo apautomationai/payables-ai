@@ -8,7 +8,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2">
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 dark:bg-gray-100">
         {children}
       </div>
       <div className="hidden bg-zinc-900 lg:flex flex-col items-center justify-center p-10 text-center relative text-white">

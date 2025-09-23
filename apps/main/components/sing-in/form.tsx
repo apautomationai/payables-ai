@@ -65,7 +65,7 @@ const OutlookIcon = (props: React.SVGProps<SVGSVGElement>) => (
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button className="w-full" type="submit" disabled={pending}>
+    <Button className="w-full dark:bg-gradient-to-r dark:from-blue-500 dark:from-50% dark:to-purple-500 dark:to-100% dark:hover:from-blue-600 dark:hover:to-purple-600 bg-gradient-to-r from-blue-500 from-50% to-purple-500 to-100% hover:from-blue-600 hover:to-purple-600 dark:text-white" type="submit" disabled={pending}>
       {pending ? <Loader2 className="animate-spin" /> : "Sign In"}
     </Button>
   );
@@ -188,3 +188,4 @@ export default function SignInForm() {
     </Suspense>
   );
 }
+

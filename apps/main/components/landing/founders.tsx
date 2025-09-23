@@ -5,15 +5,13 @@ import { Card } from "@workspace/ui/components/card";
 import { 
   Users, 
   Rocket, 
-  Building2, 
-  Brain, 
-  Code,
   Handshake,
   ArrowRight,
   Linkedin,
   Mail
 } from "lucide-react";
 import { PulsingOrb, AnimatedUsers, AnimatedWorkflow } from "./animated-icons";
+import Image from "next/image";
 
 export function Founders() {
   const founders = [
@@ -21,7 +19,7 @@ export function Founders() {
       name: "Davis Cannon",
       role: "Product Leader",
       description: "Years of experience building AI platforms and financial software",
-      icon: Brain,
+      image: "/images/Davis.jpg", // Replace with actual image path
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       linkedin: "#",
@@ -31,7 +29,7 @@ export function Founders() {
       name: "Matteo Miralaie",
       role: "Engineering Expert",
       description: "Passionate about creating tech that solves real business problems",
-      icon: Code,
+      image: "/images/Matteo.jpg", // Replace with actual image path
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       linkedin: "#",
@@ -41,7 +39,7 @@ export function Founders() {
       name: "Raz Danoukh",
       role: "Industry Specialist",
       description: "Deep relationships in construction, contracting, and business operations",
-      icon: Building2,
+      image: "/images/Raz.jpg", // Replace with actual image path
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       linkedin: "#",
@@ -101,7 +99,7 @@ export function Founders() {
           </motion.div>
         </motion.div>
 
-        {/* Founders Grid */}
+        {/* Founders Grid with Images */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
           {founders.map((founder, index) => (
             <motion.div
@@ -115,11 +113,24 @@ export function Founders() {
                 {/* Background gradient on hover */}
                 <div className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
                 
-                {/* Founder Image Placeholder */}
+                {/* Founder Image */}
                 <div className="relative mb-6">
                   <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-blue-100 via-purple-100 to-emerald-100 p-1">
-                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
-                      <founder.icon className={`h-12 w-12 ${founder.color}`} />
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center overflow-hidden">
+                      {/* Placeholder for actual image - replace with Image component when images are available
+                      <div className="w-full h-full bg-gray-200 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-gray-400">
+                          {founder.name.split(' ').map(n => n[0]).join('')}
+                        </span>
+                      </div> */}
+                      {/* Uncomment and use when you have actual images */}
+                       <Image
+                        src={founder.image}
+                        alt={founder.name}
+                        width={128}
+                        height={128}
+                        className="w-full h-full rounded-full object-cover"
+                      /> 
                     </div>
                   </div>
                   
@@ -159,83 +170,6 @@ export function Founders() {
             </motion.div>
           ))}
         </div>
-
-        {/* Team Story Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.3 }}
-          viewport={{ once: true }}
-          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
-        >
-          <div className="relative">
-            {/* Animated illustration */}
-            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-2xl border border-blue-200">
-              <div className="flex justify-center mb-6">
-                <AnimatedWorkflow />
-              </div>
-              
-              <div className="text-center">
-                <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
-                  <Rocket className="h-5 w-5 text-blue-600 mr-2" />
-                  <span className="text-sm font-medium text-gray-700">Building the Future Together</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Floating elements */}
-            <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 3, repeat: Infinity }}
-              className="absolute -top-4 -left-4"
-            >
-              <div className="bg-white p-2 rounded-full shadow-lg border border-blue-100">
-                <Handshake className="h-5 w-5 text-blue-500" />
-              </div>
-            </motion.div>
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-6">
-              Our{" "}
-              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
-                Collective Journey
-              </span>
-            </h3>
-            
-            <p className="text-lg text-gray-600 mb-6 leading-8">
-              Together, we've built Payables to solve the exact pain points we've seen across the industries we know best. 
-              Our combined expertise in AI, engineering, and industry operations allows us to create solutions that 
-              genuinely address the challenges faced by builders, contractors, and small businesses.
-            </p>
-            
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mr-4"></div>
-                <span className="text-gray-700">Decades of combined experience</span>
-              </div>
-              <div className="flex items-center">
-                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-purple-600 to-emerald-600 rounded-full mr-4"></div>
-                <span className="text-gray-700">Deep industry knowledge</span>
-              </div>
-              <div className="flex items-center">
-                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full mr-4"></div>
-                <span className="text-gray-700">Passion for solving real business problems</span>
-              </div>
-            </div>
-            
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="mt-8 inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
-            >
-              Meet Our Team
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </motion.button>
-          </div>
-        </motion.div>
-
-        
       </div>
     </section>
   );

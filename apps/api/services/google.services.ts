@@ -19,6 +19,7 @@ export const generateAuthUrl = (): string => {
     scope: [
       "https://www.googleapis.com/auth/gmail.readonly",
       "https://www.googleapis.com/auth/gmail.modify",
+      "https://www.googleapis.com/auth/userinfo.email",
     ],
   });
 };
@@ -30,7 +31,7 @@ export const getTokensFromCode = async (code: string): Promise<Credentials> => {
 
 export const setCredentials = (refreshToken: string): OAuth2Client => {
   oAuth2Client.setCredentials({ refresh_token: refreshToken });
-  
+
   //@ts-ignore
   return oAuth2Client;
 };
@@ -92,7 +93,7 @@ export const getEmailsWithAttachments = async (tokens: any) => {
             `attachments/${id}-${part.filename}`,
             part.mimeType || "application/pdf"
           );
-          console.log("S3 url", s3Url);
+
           //insert meta data to database
           await db.insert(attachments).values({
             id,
@@ -122,3 +123,5 @@ export const getEmailsWithAttachments = async (tokens: any) => {
     throw error;
   }
 };
+
+export const getAttachments = async (email: string) => {};

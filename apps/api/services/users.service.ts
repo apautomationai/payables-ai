@@ -7,6 +7,7 @@ import {
   BadRequestError,
   ConflictError,
   InternalServerError,
+  NotFoundError,
 } from "@/helpers/errors";
 
 type User = InferSelectModel<typeof usersTable>;
@@ -46,6 +47,7 @@ export class UserServices {
       // Insert the new user
       const inserted = await db
         .insert(usersTable)
+        //@ts-ignore
         .values({ firstName, lastName, profileImage, email, passwordHash })
         .returning();
 
@@ -83,7 +85,7 @@ export class UserServices {
     }
     try {
       const updatedUser = await db
-        .update(usersTable) 
+        .update(usersTable)
         .set(userData)
         .where(eq(usersTable.email, email))
         .returning();
@@ -131,6 +133,44 @@ export class UserServices {
         throw new InternalServerError("Users table not found in the database");
       }
       throw error;
+    }
+  };
+
+  getRefreshToken = async (email: string) => {
+    try {
+      const result = await db
+        .select({ refreshToken: usersTable.refreshToken })
+        .from(usersTable)
+        .where(eq(usersTable.email, email));
+      const token = result.length > 0 ? result[0].refreshToken : null;
+      return token;
+    } catch (error) {
+      throw new NotFoundError("No token found");
+    }
+  };
+
+  updateTokens = async (
+    email: string,
+    refreshToken: string ,
+    accessToken: string ,
+    expiryDate: any
+  ) => {
+    if (!email) {
+      throw new BadRequestError("Need a valid email");
+    }
+    try {
+      const newTokens = await db
+        .update(usersTable)
+        .set({
+          refreshToken: refreshToken,
+          accessToken: accessToken,
+          expiryDate: expiryDate,
+        })
+        .where(eq(usersTable.email, email))
+        .returning();
+        return newTokens
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to update token");
     }
   };
 }

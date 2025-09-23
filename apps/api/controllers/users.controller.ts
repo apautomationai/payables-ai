@@ -113,6 +113,24 @@ export class UserController {
 
     res.status(200).send(newPassword);
   };
+
+  getRefreshToken = async (req: Request, res: Response) => {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new BadRequestError("Need a valid email");
+    }
+
+    try {
+      const refreshToken = await userServices.getRefreshToken(email);
+      res.status(200).send(refreshToken);
+    } catch (error: any) {
+      if (error.message) {
+        throw new BadRequestError(error.message);
+      }
+      throw error;
+    }
+  };
 }
 
 export const userController = new UserController();

@@ -20,9 +20,9 @@ export default function Home() {
       <SocialProof />
       <Pricing />
       <UseCases />
+      <FAQ />
       <About />
       <Founders />
-      <FAQ />
       <Footer />
     </main>
   );

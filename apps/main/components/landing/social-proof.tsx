@@ -14,10 +14,10 @@ import { motion } from "framer-motion";
 const testimonials = [
   {
     name: "Sarah Chen",
-    role: "CTO at TechFlow",
+    // role: "CTO at TechFlow",
     company: "Ferrocrete Construction",
     image:
-      "https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "/images/logos/Builder.jpg",
     content:
       "Before Payables, we were drowning in invoices from subs and suppliers. Now everything flows straight from email into our accounting system — no more lost paperwork, no more late payments.",
     rating: 5,
@@ -25,10 +25,10 @@ const testimonials = [
   },
   {
     name: "Michael Rodriguez",
-    role: "VP of Operations",
+    // role: "VP of Operations",
     company: "King Genomics",
     image:
-      "https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "/images/logos/king.png",
     content:
       "We handle dozens of specialized vendor invoices each month. Payables makes it effortless to log, track, and pay — our finance team saves hours every week",
     rating: 5,
@@ -36,10 +36,10 @@ const testimonials = [
   },
   {
     name: "Emily Johnson",
-    role: "Product Manager",
+    // role: "Product Manager",
     company: "Emily Delgado’s Nails",
     image:
-      "https://images.pexels.com/photos/774909/pexels-photo-774909.jpeg?auto=compress&cs=tinysrgb&w=400",
+      "/images/logos/Emily.png",
     content:
       "Running a salon means juggling clients and suppliers. Payables keeps all my product invoices organized, and I can see exactly what’s due without the stress.",
     rating: 5,
@@ -162,22 +162,22 @@ export function SocialProof() {
                   <Avatar className="w-12 h-12">
                     <AvatarImage
                       src={testimonial.image}
-                      alt={testimonial.name}
+                      alt={"photo"}
                     />
-                    <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                    {/* <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
                       {testimonial.name
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
-                    </AvatarFallback>
+                    </AvatarFallback> */}
                   </Avatar>
                   <div>
-                    <div className="font-semibold text-gray-900">
+                    {/* <div className="font-semibold text-gray-900">
                       {testimonial.name}
-                    </div>
-                    <div className="text-sm text-gray-600">
+                    </div> */}
+                    {/* <div className="text-sm text-gray-600">
                       {testimonial.role}
-                    </div>
+                    </div> */}
                     <div className="text-sm font-medium text-blue-600">
                       {testimonial.company}
                     </div>

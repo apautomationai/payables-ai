@@ -1,0 +1,242 @@
+"use client";
+
+import { motion } from "framer-motion";
+import { Card } from "@workspace/ui/components/card";
+import { 
+  Users, 
+  Rocket, 
+  Building2, 
+  Brain, 
+  Code,
+  Handshake,
+  ArrowRight,
+  Linkedin,
+  Mail
+} from "lucide-react";
+import { PulsingOrb, AnimatedUsers, AnimatedWorkflow } from "./animated-icons";
+
+export function Founders() {
+  const founders = [
+    {
+      name: "Davis Cannon",
+      role: "Product Leader",
+      description: "Years of experience building AI platforms and financial software",
+      icon: Brain,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      linkedin: "#",
+      email: "davis@payables.ai"
+    },
+    {
+      name: "Matteo Miralaie",
+      role: "Engineering Expert",
+      description: "Passionate about creating tech that solves real business problems",
+      icon: Code,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      linkedin: "#",
+      email: "matteo@payables.ai"
+    },
+    {
+      name: "Raz Danoukh",
+      role: "Industry Specialist",
+      description: "Deep relationships in construction, contracting, and business operations",
+      icon: Building2,
+      color: "text-emerald-600",
+      bgColor: "bg-emerald-50",
+      linkedin: "#",
+      email: "raz@payables.ai"
+    }
+  ];
+
+  return (
+    <section className="py-24 sm:py-32 bg-gradient-to-br from-gray-50 to-blue-50/30 relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute top-20 left-10 opacity-10">
+        <PulsingOrb color="#3B82F6" size={120} />
+      </div>
+      <div className="absolute bottom-20 right-10 opacity-10">
+        <PulsingOrb color="#10B981" size={100} />
+      </div>
+      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-5">
+        <AnimatedUsers />
+      </div>
+      
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
+        >
+          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 p-1 rounded-2xl inline-block mb-6">
+            <div className="bg-white p-2 rounded-xl">
+              <Users className="h-8 w-8 text-emerald-600" />
+            </div>
+          </div>
+          
+          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+            Our{" "}
+            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+              Founders
+            </span>
+          </h2>
+          
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            Payables was founded by a team of passionate experts with decades of combined experience 
+            in AI technology, software engineering, and industry operations.
+          </p>
+          
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg"
+          >
+            <Handshake className="h-5 w-5 mr-2" />
+            <span>Meet the Team Behind Our Success</span>
+          </motion.div>
+        </motion.div>
+
+        {/* Founders Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          {founders.map((founder, index) => (
+            <motion.div
+              key={founder.name}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              viewport={{ once: true }}
+            >
+              <Card className="p-6 h-full dark:bg-white/80 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 group relative overflow-hidden">
+                {/* Background gradient on hover */}
+                <div className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+                
+                {/* Founder Image Placeholder */}
+                <div className="relative mb-6">
+                  <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-blue-100 via-purple-100 to-emerald-100 p-1">
+                    <div className="w-full h-full rounded-full bg-white flex items-center justify-center">
+                      <founder.icon className={`h-12 w-12 ${founder.color}`} />
+                    </div>
+                  </div>
+                  
+                  {/* Decorative orb */}
+                  <div className="absolute -top-2 -right-2">
+                    <PulsingOrb color={founder.color.replace('text-', '')} size={30} />
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{founder.name}</h3>
+                  <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+                    {founder.role}
+                  </p>
+                  <p className="text-gray-600 mb-6">{founder.description}</p>
+                  
+                  <div className="flex justify-center space-x-3">
+                    <motion.a
+                      href={founder.linkedin}
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+                    >
+                      <Linkedin className="h-5 w-5" />
+                    </motion.a>
+                    <motion.a
+                      href={`mailto:${founder.email}`}
+                      whileHover={{ scale: 1.1, y: -2 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="p-2 bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
+                    >
+                      <Mail className="h-5 w-5" />
+                    </motion.a>
+                  </div>
+                </div>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Team Story Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+          viewport={{ once: true }}
+          className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center"
+        >
+          <div className="relative">
+            {/* Animated illustration */}
+            <div className="bg-gradient-to-br from-blue-100 to-purple-100 p-8 rounded-2xl border border-blue-200">
+              <div className="flex justify-center mb-6">
+                <AnimatedWorkflow />
+              </div>
+              
+              <div className="text-center">
+                <div className="inline-flex items-center px-4 py-2 bg-white rounded-full shadow-sm border border-gray-200">
+                  <Rocket className="h-5 w-5 text-blue-600 mr-2" />
+                  <span className="text-sm font-medium text-gray-700">Building the Future Together</span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Floating elements */}
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="absolute -top-4 -left-4"
+            >
+              <div className="bg-white p-2 rounded-full shadow-lg border border-blue-100">
+                <Handshake className="h-5 w-5 text-blue-500" />
+              </div>
+            </motion.div>
+          </div>
+          
+          <div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-6">
+              Our{" "}
+              <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+                Collective Journey
+              </span>
+            </h3>
+            
+            <p className="text-lg text-gray-600 mb-6 leading-8">
+              Together, we've built Payables to solve the exact pain points we've seen across the industries we know best. 
+              Our combined expertise in AI, engineering, and industry operations allows us to create solutions that 
+              genuinely address the challenges faced by builders, contractors, and small businesses.
+            </p>
+            
+            <div className="space-y-4">
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full mr-4"></div>
+                <span className="text-gray-700">Decades of combined experience</span>
+              </div>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-purple-600 to-emerald-600 rounded-full mr-4"></div>
+                <span className="text-gray-700">Deep industry knowledge</span>
+              </div>
+              <div className="flex items-center">
+                <div className="flex-shrink-0 w-2 h-2 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-full mr-4"></div>
+                <span className="text-gray-700">Passion for solving real business problems</span>
+              </div>
+            </div>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="mt-8 inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
+            >
+              Meet Our Team
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </motion.button>
+          </div>
+        </motion.div>
+
+        
+      </div>
+    </section>
+  );
+}

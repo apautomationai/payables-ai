@@ -11,8 +11,11 @@ import PlatformSettingsForm from "./platform-settings";
 import IntegrationsTab from "./integrations-settings";
 import BillingTab from "./billing"; // Import the new component
 
+interface SettingsClientProps {
+    integrations: any[];
+}
 // This is the main client component that manages the state for the tabs.
-export default function SettingsClient() {
+export default function SettingsClient({integrations}: SettingsClientProps) {
   return (
     <Tabs defaultValue="platform">
       <TabsList>
@@ -24,7 +27,7 @@ export default function SettingsClient() {
         <PlatformSettingsForm />
       </TabsContent>
       <TabsContent value="integrations">
-        <IntegrationsTab />
+        <IntegrationsTab integrations={integrations}/>
       </TabsContent>
       <TabsContent value="billing">
         <BillingTab />

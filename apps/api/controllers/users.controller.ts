@@ -13,15 +13,15 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, profileImage, email, password } = req.body;
+      const { firstName, lastName, avatar, email, password } = req.body;
 
-      const result = await userServices.registerUser(
+      const result = await userServices.registerUser({
         firstName,
         lastName,
-        profileImage,
+        avatar,
         email,
         password
-      );
+      });
 
       return res.status(200).json({
         success: true,
@@ -114,23 +114,23 @@ export class UserController {
     res.status(200).send(newPassword);
   };
 
-  getRefreshToken = async (req: Request, res: Response) => {
-    const { email } = req.body;
+  // getRefreshToken = async (req: Request, res: Response) => {
+  //   const { email } = req.body;
 
-    if (!email) {
-      throw new BadRequestError("Need a valid email");
-    }
+  //   if (!email) {
+  //     throw new BadRequestError("Need a valid email");
+  //   }
 
-    try {
-      const refreshToken = await userServices.getRefreshToken(email);
-      res.status(200).send(refreshToken);
-    } catch (error: any) {
-      if (error.message) {
-        throw new BadRequestError(error.message);
-      }
-      throw error;
-    }
-  };
+  //   try {
+  //     const refreshToken = await userServices.getRefreshToken(email);
+  //     res.status(200).send(refreshToken);
+  //   } catch (error: any) {
+  //     if (error.message) {
+  //       throw new BadRequestError(error.message);
+  //     }
+  //     throw error;
+  //   }
+  // };
 }
 
 export const userController = new UserController();

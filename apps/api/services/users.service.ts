@@ -1,27 +1,20 @@
 import db from "@/lib/db";
 import { hashPassword } from "@/lib/utils/hash";
 import { eq, InferSelectModel } from "drizzle-orm";
-import { usersTable } from "@/models/users.model";
+import { usersModel } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
 import {
   BadRequestError,
   ConflictError,
   InternalServerError,
-  NotFoundError,
 } from "@/helpers/errors";
 
-type User = InferSelectModel<typeof usersTable>;
+type User = InferSelectModel<typeof usersModel>;
 
 type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async (
-    firstName: string,
-    lastName: string,
-    profileImage: string,
-    email: string,
-    password: string
-  ) => {
+  registerUser = async ({firstName, lastName, avatar, email, password}: {firstName: string, lastName: string, avatar: string, email: string, password: string}) => {
     try {
       if (!firstName || !email || !password) {
         throw new BadRequestError(
@@ -30,13 +23,9 @@ export class UserServices {
       }
 
       // Check if email already exists
-      const existingUser = await db
-        .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1)
-        .then((r) => r[0]);
+      const [existingUser] = await db.select().from(usersModel).where(eq(usersModel.email, email));
       console.log("use exists", existingUser);
+
       if (existingUser) {
         throw new ConflictError("Email already in use");
       }
@@ -46,9 +35,9 @@ export class UserServices {
 
       // Insert the new user
       const inserted = await db
-        .insert(usersTable)
+        .insert(usersModel)
         //@ts-ignore
-        .values({ firstName, lastName, profileImage, email, passwordHash })
+        .values({ firstName, lastName, avatar, email, passwordHash })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -61,7 +50,7 @@ export class UserServices {
           id: createdUser.id,
           firstName: createdUser.firstName,
           lastName: createdUser.lastName,
-          profileImage: createdUser.profileImage,
+          avatar: createdUser.avatar,
           email: createdUser.email,
         },
         token,
@@ -72,7 +61,7 @@ export class UserServices {
   };
   getUsers = async () => {
     try {
-      const allUsers = await db.select().from(usersTable);
+      const allUsers = await db.select().from(usersModel);
 
       return allUsers;
     } catch (error) {
@@ -85,9 +74,9 @@ export class UserServices {
     }
     try {
       const updatedUser = await db
-        .update(usersTable)
+        .update(usersModel)
         .set(userData)
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.email, email))
         .returning();
       return updatedUser;
     } catch (error: any) {
@@ -101,9 +90,9 @@ export class UserServices {
   updateLastLogin = async (email: string) => {
     try {
       const updatedLogin = await db
-        .update(usersTable)
+        .update(usersModel)
         .set({ lastLogin: new Date() })
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.email, email))
         .returning();
       console.log(updatedLogin);
       return updatedLogin;
@@ -122,9 +111,9 @@ export class UserServices {
 
     try {
       const newPassword = await db
-        .update(usersTable)
+        .update(usersModel)
         .set({ passwordHash })
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.email, email))
         .returning();
 
       return newPassword;
@@ -136,43 +125,43 @@ export class UserServices {
     }
   };
 
-  getRefreshToken = async (email: string) => {
-    try {
-      const result = await db
-        .select({ refreshToken: usersTable.refreshToken })
-        .from(usersTable)
-        .where(eq(usersTable.email, email));
-      const token = result.length > 0 ? result[0].refreshToken : null;
-      return token;
-    } catch (error) {
-      throw new NotFoundError("No token found");
-    }
-  };
+  // getRefreshToken = async (email: string) => {
+  //   try {
+  //     const result = await db
+  //       .select({ refreshToken: usersModel.refreshToken })
+  //       .from(usersModel)
+  //       .where(eq(usersModel.email, email));
+  //     const token = result.length > 0 ? result[0].refreshToken : null;
+  //     return token;
+  //   } catch (error) {
+  //     throw new NotFoundError("No token found");
+  //   }
+  // };
 
-  updateTokens = async (
-    email: string,
-    refreshToken: string ,
-    accessToken: string ,
-    expiryDate: any
-  ) => {
-    if (!email) {
-      throw new BadRequestError("Need a valid email");
-    }
-    try {
-      const newTokens = await db
-        .update(usersTable)
-        .set({
-          refreshToken: refreshToken,
-          accessToken: accessToken,
-          expiryDate: expiryDate,
-        })
-        .where(eq(usersTable.email, email))
-        .returning();
-        return newTokens
-    } catch (error: any) {
-      throw new BadRequestError(error.message || "Unable to update token");
-    }
-  };
+  // updateTokens = async (
+  //   email: string,
+  //   refreshToken: string ,
+  //   accessToken: string ,
+  //   expiryDate: any
+  // ) => {
+  //   if (!email) {
+  //     throw new BadRequestError("Need a valid email");
+  //   }
+  //   try {
+  //     const newTokens = await db
+  //       .update(usersModel)
+  //       .set({
+  //         refreshToken: refreshToken,
+  //         accessToken: accessToken,
+  //         expiryDate: expiryDate,
+  //       })
+  //       .where(eq(usersModel.email, email))
+  //       .returning();
+  //       return newTokens
+  //   } catch (error: any) {
+  //     throw new BadRequestError(error.message || "Unable to update token");
+  //   }
+  // };
 }
 
 export const userServices = new UserServices();

@@ -12,6 +12,7 @@ import { notFoundHandler } from "@/helpers/not-found-handler";
 import helloRouter from "@/routes/hello.route";
 import usersRoutes from "@/routes/users.route";
 import googleRoutes from "@/routes/google.routes";
+import settingsRoutes from "@/routes/settings.route";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(passport.initialize());
 app.use("/hello", helloRouter);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/google", googleRoutes);
+app.use("/api/v1/settings", settingsRoutes);
 
 
 

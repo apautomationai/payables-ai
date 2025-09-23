@@ -41,4 +41,6 @@ export const router = Router();
  */
 router.get('/', helloController.getHelloWorld);
 
+router.get('/health', helloController.helthCheck);
+
 export default router;

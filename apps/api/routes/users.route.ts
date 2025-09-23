@@ -15,7 +15,7 @@ router.post(
 );
 router.post("/login", validate(loginUserValidator), userController.loginUser);
 router.get("/", userController.getUsers);
-router.get("/token", userController.getRefreshToken);
+// router.get("/token", userController.getRefreshToken);
 router.patch("/updateProfile/", userController.updateUser);
 router.patch("/resetPassword", userController.resetPassword);
 

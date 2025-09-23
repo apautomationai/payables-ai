@@ -27,6 +27,15 @@ export class HelloController {
       next(error);
     }
   };
+
+  helthCheck = async (_req: Request, res: Response, _: NextFunction) => {
+    try {
+      const result = await helloService.healthCheck();
+      res.status(result.statusCode).json(result);
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 export const helloController = new HelloController();

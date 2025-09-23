@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import * as googleService from "../services/google.services";
 import { BadRequestError } from "@/helpers/errors";
-import { userServices } from "@/services/users.service";
 import { google } from "googleapis";
+import { integrationsService } from "@/services/integrations.service";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID!,
@@ -13,8 +13,8 @@ const oAuth2Client = new google.auth.OAuth2(
 //@ts-ignore
 export const authRedirect = async (req: Request, res: Response) => {
   const url = googleService.generateAuthUrl();
-  // res.redirect(url);
-  res.json({ url });
+  res.redirect(url);
+  // res.json({ url });
 };
 
 export const oauthCallback = async (
@@ -31,28 +31,58 @@ export const oauthCallback = async (
         .json({ message: "Authorization code is required" });
 
     const tokens = await googleService.getTokensFromCode(code);
-    console.log(typeof tokens.expiry_date);
 
     oAuth2Client.setCredentials(tokens);
 
-    const oauth2 = google.oauth2({ version: "v2", auth: oAuth2Client });
+    // const oauth2 = google.oauth2({ version: "v2", auth: oAuth2Client });
 
-    const { data: googleUser } = await oauth2.userinfo.get();
+    // const { data } = await oauth2.userinfo.get();
 
-    const updatedUser = await userServices.updateTokens(
-      googleUser.email ?? "",
-      tokens.refresh_token ?? "",
-      tokens.access_token ?? "",
-      BigInt(tokens.expiry_date ?? Date.now())
-    );
+    // console.log('google user', data);
+    // console.log('tokens', tokens);
 
-    res.json({
-      message: "OAuth successful",
-      access_token: tokens.access_token,
-      refresh_token: tokens.refresh_token,
-      expiry_date: tokens.expiry_date,
-      updatedUser,
-    });
+    let integration;
+    const userId = 3
+    try {
+      const existingIntegration = await integrationsService.checkIntegration(userId, 'gmail')
+
+      if(!existingIntegration){
+        integration = await integrationsService.insertIntegration({
+            userId: userId,
+            name: "gmail",
+            status: "success",
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            tokenType: tokens.token_type,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+        });
+
+        if(!integration.success){
+          // @ts-ignore
+          throw new Error(integration?.message);
+        }
+      } else{
+        integration = await integrationsService.updateIntegration(existingIntegration.id, {
+            accessToken: tokens.access_token,
+            refreshToken: tokens.refresh_token,
+            tokenType: tokens.token_type,
+            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+        });
+      }
+    } catch (error:any) {
+      throw new Error(error.message);
+    }
+
+    const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!)
+    REDIRECT_URI.searchParams.set("type", "integration.gmail");
+    REDIRECT_URI.searchParams.set("message", "Gmail successfully integrated");
+    res.redirect(REDIRECT_URI.toString());
+    // res.json({
+    //   message: "OAuth successful",
+    //   access_token: tokens.access_token,
+    //   refresh_token: tokens.refresh_token,
+    //   expiry_date: tokens.expiry_date,
+    // });
   } catch (error) {
     return next(error);
   }

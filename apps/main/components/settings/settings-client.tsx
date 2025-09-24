@@ -17,11 +17,11 @@ interface SettingsClientProps {
 // This is the main client component that manages the state for the tabs.
 export default function SettingsClient({integrations}: SettingsClientProps) {
   return (
-    <Tabs defaultValue="platform">
+    <Tabs defaultValue="integrations">
       <TabsList>
-        <TabsTrigger value="platform">Platform Settings</TabsTrigger>
+        {/* <TabsTrigger value="platform">Platform Settings</TabsTrigger> */}
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
-        <TabsTrigger value="billing">Billing</TabsTrigger>
+        {/* <TabsTrigger value="billing">Billing</TabsTrigger> */}
       </TabsList>
       <TabsContent value="platform">
         <PlatformSettingsForm />

@@ -1,61 +1,113 @@
-import "server-only";
-import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
+// lib/session.ts
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 
-// Define the secret key for signing the JWT
-const secretKey = process.env.SESSION_SECRET || "your-default-secret-key";
-const key = new TextEncoder().encode(secretKey);
+// Cookie configuration
+const SESSION_COOKIE_NAME = 'session';
+const TOKEN_COOKIE_NAME = 'auth_token';
+const SESSION_MAX_AGE = 60 * 60 * 24 * 7; // 7 days
 
-// Encrypt the session payload
-export async function encrypt(payload: any) {
-  return await new SignJWT(payload)
-    .setProtectedHeader({ alg: "HS256" })
-    .setIssuedAt()
-    .setExpirationTime("1h") // Set session to expire in 1 hour
-    .sign(key);
+interface UserSession {
+  id: string;
+  email: string;
+  name: string;
+  [key: string]: any;
 }
 
-// Decrypt the session token
-export async function decrypt(input: string): Promise<any> {
+interface SessionPayload {
+  user: UserSession;
+  token: string;
+  expires: number;
+  iat: number;
+  exp: number;
+}
+
+// Store session with backend token
+export async function login(token: string, user: UserSession): Promise<void> {
+  const expires = new Date(Date.now() + SESSION_MAX_AGE * 1000);
+  const expiresISO = expires.toISOString();
+  
+  // Get cookies instance
+  const cookieStore = await cookies();
+  
+  // Store session data
+  cookieStore.set(SESSION_COOKIE_NAME, JSON.stringify({ 
+    user,
+    expires: expiresISO 
+  }), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE,
+  });
+
+  // Store the actual token separately
+  cookieStore.set(TOKEN_COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_MAX_AGE,
+  });
+}
+
+// Logout function
+export async function logout(): Promise<void> {
+  const cookieStore = await cookies();
+  cookieStore.delete(SESSION_COOKIE_NAME);
+  cookieStore.delete(TOKEN_COOKIE_NAME);
+  redirect('/sign-in');
+}
+
+// Get current session (server-side only)
+export async function getSession(): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(input, key, {
-      algorithms: ["HS256"],
-    });
-    return payload;
+    const cookieStore = await cookies();
+    const sessionData = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+    const token = cookieStore.get(TOKEN_COOKIE_NAME)?.value;
+    
+    if (!sessionData || !token) {
+      console.log('No session data or token found');
+      return null;
+    }
+
+    const { user, expires: expiresISO } = JSON.parse(sessionData);
+    const expires = new Date(expiresISO).getTime();
+    const now = Date.now();
+    
+    // Check if session is expired
+    if (expires < now) {
+      console.log('Session expired');
+      return null;
+    }
+
+    return { 
+      user, 
+      token, 
+      expires,
+      iat: now - (SESSION_MAX_AGE * 1000), // Issued at (current time - session max age)
+      exp: expires // Expiration time
+    };
   } catch (error) {
-    // Return null if token is invalid or expired
+    console.error('Session error:', error);
     return null;
   }
 }
 
-// Function to handle logging in
-export async function login(user: any) {
-  // Create a session with user data
-  const session = await encrypt({
-    user,
-    expires: new Date(Date.now() + 3600 * 1000),
-  });
-  const cookieStore = await (cookies() as any);
-  // Save the session in a secure, httpOnly cookie
-  cookieStore.set("session", session, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "lax",
-    path: "/",
-  });
+// Get current user (server-side only)
+export async function getCurrentUser(): Promise<UserSession | null> {
+  const session = await getSession();
+  return session?.user || null;
 }
 
-// Function to handle logging out
-export async function logout() {
-  const cookieStore = await (cookies() as any);
-  // Destroy the session cookie
-  cookieStore.set("session", "", { expires: new Date(0) });
+// Get auth token for API requests (server-side only)
+export async function getAuthToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(TOKEN_COOKIE_NAME)?.value || null;
 }
 
-// Function to get the current session
-export async function getSession() {
-  const cookieStore = await (cookies() as any);
-  const session = cookieStore.get("session")?.value;
-  if (!session) return null;
-  return await decrypt(session);
-}
+
+
+
+

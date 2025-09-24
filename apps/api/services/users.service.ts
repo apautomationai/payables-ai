@@ -14,7 +14,19 @@ type User = InferSelectModel<typeof usersModel>;
 type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async ({firstName, lastName, avatar, email, password}: {firstName: string, lastName: string, avatar: string, email: string, password: string}) => {
+  registerUser = async ({
+    firstName,
+    lastName,
+    avatar,
+    email,
+    password,
+  }: {
+    firstName: string;
+    lastName: string;
+    avatar: string;
+    email: string;
+    password: string;
+  }) => {
     try {
       if (!firstName || !email || !password) {
         throw new BadRequestError(
@@ -23,7 +35,10 @@ export class UserServices {
       }
 
       // Check if email already exists
-      const [existingUser] = await db.select().from(usersModel).where(eq(usersModel.email, email));
+      const [existingUser] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.email, email));
       console.log("use exists", existingUser);
 
       if (existingUser) {
@@ -125,23 +140,10 @@ export class UserServices {
     }
   };
 
-  // getRefreshToken = async (email: string) => {
-  //   try {
-  //     const result = await db
-  //       .select({ refreshToken: usersModel.refreshToken })
-  //       .from(usersModel)
-  //       .where(eq(usersModel.email, email));
-  //     const token = result.length > 0 ? result[0].refreshToken : null;
-  //     return token;
-  //   } catch (error) {
-  //     throw new NotFoundError("No token found");
-  //   }
-  // };
-
   // updateTokens = async (
   //   email: string,
-  //   refreshToken: string ,
-  //   accessToken: string ,
+  //   refreshToken: string,
+  //   accessToken: string,
   //   expiryDate: any
   // ) => {
   //   if (!email) {
@@ -157,7 +159,7 @@ export class UserServices {
   //       })
   //       .where(eq(usersModel.email, email))
   //       .returning();
-  //       return newTokens
+  //     return newTokens;
   //   } catch (error: any) {
   //     throw new BadRequestError(error.message || "Unable to update token");
   //   }

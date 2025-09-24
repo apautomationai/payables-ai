@@ -1,7 +1,5 @@
 import { google } from "googleapis";
 import { Credentials, OAuth2Client } from "google-auth-library";
-import db from "@/lib/db";
-import { attachments } from "@/models/users.model";
 import { extractEmail, getHeader } from "@/helpers/email-helpers";
 import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
@@ -95,15 +93,16 @@ export const getEmailsWithAttachments = async (tokens: any) => {
           );
 
           //insert meta data to database
-          await db.insert(attachments).values({
-            id,
-            emailId: msg.id!,
-            filename: part.filename,
-            mimeType: part.mimeType || "application/octet-stream",
-            sender,
-            receiver,
-            s3Url,
-          });
+          // await db.insert(emailAttachmentsModel).values({
+          //   id ,
+          //   userId : 1,
+          //   emailId: msg.id!,
+          //   filename: part.filename,
+          //   mimeType: part.mimeType || "application/octet-stream",
+          //   sender,
+          //   receiver,
+          //   s3Url
+          // });
 
           results.push({
             id,

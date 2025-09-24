@@ -18,6 +18,8 @@ async function getIntegrations(): Promise<any[]> {
 export default async function SettingsPage({searchParams}: {searchParams: any}) {
   const integrations = await getIntegrations();
 
+console.log(integrations)
+
   const params = await searchParams;
   console.log(params);
 

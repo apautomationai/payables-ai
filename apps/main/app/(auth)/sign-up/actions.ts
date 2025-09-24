@@ -1,7 +1,8 @@
+// app/(auth)/sign-up/actions.ts
 "use server";
 
 import { signUpSchema } from "@/lib/validators";
-import { redirect } from "next/navigation";
+
 
 export type SignUpFormState = {
   message: string;
@@ -13,10 +14,11 @@ export type SignUpFormState = {
     _form?: string[];
   };
   success: boolean;
+  redirectTo?: string;
 };
 
 export async function signUpAction(
-  prevState: SignUpFormState,
+  prevState: SignUpFormState | null,
   formData: FormData
 ): Promise<SignUpFormState> {
   const validatedFields = signUpSchema.safeParse(
@@ -25,7 +27,7 @@ export async function signUpAction(
 
   if (!validatedFields.success) {
     return {
-      message: "Form submission failed.",
+      message: "Validation failed",
       errors: validatedFields.error.flatten().fieldErrors,
       success: false,
     };
@@ -33,59 +35,47 @@ export async function signUpAction(
 
   const { firstName, lastName, email, password } = validatedFields.data;
 
-  // This is the key change: The keys now match the camelCase format
-  // expected by your backend API's validation layer.
-  const requestBody = {
-    firstName: firstName,
-    lastName: lastName,
-    email: email,
-    password: password,
-  };
-
   try {
     const response = await fetch(
-      "http://localhost:5000/api/v1/users/register",
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/register`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ 
+          firstName, 
+          lastName, 
+          email, 
+          password 
+        }),
       }
     );
 
     const data = await response.json();
 
     if (!response.ok) {
-      console.error("Backend Error Response:", data);
-
-      if (response.status === 409) {
-        // Email already exists
-        return {
-          message: data.message || "An account with this email already exists.",
-          errors: {
-            email: [
-              data.message || "An account with this email already exists.",
-            ],
-          },
-          success: false,
-        };
-      }
       return {
-        message: data.message || "An unexpected error occurred.",
-        errors: { _form: [data.message || "An unexpected error occurred."] },
+        message: data.message || "Registration failed",
+        errors: { _form: [data.message || "Registration failed"] },
         success: false,
       };
     }
 
-    console.log("New user created successfully:", data);
-  } catch (error) {
-    console.error("Network or fetch error:", error);
+    // On successful registration
     return {
-      message:
-        "Could not connect to the server. Please check if your backend is running and accessible.",
-      errors: { _form: ["Could not connect to the server."] },
+      message: "Registration successful! Redirecting to sign in...",
+      success: true,
+      redirectTo: "/sign-in?signup=success",
+    };
+
+  } catch (error) {
+    console.error("Sign-up error:", error);
+    return {
+      message: "Could not connect to the server. Please try again.",
+      errors: { _form: ["An unexpected error occurred."] },
       success: false,
     };
   }
-
-  redirect("/sign-in?signup=success");
 }

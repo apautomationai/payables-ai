@@ -40,7 +40,6 @@ export async function fetchClient<T = any>(
 import { cookies } from "next/headers";
 
 // 1. Define the base URL for the API.
-// const BASE_URL: string | undefined = process.env.NEXT_PUBLIC_API_URL;
 
 // Next.js-specific fetch options (subset)
 type NextFetchOptions = {

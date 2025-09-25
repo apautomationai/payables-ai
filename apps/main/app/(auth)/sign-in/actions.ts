@@ -53,6 +53,7 @@ export async function signInAction(
 
     const data = await response.json();
 
+    // Handle non-200 responses
     if (!response.ok) {
       // Handle various error scenarios from the API
       if (response.status === 403 && data.requiresTwoFactor) {

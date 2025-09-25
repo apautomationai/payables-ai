@@ -1,10 +1,45 @@
+// lib/fetch-client.ts
+import { getSession } from "./session";
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
+
+export async function fetchClient<T = any>(
+  endpoint: string,
+  options: RequestInit = {}
+): Promise<T> {
+  const session = await getSession();
+  
+  const headers = new Headers(options.headers);
+  headers.set("Content-Type", "application/json");
+  
+  if (session) {
+    headers.set("Authorization", `Bearer ${session.user.id}`);
+  }
+
+  const response = await fetch(`${BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({}));
+    throw new Error(error.message || "An error occurred");
+  }
+
+  return response.json();
+}
+
+
+
+
+
 // A wrapper around the native fetch API to provide a more convenient interface
 // and centralize API logic, similar to an Axios instance.
 
 import { cookies } from "next/headers";
 
 // 1. Define the base URL for the API.
-const BASE_URL: string | undefined = process.env.NEXT_PUBLIC_API_URL;
 
 // Next.js-specific fetch options (subset)
 type NextFetchOptions = {
@@ -141,21 +176,21 @@ const client = {
 export default client;
 
 /*
-  // HOW TO USE IT IN YOUR NEXT.JS COMPONENTS/PAGES:
+//   // HOW TO USE IT IN YOUR NEXT.JS COMPONENTS/PAGES:
 
-  import client from './path/to/your/client';
+//   import client from './path/to/your/client';
 
-  // Example GET request in a Server Component or Client Component
-  const fetchUsers = async () => {
-    try {
-      // The 'next' object allows you to control caching behavior.
-      // For example, revalidate every 60 seconds.
-      const users = await client.get('users', { next: { revalidate: 60 } });
-      console.log(users);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    }
-  };
+//   // Example GET request in a Server Component or Client Component
+//   const fetchUsers = async () => {
+//     try {
+//       // The 'next' object allows you to control caching behavior.
+//       // For example, revalidate every 60 seconds.
+//       const users = await client.get('users', { next: { revalidate: 60 } });
+//       console.log(users);
+//     } catch (error) {
+//       console.error("Failed to fetch users:", error);
+//     }
+//   };
 
   // Example POST request in a Client Component
   const createUser = async (userData) => {

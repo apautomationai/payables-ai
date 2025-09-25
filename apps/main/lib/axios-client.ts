@@ -7,7 +7,7 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  // withCredentials: true, // This ensures cookies are sent with requests
+  withCredentials: true,
 });
 // 2. Use a request interceptor to dynamically add headers to every request.
 // This function will run BEFORE each request is sent.
@@ -30,24 +30,20 @@ client.interceptors.request.use(
     return config;
   },
   (error) => {
-    // This function handles errors that occur before the request is sent.
-    console.error("Request Error:", error);
     return Promise.reject(error);
   }
 );
 // 3. (Optional but recommended) Use a response interceptor to handle responses globally.
 // This allows you to process data or handle errors from one central location.
 client.interceptors.response.use(
-  (response) => {
-    // Any status code within the range of 2xx will trigger this function.
-    // Here, we simply return the response data.
-    // console.log(response.data, "API response");
-    return response.data;
-  },
-  (error) => {
-    // Any status codes outside the range of 2xx will trigger this function.
-    // You can handle errors here, such as redirecting to a login page on 401 errors.
-    console.error("Response Error:", error);
+  (response) => response,
+  async (error) => {
+    if (error.response?.status === 401) {
+      // Handle unauthorized
+      if (typeof window !== "undefined") {
+        window.location.href = "/sign-in";
+      }
+    }
     return Promise.reject(error);
   }
 );

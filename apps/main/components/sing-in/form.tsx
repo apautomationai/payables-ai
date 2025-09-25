@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, Suspense, useActionState } from "react";
+import React, { useEffect, Suspense, useActionState  } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
@@ -96,7 +96,6 @@ function SignInFormComponent() {
       toast.success("Login Successful", {
         description: "You have been successfully logged in!",
       });
-
       // Redirect if needed
       if (state.redirectTo) {
         router.push(state.redirectTo);
@@ -114,7 +113,6 @@ function SignInFormComponent() {
       {/* Animated Gradient Background Effect */}
       <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl opacity-75 blur-xl animate-pulse-slow"></div>
       <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl opacity-50 blur-lg animate-rotate"></div>
-
       {/* Main Card with Gradient Border */}
       <Card className="relative w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl overflow-hidden">
         {/* Animated Gradient Shine Overlay */}

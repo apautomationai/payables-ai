@@ -83,10 +83,10 @@ export default function IntegrationsTab({
 }
 
 function IntegrationCard(integration: any) {
-  const handleAuth = async () => {
-    const response = await client.get("api/v1/google/auth");
-    console.log(response);
-  };
+  // const handleAuth = async () => {
+  //   const response = await client.get("api/v1/google/auth");
+  //   console.log(response);
+  // };
   const integrationStatus =
     integration.status === "success"
       ? "Connected"
@@ -126,12 +126,12 @@ function IntegrationCard(integration: any) {
               disabled={!integration.allowCollection}
             >
               {integration.allowCollection ? (
-                // <Link
-                //   href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${integration.path}`}
-                // >
-                <button onClick={handleAuth}>Connect</button>
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${integration.path}`}
+                >
+                  connect
+                </Link>
               ) : (
-                // </Link>
                 <span>Not Allowed</span>
               )}
             </Button>

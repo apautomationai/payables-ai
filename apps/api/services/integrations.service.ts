@@ -1,4 +1,3 @@
-import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
 import { eq } from "drizzle-orm";
@@ -80,57 +79,16 @@ class IntegrationsService {
     // check if this integration exists for the user
 
     try {
-      const [integration] = await db
-        .select()
-        .from(integrationsModel)
-        .where(
-          eq(integrationsModel.userId, userId),
-          eq(integrationsModel.name, name)
-        );
+      const [integration] = await db.select().from(integrationsModel).where(
+        eq(integrationsModel.userId, userId),
+        //@ts-ignore
+        eq(integrationsModel.name, name)
+      );
       return integration;
     } catch (error: any) {
       return false;
     }
   }
-
-  getAccessToken = async (id: number) => {
-    try {
-      const result = await db
-        .select({ accessToken: integrationsModel.accessToken })
-        .from(integrationsModel)
-        .where(eq(integrationsModel.userId, id));
-      const token = result.length > 0 ? result[0].accessToken : null;
-      return token;
-    } catch (error) {
-      throw new NotFoundError("No token found");
-    }
-  };
-
-  getRefreshToken = async (id: number) => {
-    try {
-      const result = await db
-        .select({ refreshToken: integrationsModel.refreshToken })
-        .from(integrationsModel)
-        .where(eq(integrationsModel.userId, id));
-      const token = result.length > 0 ? result[0].refreshToken : null;
-      return token;
-    } catch (error) {
-      throw new NotFoundError("No token found");
-    }
-  };
-
-  getExpiryDate = async (id: number) => {
-    try {
-      const result = await db
-        .select({ expiryDate: integrationsModel.expiryDate })
-        .from(integrationsModel)
-        .where(eq(integrationsModel.userId, id));
-      const token = result.length > 0 ? result[0].expiryDate : null;
-      return token;
-    } catch (error) {
-      throw new NotFoundError("No token found");
-    }
-  };
 }
 
 export const integrationsService = new IntegrationsService();

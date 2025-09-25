@@ -1,5 +1,6 @@
 import {
   authRedirect,
+  // getAttachments,
   //   getAttachments,
   oauthCallback,
   readEmails,
@@ -10,7 +11,7 @@ import { Router } from "express";
 const router = Router();
 
 router.get("/auth", authenticate, authRedirect);
-router.get("/callback" , oauthCallback);
+router.get("/callback", authenticate, oauthCallback);
 router.get("/readEmails", readEmails);
 // router.get("/attachments", getAttachments);
 

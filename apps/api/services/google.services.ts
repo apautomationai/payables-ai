@@ -3,6 +3,9 @@ import { Credentials, OAuth2Client } from "google-auth-library";
 import { extractEmail, getHeader } from "@/helpers/email-helpers";
 import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
+import db from "@/lib/db";
+import { emailAttachmentsModel } from "@/models/emails.model";
+import { eq } from "drizzle-orm";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -44,7 +47,7 @@ const getOAuthClient = (tokens: any) => {
   return oAuth2Client;
 };
 
-export const getEmailsWithAttachments = async (tokens: any) => {
+export const getEmailsWithAttachments = async (tokens: any, userId: number) => {
   try {
     const auth = getOAuthClient(tokens);
     const gmail = google.gmail({ version: "v1", auth });
@@ -53,9 +56,9 @@ export const getEmailsWithAttachments = async (tokens: any) => {
       userId: "me",
       q: "has:attachment",
     });
+
     const messages = res.data.messages || [];
     const results: any[] = [];
-
     for (const msg of messages) {
       const message = await gmail.users.messages.get({
         userId: "me",
@@ -77,7 +80,6 @@ export const getEmailsWithAttachments = async (tokens: any) => {
             id: part.body.attachmentId,
           });
           const data = attachment.data.data;
-
           //hash id
           const id = crypto
             .createHash("sha256")
@@ -92,17 +94,18 @@ export const getEmailsWithAttachments = async (tokens: any) => {
             part.mimeType || "application/pdf"
           );
 
-          //insert meta data to database
-          // await db.insert(emailAttachmentsModel).values({
-          //   id ,
-          //   userId : 1,
-          //   emailId: msg.id!,
-          //   filename: part.filename,
-          //   mimeType: part.mimeType || "application/octet-stream",
-          //   sender,
-          //   receiver,
-          //   s3Url
-          // });
+          // insert meta data to database
+          //@ts-ignore
+          await db.insert(emailAttachmentsModel).values({
+            id,
+            userId,
+            emailId: msg.id!,
+            filename: part.filename,
+            mimeType: part.mimeType || "application/octet-stream",
+            sender,
+            receiver,
+            s3Url,
+          });
 
           results.push({
             id,
@@ -116,11 +119,19 @@ export const getEmailsWithAttachments = async (tokens: any) => {
         }
       }
     }
-
     return results;
   } catch (error) {
     throw error;
   }
 };
 
-export const getAttachments = async (email: string) => {};
+// export const getAttachments = async (userId: number) => {
+//   const attachment = await db
+//     .select()
+//     .from(emailAttachmentsModel)
+//     .where(eq(emailAttachmentsModel.userId, userId));
+
+//   return attachment;
+//   try {
+//   } catch (error: any) {}
+// };

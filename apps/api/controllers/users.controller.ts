@@ -13,12 +13,14 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, avatar, email, password } = req.body;
+      const { firstName, lastName, avatar, businessName, email, password } =
+        req.body;
 
       const result = await userServices.registerUser({
         firstName,
         lastName,
         avatar,
+        businessName,
         email,
         password,
       });
@@ -64,7 +66,6 @@ export class UserController {
         if (token) {
           await userServices.updateLastLogin(user.email);
         }
-        res.cookie("token", token);
 
         return res.json({ user, token });
       }
@@ -114,6 +115,40 @@ export class UserController {
     const newPassword = await userServices.resetPassword(email, password);
 
     res.status(200).send(newPassword);
+  };
+  changePassword = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    try {
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        throw new BadRequestError(
+          "Old password, new password, confirm password are required"
+        );
+      }
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestError(
+          "new password should match the confirm password"
+        );
+      }
+      const response = await userServices.changePassword(
+        userId,
+        oldPassword,
+        newPassword
+      );
+      if (!response) {
+        throw new BadRequestError("Password has not change");
+      }
+      const result = {
+        status: "success",
+        data: {
+          message: "Password changed successfully",
+        },
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to change password");
+    }
   };
 }
 

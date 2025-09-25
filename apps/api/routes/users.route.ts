@@ -1,4 +1,5 @@
 import { userController } from "@/controllers/users.controller";
+import { authenticate } from "@/middlewares/auth.middleware";
 import {
   loginUserValidator,
   registerUserValidator,
@@ -15,8 +16,8 @@ router.post(
 );
 router.post("/login", validate(loginUserValidator), userController.loginUser);
 router.get("/", userController.getUsers);
-// router.get("/token", userController.getRefreshToken);
-router.patch("/updateProfile/", userController.updateUser);
-router.patch("/resetPassword", userController.resetPassword);
+router.patch("/updateProfile/", authenticate, userController.updateUser);
+router.patch("/resetPassword", authenticate, userController.resetPassword);
+router.patch("/changePassword", authenticate, userController.changePassword);
 
 export default router;

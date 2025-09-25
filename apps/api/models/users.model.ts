@@ -12,6 +12,7 @@ export const usersModel = pgTable("users", {
   firstName: varchar("first_name", { length: 255 }).notNull(),
   lastName: varchar("last_name", { length: 255 }),
   avatar: varchar("avatar", { length: 255 }),
+  businessName: varchar("business_name", { length: 255 }),
   email: varchar("email", { length: 255 }).notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   provider: varchar("provider", { length: 255 }).notNull().default("credentials"),
@@ -20,7 +21,10 @@ export const usersModel = pgTable("users", {
   isActive: boolean("is_active").default(true).notNull(),
   isBanned: boolean("is_banned").default(false).notNull(),
   lastLogin: timestamp("last_login").defaultNow(),
-  createdAt: timestamp("created_at", { withTimezone: false }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: false }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: false })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: false })
+    .defaultNow()
+    .notNull(),
 });
-

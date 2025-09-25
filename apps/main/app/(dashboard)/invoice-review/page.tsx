@@ -1,12 +1,16 @@
 import React from "react";
+
 import InvoiceReviewClient from "@/components/invoice-process/invoice-review-client";
 import { mockInvoices, mockInvoiceDetails } from "@/data//invoice-data";
 
 // This is the main server component for the page.
 // It fetches initial data and passes it to the client component.
 export default function InvoiceReviewPage() {
+
   // In a real app, you would fetch this data from your API
   const invoices = mockInvoices;
+ 
+
 
   // Handle the case where there might be no invoices
   if (!invoices || invoices.length === 0) {

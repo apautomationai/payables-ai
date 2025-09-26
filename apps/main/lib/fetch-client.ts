@@ -135,7 +135,18 @@ const client = {
   delete: <T = any>(route: Route, options: ApiFetchOptions = {}) => {
     return request<T>(route, { ...options, method: "DELETE" });
   },
-  // You can add other methods like patch, head, etc., as needed.
+  patch: <T = any>(route: Route, body?: unknown | FormData, options: ApiFetchOptions = {}) => {
+    const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
+    const finalOptions: ApiFetchOptions = {
+      ...options,
+      method: "PATCH",
+      body: isFormData ? (body as FormData) : body !== undefined ? JSON.stringify(body) : undefined,
+    };
+    if (isFormData && finalOptions.headers instanceof Headers) {
+      finalOptions.headers.delete("Content-Type");
+    }
+    return request<T>(route, finalOptions);
+  },
 };
 
 export default client;
@@ -167,3 +178,5 @@ export default client;
     }
   };
 */
+
+

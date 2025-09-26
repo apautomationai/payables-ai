@@ -107,12 +107,12 @@ export function Footer() {
               >
                 AI-Powered
               </Badge>
-              <Badge
+              {/* <Badge
                 variant="outline"
                 className="text-xs font-medium border-blue-600 bg-blue-900/20 text-blue-400"
               >
                 SOC 2 Compliant
-              </Badge>
+              </Badge> */}
             </div>
             <div className="flex gap-4">
               <Link

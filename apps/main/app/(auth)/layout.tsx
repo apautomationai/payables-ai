@@ -76,7 +76,7 @@ export default function AuthLayout({
 
       {/* Main Content Container */}
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-6xl">
+        <div className="w-full max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Side - Promotional Content */}

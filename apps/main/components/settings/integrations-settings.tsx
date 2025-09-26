@@ -20,15 +20,16 @@ const initialIntegrations = [
     allowCollection: true,
   },
   {
-    name: "QuickBooks",
-    category: "Accounting & Financial Management",
-    allowCollection: false,
-  },
-  {
     name: "Outlook",
     category: "Email Processing & Automation",
     allowCollection: false,
   },
+  {
+    name: "QuickBooks",
+    category: "Accounting & Financial Management",
+    allowCollection: false,
+  },
+
 ];
 
 export default function IntegrationsTab({

@@ -13,7 +13,7 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, avatar, businessName, email, password } =
+      const { firstName, lastName, avatar, businessName, email, phone, password } =
         req.body;
 
       const result = await userServices.registerUser({
@@ -22,6 +22,7 @@ export class UserController {
         avatar,
         businessName,
         email,
+        phone,
         password,
       });
 

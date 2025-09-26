@@ -21,6 +21,7 @@ export class UserServices {
     avatar,
     businessName,
     email,
+    phone,
     password,
   }: {
     firstName: string;
@@ -28,6 +29,7 @@ export class UserServices {
     avatar: string;
     businessName: string;
     email: string;
+    phone: string;
     password: string;
   }) => {
     try {
@@ -61,6 +63,7 @@ export class UserServices {
           avatar,
           businessName,
           email,
+          phone,
           passwordHash,
         })
         .returning();
@@ -77,6 +80,7 @@ export class UserServices {
           lastName: createdUser.lastName,
           avatar: createdUser.avatar,
           email: createdUser.email,
+          phone: createdUser.phone,
         },
         token,
       };

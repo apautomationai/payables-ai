@@ -9,13 +9,14 @@ import { Router } from "express";
 
 const router = Router();
 
+router.get("/", userController.getUsers);
 router.post(
   "/register",
   validate(registerUserValidator),
   userController.registerUser
 );
 router.post("/login", validate(loginUserValidator), userController.loginUser);
-router.get("/", userController.getUsers);
+router.get("/userWithId", authenticate, userController.getUserWithId);
 router.patch("/updateProfile/", authenticate, userController.updateUser);
 router.patch("/resetPassword", authenticate, userController.resetPassword);
 router.patch("/changePassword", authenticate, userController.changePassword);

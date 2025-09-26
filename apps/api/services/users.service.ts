@@ -97,6 +97,17 @@ export class UserServices {
       return [];
     }
   };
+  getUserWithId = async (userId: number) => {
+    try {
+      const user = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+      return user;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "No user found");
+    }
+  };
   updateUser = async (email: string, userData: UpdateUser) => {
     if (!email) {
       throw new BadRequestError("Email is required");

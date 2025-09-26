@@ -13,8 +13,15 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, avatar, businessName, email, phone, password } =
-        req.body;
+      const {
+        firstName,
+        lastName,
+        avatar,
+        businessName,
+        email,
+        phone,
+        password,
+      } = req.body;
 
       const result = await userServices.registerUser({
         firstName,
@@ -81,6 +88,23 @@ export class UserController {
       return res.status(200).send(allUsers);
     } catch (error) {
       return new InternalServerError("Unable to connect to the server");
+    }
+  };
+  getUserWithId = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    if (!userId) {
+      throw new BadRequestError("Need a valid user id");
+    }
+    try {
+      const response = await userServices.getUserWithId(userId);
+      const result = {
+        success: "success",
+        data: response,
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to get user");
     }
   };
   updateUser = async (req: Request, res: Response) => {

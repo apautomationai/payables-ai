@@ -1,22 +1,22 @@
-import { Request, Response } from 'express';
+import { Request, Response } from "express";
 import { settingsService } from "@/services/settings.service";
 
 class SettingsController {
+  async getIntegrations(req: Request, res: Response) {
+    //@ts-ignore
+    const userId = req.user.id;
+    const result = await settingsService.getIntegrations(userId);
+  
+    try {
+      if (result.success) {
+       return res.json(result);
+      }
 
-    async getIntegrations(req: Request, res: Response) {
-        const userId = 3;
-        const result = await settingsService.getIntegrations(userId);
-
-       try {
-         if (result.success) {
-             res.json(result);
-         }
- 
-         res.status(result.statusCode).json(result);
-       } catch (error) {
-        throw error;
-       }
+     return res.status(result.statusCode).json(result);
+    } catch (error) {
+      throw error;
     }
+  }
 }
 
 export const settingsController = new SettingsController();

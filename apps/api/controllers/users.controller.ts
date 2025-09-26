@@ -13,14 +13,24 @@ import {
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, avatar, email, password } = req.body;
+      const {
+        firstName,
+        lastName,
+        avatar,
+        businessName,
+        email,
+        phone,
+        password,
+      } = req.body;
 
       const result = await userServices.registerUser({
         firstName,
         lastName,
         avatar,
+        businessName,
         email,
-        password
+        phone,
+        password,
       });
 
       return res.status(200).json({
@@ -58,6 +68,7 @@ export class UserController {
 
         const token = signJwt({
           sub: (user as any).id,
+          id: (user as any).id,
           email: (user as any).email,
         });
         if (token) {
@@ -77,6 +88,23 @@ export class UserController {
       return res.status(200).send(allUsers);
     } catch (error) {
       return new InternalServerError("Unable to connect to the server");
+    }
+  };
+  getUserWithId = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    if (!userId) {
+      throw new BadRequestError("Need a valid user id");
+    }
+    try {
+      const response = await userServices.getUserWithId(userId);
+      const result = {
+        success: "success",
+        data: response,
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to get user");
     }
   };
   updateUser = async (req: Request, res: Response) => {
@@ -113,24 +141,40 @@ export class UserController {
 
     res.status(200).send(newPassword);
   };
-
-  // getRefreshToken = async (req: Request, res: Response) => {
-  //   const { email } = req.body;
-
-  //   if (!email) {
-  //     throw new BadRequestError("Need a valid email");
-  //   }
-
-  //   try {
-  //     const refreshToken = await userServices.getRefreshToken(email);
-  //     res.status(200).send(refreshToken);
-  //   } catch (error: any) {
-  //     if (error.message) {
-  //       throw new BadRequestError(error.message);
-  //     }
-  //     throw error;
-  //   }
-  // };
+  changePassword = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    try {
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        throw new BadRequestError(
+          "Old password, new password, confirm password are required"
+        );
+      }
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestError(
+          "new password should match the confirm password"
+        );
+      }
+      const response = await userServices.changePassword(
+        userId,
+        oldPassword,
+        newPassword
+      );
+      if (!response) {
+        throw new BadRequestError("Password has not change");
+      }
+      const result = {
+        status: "success",
+        data: {
+          message: "Password changed successfully",
+        },
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to change password");
+    }
+  };
 }
 
 export const userController = new UserController();

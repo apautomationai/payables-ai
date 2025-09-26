@@ -1,12 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Button } from "@workspace/ui/components/button";
 import { Plus, UploadCloud, ListFilter } from "lucide-react";
 import { motion } from "framer-motion";
 
-export default function DashboardClient({ userName }: { userName: string }) {
+interface DashboardClientProps {
+  userName: string;
+}
+
+export default function DashboardClient({ userName }: DashboardClientProps) {
+  // You can use the userId for any client-side operations
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}

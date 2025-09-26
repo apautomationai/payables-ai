@@ -1,5 +1,8 @@
 import "dotenv/config";
 import express from "express";
+import cors from 'cors';
+//@ts-ignore
+import cookieParser from "cookie-parser"
 
 // import middlewares
 import passport from "@/lib/passport";
@@ -18,8 +21,15 @@ const app = express();
 
 // Apply middleware
 app.use(express.json());
+app.use(cors({
+  origin: 'http://localhost:3001',
+  credentials: true, 
+}));
+
+app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
+
 
 // Apply routes
 app.use("/hello", helloRouter);

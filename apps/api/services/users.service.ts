@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { hashPassword } from "@/lib/utils/hash";
+import { hashPassword, verifyPassword } from "@/lib/utils/hash";
 import { eq, InferSelectModel } from "drizzle-orm";
 import { usersModel } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
@@ -7,6 +7,7 @@ import {
   BadRequestError,
   ConflictError,
   InternalServerError,
+  NotFoundError,
 } from "@/helpers/errors";
 
 type User = InferSelectModel<typeof usersModel>;
@@ -14,7 +15,23 @@ type User = InferSelectModel<typeof usersModel>;
 type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async ({firstName, lastName, avatar, email, password}: {firstName: string, lastName: string, avatar: string, email: string, password: string}) => {
+  registerUser = async ({
+    firstName,
+    lastName,
+    avatar,
+    businessName,
+    email,
+    phone,
+    password,
+  }: {
+    firstName: string;
+    lastName: string;
+    avatar: string;
+    businessName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => {
     try {
       if (!firstName || !email || !password) {
         throw new BadRequestError(
@@ -23,7 +40,10 @@ export class UserServices {
       }
 
       // Check if email already exists
-      const [existingUser] = await db.select().from(usersModel).where(eq(usersModel.email, email));
+      const [existingUser] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.email, email));
       console.log("use exists", existingUser);
 
       if (existingUser) {
@@ -37,7 +57,15 @@ export class UserServices {
       const inserted = await db
         .insert(usersModel)
         //@ts-ignore
-        .values({ firstName, lastName, avatar, email, passwordHash })
+        .values({
+          firstName,
+          lastName,
+          avatar,
+          businessName,
+          email,
+          phone,
+          passwordHash,
+        })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -52,6 +80,7 @@ export class UserServices {
           lastName: createdUser.lastName,
           avatar: createdUser.avatar,
           email: createdUser.email,
+          phone: createdUser.phone,
         },
         token,
       };
@@ -66,6 +95,17 @@ export class UserServices {
       return allUsers;
     } catch (error) {
       return [];
+    }
+  };
+  getUserWithId = async (userId: number) => {
+    try {
+      const user = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+      return user;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "No user found");
     }
   };
   updateUser = async (email: string, userData: UpdateUser) => {
@@ -125,43 +165,37 @@ export class UserServices {
     }
   };
 
-  // getRefreshToken = async (email: string) => {
-  //   try {
-  //     const result = await db
-  //       .select({ refreshToken: usersModel.refreshToken })
-  //       .from(usersModel)
-  //       .where(eq(usersModel.email, email));
-  //     const token = result.length > 0 ? result[0].refreshToken : null;
-  //     return token;
-  //   } catch (error) {
-  //     throw new NotFoundError("No token found");
-  //   }
-  // };
+  changePassword = async (
+    userId: number,
+    oldPassword: string,
+    newPassword: string
+  ) => {
+    try {
+      const [user] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
 
-  // updateTokens = async (
-  //   email: string,
-  //   refreshToken: string ,
-  //   accessToken: string ,
-  //   expiryDate: any
-  // ) => {
-  //   if (!email) {
-  //     throw new BadRequestError("Need a valid email");
-  //   }
-  //   try {
-  //     const newTokens = await db
-  //       .update(usersModel)
-  //       .set({
-  //         refreshToken: refreshToken,
-  //         accessToken: accessToken,
-  //         expiryDate: expiryDate,
-  //       })
-  //       .where(eq(usersModel.email, email))
-  //       .returning();
-  //       return newTokens
-  //   } catch (error: any) {
-  //     throw new BadRequestError(error.message || "Unable to update token");
-  //   }
-  // };
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+      //@ts-ignore
+      const isMatch = await verifyPassword(oldPassword, user.passwordHash);
+      if (!isMatch) {
+        throw new BadRequestError("Old password is incorrect");
+      }
+      const hashed = await hashPassword(newPassword);
+
+      // 4. Update password
+      const response = await db
+        .update(usersModel)
+        .set({ passwordHash: hashed })
+        .where(eq(usersModel.id, userId));
+      return response;
+    } catch (error: any) {
+      throw new BadRequestError(error.message);
+    }
+  };
 }
 
 export const userServices = new UserServices();

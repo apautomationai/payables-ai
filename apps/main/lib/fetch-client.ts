@@ -192,13 +192,13 @@ export default client;
 //     }
 //   };
 
-//   // Example POST request in a Client Component
-//   const createUser = async (userData) => {
-//     try {
-//       const newUser = await client.post('users', userData);
-//       console.log('User created:', newUser);
-//     } catch (error) {
-//       console.error("Failed to create user:", error);
-//     }
-//   };
-// */
+  // Example POST request in a Client Component
+  const createUser = async (userData) => {
+    try {
+      const newUser = await client.post('users', userData);
+      console.log('User created:', newUser);
+    } catch (error) {
+      console.error("Failed to create user:", error);
+    }
+  };
+*/

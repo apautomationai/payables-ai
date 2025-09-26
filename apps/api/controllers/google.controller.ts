@@ -13,8 +13,16 @@ const oAuth2Client = new google.auth.OAuth2(
 //@ts-ignore
 export const authRedirect = async (req: Request, res: Response) => {
   const url = googleService.generateAuthUrl();
-  res.redirect(url);
+  const token = req.headers.authorization;
+
+  //@ts-ignore
+  if (req.token) {
+    //@ts-ignore
+    res.cookie("token", req.token, { httpOnly: true });
+  }
+
   // res.json({ url });
+  res.redirect(url);
 };
 
 export const oauthCallback = async (
@@ -34,46 +42,50 @@ export const oauthCallback = async (
 
     oAuth2Client.setCredentials(tokens);
 
-    // const oauth2 = google.oauth2({ version: "v2", auth: oAuth2Client });
-
-    // const { data } = await oauth2.userinfo.get();
-
-    // console.log('google user', data);
-    // console.log('tokens', tokens);
-
     let integration;
-    const userId = 3
-    try {
-      const existingIntegration = await integrationsService.checkIntegration(userId, 'gmail')
 
-      if(!existingIntegration){
+    //@ts-ignore
+    const userId = req.user.id;
+
+    try {
+      const existingIntegration = await integrationsService.checkIntegration(
+        userId,
+        "gmail"
+      );
+
+      if (!existingIntegration) {
         integration = await integrationsService.insertIntegration({
-            userId: userId,
-            name: "gmail",
-            status: "success",
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token,
-            tokenType: tokens.token_type,
-            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
+          userId: userId,
+          name: "gmail",
+          status: "success",
+          accessToken: tokens.access_token,
+          refreshToken: tokens.refresh_token,
+          tokenType: tokens.token_type,
+          expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
         });
 
-        if(!integration.success){
+        if (!integration.success) {
           // @ts-ignore
           throw new Error(integration?.message);
         }
-      } else{
-        integration = await integrationsService.updateIntegration(existingIntegration.id, {
+      } else {
+        integration = await integrationsService.updateIntegration(
+          existingIntegration.id,
+          {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token,
             tokenType: tokens.token_type,
-            expiryDate: tokens.expiry_date ? new Date(tokens.expiry_date) : null,
-        });
+            expiryDate: tokens.expiry_date
+              ? new Date(tokens.expiry_date)
+              : null,
+          }
+        );
       }
-    } catch (error:any) {
+    } catch (error: any) {
       throw new Error(error.message);
     }
 
-    const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!)
+    const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!);
     REDIRECT_URI.searchParams.set("type", "integration.gmail");
     REDIRECT_URI.searchParams.set("message", "Gmail successfully integrated");
     res.redirect(REDIRECT_URI.toString());
@@ -90,30 +102,58 @@ export const oauthCallback = async (
 
 export const readEmails = async (req: Request, res: Response) => {
   try {
-    const tokens = req.body.tokens;
+    //@ts-ignore
+    // const id = req.user.id;
+    const id = 19;
+
+    const integration = await integrationsService.getIntegrations(id);
+    //@ts-ignore
+    const integrationInfo = integration.data[0];
+
+    const timeStampDate = integrationInfo.expiryDate;
+    if (!timeStampDate) {
+      throw new Error("No expiry date found in database");
+    }
+    const date = new Date(timeStampDate);
+    const expiryDate = date.getTime();
+
+    const tokens = {
+      access_token: integrationInfo.accessToken,
+      refresh_token: integrationInfo.refreshToken,
+      token_type: integrationInfo.tokenType,
+      expiry_date: expiryDate,
+    };
 
     if (!tokens) {
       throw new BadRequestError("Need valid tokens");
     }
-    const attachments = await googleService.getEmailsWithAttachments(tokens);
-    res.status(200).send(attachments);
+    const attachments = await googleService.getEmailsWithAttachments(
+      tokens,
+      id
+    );
+    const result = {
+      status: "success",
+      data: attachments,
+    };
+    return res.send(result);
   } catch (error: any) {
     throw new BadRequestError(error.message || "Unable to get the attachments");
   }
 };
 
-export const getAttachments = async (req: Request, res: Response) => {
-  const { email } = req.body;
-  if (!email) {
-    throw new BadRequestError("Need a valid email");
-  }
-  try {
-    const attachments = await googleService.getAttachments(email);
-    res.status(200).send(attachments);
-  } catch (error: any) {
-    if (error.message) {
-      throw new BadRequestError(error.message);
-    }
-    throw new BadRequestError("`");
-  }
-};
+// export const getAttachments = async (req: Request, res: Response) => {
+//   const userId = 19;
+//   if (!userId) {
+//     throw new BadRequestError("Need a valid userId");
+//   }
+//   try {
+//     const attachments = await googleService.getAttachments(userId);
+//     const result = {
+//       status: "success",
+//       data: attachments,
+//     };
+//     res.send(result);
+//   } catch (error: any) {
+//     throw new BadRequestError(error.message || "Failed to get attachments");
+//   }
+// };

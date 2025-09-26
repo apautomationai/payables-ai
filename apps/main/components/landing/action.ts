@@ -1,8 +1,14 @@
 "use server";
 
-import { getSession } from "@/lib/session";
+import { cookies } from "next/headers";
 
 export async function checkSession() {
-  const session = await getSession();
-  return { isLoggedIn: !!session };
+  const cookieStore = await cookies();
+  const token = cookieStore.get("token");
+  const userId = cookieStore.get("userId");
+
+  return {
+    isLoggedIn: !!token,
+    userId: userId?.value || null,
+  };
 }

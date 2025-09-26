@@ -14,6 +14,7 @@ class SettingsService {
             })
             .from(integrationsModel)
             .where(eq(integrationsModel.userId, userId));
+         
             const result = {
                 success: true,
                 data: response,

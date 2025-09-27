@@ -16,8 +16,11 @@ router.post(
   userController.registerUser
 );
 router.post("/login", validate(loginUserValidator), userController.loginUser);
-router.get("/userWithId", authenticate, userController.getUserWithId);
-router.patch("/updateProfile/", authenticate, userController.updateUser);
+router
+  .route("/me")
+  .get(authenticate, userController.getUserWithId)
+  .patch(authenticate, userController.updateUser);
+// router.patch("/me", authenticate, userController.updateUser);
 router.patch("/resetPassword", authenticate, userController.resetPassword);
 router.patch("/changePassword", authenticate, userController.changePassword);
 

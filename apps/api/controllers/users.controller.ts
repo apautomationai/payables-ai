@@ -93,7 +93,7 @@ export class UserController {
   };
   getUserWithId = async (req: Request, res: Response) => {
     //@ts-ignore
-    const userId = 24;
+    const userId = req.user.id;
     if (!userId) {
       throw new BadRequestError("Need a valid user id");
     }
@@ -113,7 +113,7 @@ export class UserController {
   };
   updateUser = async (req: Request, res: Response) => {
     //@ts-ignore
-    const userId = 24;
+    const userId = req.user.id;
     // const { email } = req.body;
     const userData = req.body;
 

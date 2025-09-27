@@ -1,10 +1,10 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 
 export const emailAttachmentsModel = pgTable("email_attachments", {
   id: text("id").primaryKey(),
-  userId: text("user_id").notNull(),
+  userId: integer("user_id").notNull(),
   emailId: text("email_id").notNull(),
   filename: text("filename").notNull(),
   mimeType: text("mime_type").notNull(),

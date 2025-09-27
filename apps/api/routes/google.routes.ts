@@ -1,18 +1,12 @@
-import {
-  authRedirect,
-  // getAttachments,
-  //   getAttachments,
-  oauthCallback,
-  readEmails,
-} from "@/controllers/google.controller";
+import { googleController } from "@/controllers/google.controller";
 import { authenticate } from "@/middlewares/auth.middleware";
 import { Router } from "express";
 
 const router = Router();
 
-router.get("/auth", authenticate, authRedirect);
-router.get("/callback", authenticate, oauthCallback);
-router.get("/readEmails", readEmails);
-// router.get("/attachments", getAttachments);
+router.get("/auth", authenticate, googleController.authRedirect);
+router.get("/callback", authenticate, googleController.oauthCallback);
+router.get("/readEmails", googleController.readEmails);
+router.get("/attachments", googleController.getAttachments);
 
 export default router;

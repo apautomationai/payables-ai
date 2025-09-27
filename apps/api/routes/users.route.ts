@@ -16,8 +16,8 @@ router.post(
   userController.registerUser
 );
 router.post("/login", validate(loginUserValidator), userController.loginUser);
-router.get("/userWithId", authenticate, userController.getUserWithId);
-router.patch("/updateProfile/", authenticate, userController.updateUser);
+router.get("/userWithId", userController.getUserWithId);
+router.patch("/updateProfile/", userController.updateUser);
 router.patch("/resetPassword", authenticate, userController.resetPassword);
 router.patch("/changePassword", authenticate, userController.changePassword);
 

@@ -18,6 +18,7 @@
     "cmdk": "^1.1.1",
     "cookies-next": "^6.1.0",
     "country-codes-list": "^2.0.0",
+    "date-fns": "^4.1.0",
     "framer-motion": "^12.23.12",
     "install": "^0.13.0",
     "jose": "^6.1.0",

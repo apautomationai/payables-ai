@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
-import { Loader2, Camera } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { personalInfoSchema, type PersonalInfoFormData } from "@/lib/validators";
 import {
   Card,
@@ -18,27 +18,26 @@ import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@workspace/ui/components/avatar";
-import { Badge } from "@workspace/ui/components/badge";
-import { Skeleton } from "@workspace/ui/components/skeleton";
-import { cn } from "@workspace/ui/lib/utils";
 
-// Define the component's props, including the Server Action passed from the parent
 type PersonalInfoFormProps = {
   initialData: PersonalInfoFormData;
-  updateUserAction: (formData: FormData) => Promise<{ data?: any; error?: string }>;
+  updateUserAction: (updateData: { [key: string]: any }) => Promise<{ data?: any; error?: string }>;
+  onCancel: () => void;
+  onSaveSuccess: (updatedData: any) => void;
 };
 
-export function PersonalInformationForm({ initialData, updateUserAction }: PersonalInfoFormProps) {
-  const [isEditing, setIsEditing] = useState(false);
+export function PersonalInformationForm({ 
+  initialData, 
+  updateUserAction, 
+  onCancel, 
+  onSaveSuccess 
+}: PersonalInfoFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [previewImage, setPreviewImage] = useState<string | null>(null);
-  const avatarFileRef = useRef<HTMLInputElement | null>(null);
 
   const {
     register,
     handleSubmit,
-    reset,
     watch,
     formState: { errors, isDirty, dirtyFields },
   } = useForm<PersonalInfoFormData>({
@@ -46,187 +45,162 @@ export function PersonalInformationForm({ initialData, updateUserAction }: Perso
     defaultValues: initialData,
   });
 
-  const { firstName, lastName, email, isBanned, isActive, avatarUrl } = watch();
-  const avatarFileRegistration = register('avatarFile');
+  const { firstName, lastName, email, avatarUrl } = watch();
 
-  const handleEdit = () => setIsEditing(true);
-
-  const handleCancel = () => {
-    reset(initialData);
-    setPreviewImage(null);
-    setIsEditing(false);
-    setServerError(null);
-  };
-
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-          setPreviewImage(URL.createObjectURL(file));
-      }
+  const onValidationErrors = (errors: any) => {
+    toast.error("Please check the form for errors before submitting.");
   };
 
   const onSubmit = async (data: PersonalInfoFormData) => {
     if (!isDirty) {
-      setIsEditing(false);
+      onCancel();
       return;
     }
-  
+
     setIsSubmitting(true);
     setServerError(null);
-    const formData = new FormData();
-    
-    for (const field of Object.keys(dirtyFields) as (keyof PersonalInfoFormData)[]) {
-        if (field === 'avatarFile' && data.avatarFile?.length) {
-            formData.append('avatar', data.avatarFile[0]);
-        } else if (data[field] !== undefined) {
-             formData.append(field, data[field] as string);
-        }
-    }
 
-    const response = await updateUserAction(formData);
+    try {
+      const updatePayload: { [key: string]: any } = {};
+      if (dirtyFields.firstName) updatePayload.firstName = data.firstName;
+      if (dirtyFields.lastName) updatePayload.lastName = data.lastName;
+      if (dirtyFields.phone) updatePayload.phone = data.phone || '';
+      if (dirtyFields.businessName) updatePayload.businessName = data.businessName || '';
+      
+      const result = await updateUserAction(updatePayload);
 
-    if (response.data) {
-        const updatedFormData = {
-          firstName: response.data.firstName ?? "",
-          lastName: response.data.lastName ?? "",
-          email: response.data.email ?? "",
-          phone: response.data.phone ?? "",
-          businessName: response.data.businessName ?? "",
-          isActive: response.data.isActive ?? true,
-          isBanned: response.data.isBanned ?? false,
-          avatarUrl: response.data.avatarUrl ?? "",
-        };
-        reset(updatedFormData);
-        setPreviewImage(null);
-        toast.success("Profile updated successfully!");
-        setIsEditing(false);
-    } else {
-        setServerError(response.error || "An unknown error occurred");
-        toast.error(response.error || "Failed to update profile.");
+      if (result.error) {
+        setServerError(result.error);
+        toast.error(result.error);
+      } else {
+        toast.success('Profile updated successfully');
+        onSaveSuccess({ ...initialData, ...data, avatarUrl });
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      const errorMessage = 'An unexpected error occurred. Please try again.';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsSubmitting(false);
   };
 
-  const avatarSrc = previewImage || avatarUrl || `https://ui-avatars.com/api/?name=${firstName}+${lastName}&background=random`;
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)}>
+    <form onSubmit={handleSubmit(onSubmit, onValidationErrors)}>
       <Card>
         <CardHeader>
-          <CardTitle>Personal Information</CardTitle>
-          <CardDescription>Update your personal details and profile picture.</CardDescription>
+          <CardTitle>Edit Personal Information</CardTitle>
+          <CardDescription>Update your personal information below.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-            <div className="flex items-center gap-6">
-                <div className="relative">
-                    <Avatar className="h-20 w-20">
-                        <AvatarImage src={avatarSrc} alt="Profile Avatar" />
-                        <AvatarFallback>{firstName?.[0]}{lastName?.[0]}</AvatarFallback>
-                    </Avatar>
-                    {isEditing && (
-                        <button 
-                            type="button" 
-                            onClick={() => avatarFileRef.current?.click()}
-                            className="absolute -bottom-1 -right-1 bg-primary text-primary-foreground rounded-full p-1.5 hover:bg-primary/90 transition-colors"
-                            aria-label="Change profile picture"
-                        >
-                            <Camera className="h-4 w-4" />
-                        </button>
-                    )}
-                    <Input 
-                        type="file" 
-                        className="hidden" 
-                        accept="image/png, image/jpeg, image/webp"
-                        name={avatarFileRegistration.name}
-                        onBlur={avatarFileRegistration.onBlur}
-                        ref={(e) => {
-                            avatarFileRegistration.ref(e);
-                            avatarFileRef.current = e;
-                        }}
-                        onChange={(e) => {
-                            avatarFileRegistration.onChange(e);
-                            handleAvatarChange(e);
-                        }}
-                    />
+        
+        <CardContent className="border-t pt-6">
+          {serverError && (
+            <div className="mb-6 p-4 text-sm text-red-700 bg-red-100 rounded-md" role="alert">
+              {serverError}
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 gap-x-8 gap-y-10 md:grid-cols-3">
+            <div className="md:col-span-1">
+              <h3 className="text-base font-semibold leading-7">Profile</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Your avatar is synced from your login provider.
+              </p>
+              <div className="mt-6">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={avatarUrl} alt={`${firstName} ${lastName}`} />
+                  <AvatarFallback>
+                    {`${firstName?.[0] || ''}${lastName?.[0] || ''}`.toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-6">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="firstName">First Name</Label>
+                  <Input id="firstName" {...register('firstName')} disabled={isSubmitting} className="mt-2" />
+                  {errors.firstName && <p className="mt-2 text-sm text-red-500">{errors.firstName.message}</p>}
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold">{firstName} {lastName}</h3>
-                  <p className="text-sm text-muted-foreground">{email}</p>
-                  <Badge className={cn("mt-2", isBanned ? "bg-red-100 text-red-800" : "bg-green-100 text-green-800")}>
-                    {isBanned ? "Banned" : isActive ? "Active" : "Inactive"}
-                  </Badge>
-                </div>
-            </div>
-            {errors.avatarFile && <p className="text-sm text-red-500 pt-1">{errors.avatarFile.message as string}</p>}
-            {serverError && <div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">{serverError}</div>}
-          
-            <div className="grid md:grid-cols-2 gap-6 pt-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input id="firstName" {...register('firstName')} disabled={!isEditing || isSubmitting} />
-                  {errors.firstName && <p className="text-sm text-red-500">{errors.firstName.message}</p>}
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input id="lastName" {...register('lastName')} disabled={!isEditing || isSubmitting} />
-                  {errors.lastName && <p className="text-sm text-red-500">{errors.lastName.message}</p>}
+                  <Input id="lastName" {...register('lastName')} disabled={isSubmitting} className="mt-2" />
+                  {errors.lastName && <p className="mt-2 text-sm text-red-500">{errors.lastName.message}</p>}
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" value={email} disabled className="bg-gray-100 cursor-not-allowed" />
-                </div>
-                <div className="space-y-2">
+              </div>
+
+              <div>
+                <Label htmlFor="email">Email Address</Label>
+                <Input id="email" type="email" value={email} disabled readOnly className="mt-2 cursor-not-allowed bg-muted" />
+                <p className="mt-2 text-sm text-muted-foreground">Your email address cannot be changed.</p>
+              </div>
+              
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" type="tel" {...register('phone')} disabled={!isEditing || isSubmitting} />
-                  {errors.phone && <p className="text-sm text-red-500">{errors.phone.message}</p>}
+                  <Input id="phone" {...register('phone')} disabled={isSubmitting} className="mt-2" />
+                  {errors.phone && <p className="mt-2 text-sm text-red-500">{errors.phone.message}</p>}
                 </div>
-                <div className="space-y-2 md:col-span-2">
+                <div>
                   <Label htmlFor="businessName">Business Name</Label>
-                  <Input id="businessName" {...register('businessName')} disabled={!isEditing || isSubmitting} />
-                  {errors.businessName && <p className="text-sm text-red-500">{errors.businessName.message}</p>}
+                  <Input id="businessName" {...register('businessName')} disabled={isSubmitting} className="mt-2" />
+                  {errors.businessName && <p className="mt-2 text-sm text-red-500">{errors.businessName.message}</p>}
                 </div>
+              </div>
             </div>
+          </div>
         </CardContent>
-        <CardFooter className="border-t px-6 py-4 flex justify-end gap-2">
-            {isEditing ? (
+
+        <CardFooter className="border-t px-6 py-4 flex justify-end space-x-3">
+          <Button type="button" variant="outline" onClick={onCancel} disabled={isSubmitting}>
+            Cancel
+          </Button>
+          <Button type="submit" disabled={!isDirty || isSubmitting}>
+            {isSubmitting ? (
               <>
-                <Button type="button" variant="outline" onClick={handleCancel} disabled={isSubmitting}>Cancel</Button>
-                <Button type="submit" disabled={!isDirty || isSubmitting}>
-                  {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</> : 'Save Changes'}
-                </Button>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving...
               </>
-            ) : (
-              <Button type="button" onClick={handleEdit}>Edit Profile</Button>
-            )}
+            ) : 'Save Changes'}
+          </Button>
         </CardFooter>
       </Card>
     </form>
   );
 }
 
-
-// --- ADD THIS EXPORTED SKELETON COMPONENT AT THE END OF THE FILE ---
 export const FormSkeleton = () => (
-  <Card>
+    <Card>
       <CardHeader>
-          <Skeleton className="h-8 w-1/3" />
-          <Skeleton className="h-4 w-1/2" />
+        <div className="h-8 w-1/3 bg-gray-200 rounded animate-pulse" />
+        <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
       </CardHeader>
       <CardContent className="space-y-6">
-          <div className="flex items-center gap-6">
-              <Skeleton className="h-20 w-20 rounded-full" />
-              <div className="space-y-2">
-                  <Skeleton className="h-6 w-32" />
-                  <Skeleton className="h-4 w-48" />
-              </div>
+        <div className="flex items-center gap-6">
+          <div className="h-24 w-24 rounded-full bg-gray-200 animate-pulse" />
+          <div className="space-y-2">
+            <div className="h-6 w-32 bg-gray-200 rounded animate-pulse" />
+            <div className="h-4 w-48 bg-gray-200 rounded animate-pulse" />
           </div>
-          <div className="grid md:grid-cols-2 gap-6 pt-4">
-              <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-10 w-full" /></div>
-              <div className="space-y-2"><Skeleton className="h-4 w-20" /><Skeleton className="h-10 w-full" /></div>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
           </div>
+          <div className="space-y-2">
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+          </div>
+           <div className="space-y-2 md:col-span-2">
+            <div className="h-4 w-20 bg-gray-200 rounded animate-pulse" />
+            <div className="h-10 w-full bg-gray-200 rounded animate-pulse" />
+          </div>
+        </div>
       </CardContent>
-      <CardFooter className="border-t px-6 py-4 flex justify-end">
-          <Skeleton className="h-10 w-24" />
+      <CardFooter className="flex justify-end">
+        <div className="h-10 w-24 bg-gray-200 rounded animate-pulse" />
       </CardFooter>
-  </Card>
-);
+    </Card>
+  );

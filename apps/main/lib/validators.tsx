@@ -38,8 +38,7 @@ export const personalInfoSchema = z.object({
   email: z.string().email(), 
   phone: z.string().min(6, { message: "Please enter a valid phone number." }).optional().or(z.literal('')),
   businessName: z.string().min(2, { message: "Business name is required." }).optional().or(z.literal('')),
-  isActive: z.boolean(),
-  isBanned: z.boolean(),
+
   
   // For displaying the current avatar from the server
   avatarUrl: z.string().optional(),
@@ -56,3 +55,26 @@ export const personalInfoSchema = z.object({
 });
 
 export type PersonalInfoFormData = z.infer<typeof personalInfoSchema>;
+
+export const changePasswordSchema = z.object({
+  oldPassword: z.string().min(1, { message: "Current password is required." }),
+  newPassword: z.string().min(8, { message: "New password must be at least 8 characters long." }),
+  confirmPassword: z.string(),
+})
+.refine((data) => data.newPassword === data.confirmPassword, {
+  message: "New passwords do not match.",
+  path: ["confirmPassword"], // Show the error on the confirmation field
+});
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
+
+
+// Add this new schema for the attachment details form
+export const attachmentDetailsSchema = z.object({
+  filename: z.string().min(1, "Filename is required."),
+  sender: z.string().email("Invalid email format."),
+  receiver: z.string().email("Invalid email format."),
+});
+
+export type AttachmentDetailsFormData = z.infer<typeof attachmentDetailsSchema>;

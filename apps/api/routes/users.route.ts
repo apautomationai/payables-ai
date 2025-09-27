@@ -21,7 +21,7 @@ router
   .get(authenticate, userController.getUserWithId)
   .patch(authenticate, userController.updateUser);
 // router.patch("/me", authenticate, userController.updateUser);
-router.patch("/resetPassword", authenticate, userController.resetPassword);
-router.patch("/changePassword", authenticate, userController.changePassword);
+router.patch("/reset-password", authenticate, userController.resetPassword);
+router.patch("/change-password", authenticate, userController.changePassword);
 
 export default router;

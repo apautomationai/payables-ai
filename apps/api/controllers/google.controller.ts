@@ -14,7 +14,7 @@ export class GoogleController {
   //@ts-ignore
   authRedirect = async (req: Request, res: Response) => {
     const url = googleServices.generateAuthUrl();
-    const token = req.headers.authorization;
+    // const token = req.headers.authorization;
 
     //@ts-ignore
     if (req.token) {
@@ -102,8 +102,8 @@ export class GoogleController {
   readEmails = async (req: Request, res: Response) => {
     try {
       //@ts-ignore
-      // const id = req.user.id;
-      const userId = 24;
+      const userId = req.user.id;
+
       if (!userId) {
         throw new BadRequestError("Need a valid userId");
       }
@@ -152,8 +152,8 @@ export class GoogleController {
 
   getAttachments = async (req: Request, res: Response) => {
     //@ts-ignore
-    //const userId = req.user.id
-    const userId = 24;
+    const userId = req.user.id;
+    // const userId = 24;
     if (!userId) {
       throw new BadRequestError("Need a valid userId");
     }
@@ -172,6 +172,27 @@ export class GoogleController {
       res.status(200).send(result);
     } catch (error: any) {
       throw new BadRequestError(error.message || "Failed to get attachments");
+    }
+  };
+
+  getAttachmentWithId = async (req: Request, res: Response) => {
+    try {
+      const id = req.params.id;
+      if (!id) {
+        throw new BadRequestError("No id found");
+      }
+      const response = await googleServices.getAttachmentWithId(id);
+      const result = {
+        status: "success",
+        data: response[0],
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      const result = {
+        status: false,
+        data: error.message,
+      };
+      return result;
     }
   };
 }

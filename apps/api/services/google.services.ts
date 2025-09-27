@@ -6,6 +6,7 @@ import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { eq } from "drizzle-orm";
+import { BadRequestError } from "@/helpers/errors";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -140,6 +141,18 @@ export class GoogleServices {
         data: error.message,
       };
       return result;
+    }
+  };
+
+  getAttachmentWithId = async (id: string) => {
+    try {
+      const response = await db
+        .select()
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.id, id));
+      return response;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "No attachment found");
     }
   };
 }

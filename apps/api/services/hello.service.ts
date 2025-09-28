@@ -6,7 +6,7 @@ import {
   InternalServerError 
 } from '@/helpers/errors';
 import db from '@/lib/db';
-import { usersTable } from '@/models/users.model';
+import { usersModel } from '@/models/users.model';
 
 interface HelloResponse {
   message: string;
@@ -74,7 +74,7 @@ export class HelloService {
   async healthCheck() {
     try {
       // Execute a simple query to check database connection
-      await db.select().from(usersTable).limit(1);
+      await db.select().from(usersModel).limit(1);
       
       return {
         status: 'success',

@@ -6,6 +6,7 @@ import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { eq } from "drizzle-orm";
+import { BadRequestError } from "@/helpers/errors";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -13,125 +14,146 @@ const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_REDIRECT_URI
 );
 
-export const generateAuthUrl = (): string => {
-  return oAuth2Client.generateAuthUrl({
-    access_type: "offline",
-    prompt: "consent",
-    scope: [
-      "https://www.googleapis.com/auth/gmail.readonly",
-      "https://www.googleapis.com/auth/gmail.modify",
-      "https://www.googleapis.com/auth/userinfo.email",
-    ],
-  });
-};
-
-export const getTokensFromCode = async (code: string): Promise<Credentials> => {
-  const { tokens } = await oAuth2Client.getToken(code);
-  return tokens;
-};
-
-export const setCredentials = (refreshToken: string): OAuth2Client => {
-  oAuth2Client.setCredentials({ refresh_token: refreshToken });
-
-  //@ts-ignore
-  return oAuth2Client;
-};
-
-const getOAuthClient = (tokens: any) => {
-  const oAuth2Client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
-  );
-  oAuth2Client.setCredentials(tokens);
-  return oAuth2Client;
-};
-
-export const getEmailsWithAttachments = async (tokens: any, userId: number) => {
-  try {
-    const auth = getOAuthClient(tokens);
-    const gmail = google.gmail({ version: "v1", auth });
-
-    const res = await gmail.users.messages.list({
-      userId: "me",
-      q: "has:attachment",
+export class GoogleServices {
+  generateAuthUrl = (): string => {
+    return oAuth2Client.generateAuthUrl({
+      access_type: "offline",
+      prompt: "consent",
+      scope: [
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://www.googleapis.com/auth/userinfo.email",
+      ],
     });
+  };
 
-    const messages = res.data.messages || [];
-    const results: any[] = [];
-    for (const msg of messages) {
-      const message = await gmail.users.messages.get({
+  getTokensFromCode = async (code: string): Promise<Credentials> => {
+    const { tokens } = await oAuth2Client.getToken(code);
+    return tokens;
+  };
+
+  setCredentials = (refreshToken: string): OAuth2Client => {
+    oAuth2Client.setCredentials({ refresh_token: refreshToken });
+
+    //@ts-ignore
+    return oAuth2Client;
+  };
+
+  getOAuthClient = (tokens: any) => {
+    const oAuth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+    oAuth2Client.setCredentials(tokens);
+    return oAuth2Client;
+  };
+
+  getEmailsWithAttachments = async (tokens: any, userId: number) => {
+    try {
+      const auth = this.getOAuthClient(tokens);
+      const gmail = google.gmail({ version: "v1", auth });
+
+      const res = await gmail.users.messages.list({
         userId: "me",
-        id: msg.id!,
-        format: "full",
+        q: "has:attachment",
       });
 
-      const headers = message.data.payload?.headers || [];
-      const sender = extractEmail(getHeader(headers, "from"));
-      const receiver = extractEmail(getHeader(headers, "to"));
+      const messages = res.data.messages || [];
+      const results: any[] = [];
+      for (const msg of messages) {
+        const message = await gmail.users.messages.get({
+          userId: "me",
+          id: msg.id!,
+          format: "full",
+        });
 
-      const parts = message.data.payload?.parts || [];
+        const headers = message.data.payload?.headers || [];
+        const sender = extractEmail(getHeader(headers, "from"));
+        const receiver = extractEmail(getHeader(headers, "to"));
 
-      for (const part of parts) {
-        if (part.filename && part.body?.attachmentId) {
-          const attachment = await gmail.users.messages.attachments.get({
-            userId: "me",
-            messageId: msg.id!,
-            id: part.body.attachmentId,
-          });
-          const data = attachment.data.data;
-          //hash id
-          const id = crypto
-            .createHash("sha256")
-            .update(`${msg.id}-${part.body.attachmentId}`)
-            .digest("hex");
+        const parts = message.data.payload?.parts || [];
 
-          // upload to S3
-          const buffer = Buffer.from(data!, "base64url");
-          const s3Url = await uploadBufferToS3(
-            buffer,
-            `attachments/${id}-${part.filename}`,
-            part.mimeType || "application/pdf"
-          );
+        for (const part of parts) {
+          if (part.filename && part.body?.attachmentId) {
+            const attachment = await gmail.users.messages.attachments.get({
+              userId: "me",
+              messageId: msg.id!,
+              id: part.body.attachmentId,
+            });
+            const data = attachment.data.data;
+            //hash id
+            const id = crypto
+              .createHash("sha256")
+              .update(`${msg.id}-${part.body.attachmentId}`)
+              .digest("hex");
 
-          // insert meta data to database
-          //@ts-ignore
-          await db.insert(emailAttachmentsModel).values({
-            id,
-            userId,
-            emailId: msg.id!,
-            filename: part.filename,
-            mimeType: part.mimeType || "application/octet-stream",
-            sender,
-            receiver,
-            s3Url,
-          });
+            // upload to S3
+            const buffer = Buffer.from(data!, "base64url");
+            const s3Url = await uploadBufferToS3(
+              buffer,
+              `attachments/${id}-${part.filename}`,
+              part.mimeType || "application/pdf"
+            );
 
-          results.push({
-            id,
-            emailId: msg.id,
-            filename: part.filename,
-            mimeType: part.mimeType,
-            sender: sender,
-            receiver: receiver,
-            s3Url: s3Url,
-          });
+            // insert meta data to database
+            //@ts-ignore
+            await db.insert(emailAttachmentsModel).values({
+              id,
+              userId,
+              emailId: msg.id!,
+              filename: part.filename,
+              mimeType: part.mimeType || "application/octet-stream",
+              sender,
+              receiver,
+              s3Url,
+            });
+
+            results.push({
+              id,
+              emailId: msg.id,
+              filename: part.filename,
+              mimeType: part.mimeType,
+              sender: sender,
+              receiver: receiver,
+              s3Url: s3Url,
+            });
+          }
         }
       }
+      return results;
+    } catch (error) {
+      throw error;
     }
-    return results;
-  } catch (error) {
-    throw error;
-  }
-};
+  };
 
-// export const getAttachments = async (userId: number) => {
-//   const attachment = await db
-//     .select()
-//     .from(emailAttachmentsModel)
-//     .where(eq(emailAttachmentsModel.userId, userId));
+  getAttachments = async (userId: number) => {
+    try {
+      const attachment = await db
+        .select()
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.userId, userId));
 
-//   return attachment;
-//   try {
-//   } catch (error: any) {}
-// };
+      return attachment;
+    } catch (error: any) {
+      const result = {
+        success: false,
+        data: error.message,
+      };
+      return result;
+    }
+  };
+
+  getAttachmentWithId = async (id: string) => {
+    try {
+      const response = await db
+        .select()
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.id, id));
+      return response;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "No attachment found");
+    }
+  };
+}
+export const googleServices = new GoogleServices();

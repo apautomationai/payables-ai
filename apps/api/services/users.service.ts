@@ -108,15 +108,20 @@ export class UserServices {
       throw new BadRequestError(error.message || "No user found");
     }
   };
-  updateUser = async (email: string, userData: UpdateUser) => {
-    if (!email) {
-      throw new BadRequestError("Email is required");
-    }
+  updateUser = async (userId: number, userData: UpdateUser) => {
     try {
+      const [user] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
       const updatedUser = await db
         .update(usersModel)
         .set(userData)
-        .where(eq(usersModel.email, email))
+        .where(eq(usersModel.id, userId))
         .returning();
       return updatedUser;
     } catch (error: any) {

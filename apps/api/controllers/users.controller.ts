@@ -8,20 +8,31 @@ import {
   BadRequestError,
   ConflictError,
   InternalServerError,
+  NotFoundError,
 } from "@/helpers/errors";
 
 export class UserController {
   registerUser = async (req: Request, res: Response) => {
     try {
-      const { firstName, lastName, profileImage, email, password } = req.body;
-
-      const result = await userServices.registerUser(
+      const {
         firstName,
         lastName,
-        profileImage,
+        avatar,
+        businessName,
         email,
-        password
-      );
+        phone,
+        password,
+      } = req.body;
+
+      const result = await userServices.registerUser({
+        firstName,
+        lastName,
+        avatar,
+        businessName,
+        email,
+        phone,
+        password,
+      });
 
       return res.status(200).json({
         success: true,
@@ -58,6 +69,7 @@ export class UserController {
 
         const token = signJwt({
           sub: (user as any).id,
+          id: (user as any).id,
           email: (user as any).email,
         });
         if (token) {
@@ -79,19 +91,45 @@ export class UserController {
       return new InternalServerError("Unable to connect to the server");
     }
   };
+  getUserWithId = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    if (!userId) {
+      throw new BadRequestError("Need a valid user id");
+    }
+    try {
+      const response = await userServices.getUserWithId(userId);
+      if (response.length === 0) {
+        throw new NotFoundError("No user found");
+      }
+      const result = {
+        success: "success",
+        data: response[0],
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to get user");
+    }
+  };
   updateUser = async (req: Request, res: Response) => {
-    const { email } = req.body;
+    //@ts-ignore
+    const userId = req.user.id;
+    // const { email } = req.body;
     const userData = req.body;
 
-    if (!email) {
+    if (!userId) {
       throw new BadRequestError("Email is required");
     }
 
     try {
-      const updatedUser = await userServices.updateUser(email, userData);
+      const updatedUser = await userServices.updateUser(userId, userData);
 
       if (updatedUser) {
-        return res.status(200).send(updatedUser);
+        const result = {
+          success: "success",
+          data: updatedUser[0],
+        };
+        return res.status(200).send(result);
       }
       throw new BadRequestError("User has not updated");
     } catch (err: any) {
@@ -112,6 +150,40 @@ export class UserController {
     const newPassword = await userServices.resetPassword(email, password);
 
     res.status(200).send(newPassword);
+  };
+  changePassword = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    try {
+      const { oldPassword, newPassword, confirmPassword } = req.body;
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        throw new BadRequestError(
+          "Old password, new password, confirm password are required"
+        );
+      }
+      if (newPassword !== confirmPassword) {
+        throw new BadRequestError(
+          "new password should match the confirm password"
+        );
+      }
+      const response = await userServices.changePassword(
+        userId,
+        oldPassword,
+        newPassword
+      );
+      if (!response) {
+        throw new BadRequestError("Password has not change");
+      }
+      const result = {
+        status: "success",
+        data: {
+          message: "Password changed successfully",
+        },
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to change password");
+    }
   };
 }
 

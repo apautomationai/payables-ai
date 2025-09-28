@@ -4,7 +4,7 @@ import { Strategy as JwtStrategy, ExtractJwt } from 'passport-jwt';
 import { eq } from 'drizzle-orm';
 
 import db from './db';
-import { usersTable } from '@/models/users.model';
+import { usersModel } from '@/models/users.model';
 import { verifyPassword } from './utils/hash';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -17,12 +17,11 @@ passport.use(
     { usernameField: 'email', passwordField: 'password', session: false },
     async (email, password, done) => {
       try {
-        const user = await db
+        const [user] = await db
           .select()
-          .from(usersTable)
-          .where(eq(usersTable.email, email))
+          .from(usersModel)
+          .where(eq(usersModel.email, email))
           .limit(1)
-          .then((r) => r[0]);
 
         if (!user) {
           return done(null, false, { message: 'Incorrect email or password' });
@@ -58,8 +57,8 @@ passport.use(
 
         const user = await db
           .select()
-          .from(usersTable)
-          .where(eq(usersTable.id, Number(userId)))
+          .from(usersModel)
+          .where(eq(usersModel.id, Number(userId)))
           .limit(1)
           .then((r) => r[0]);
 

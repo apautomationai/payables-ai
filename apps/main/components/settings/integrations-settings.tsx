@@ -9,81 +9,45 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Button } from "@workspace/ui/components/button";
-import { PlusCircle } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import Link from "next/link";
+import client from "@/lib/axios-client";
 
-// Mock data for integrations
-const integrations = [
+const initialIntegrations = [
+  {
+    name: "Gmail",
+    path: "google/auth",
+    category: "Email Processing & Automation",
+    allowCollection: true,
+  },
   {
     name: "QuickBooks",
     category: "Accounting & Financial Management",
-    connected: false,
-  },
-  {
-    name: "Gmail",
-    category: "Email Processing & Automation",
-    connected: false,
+    allowCollection: false,
   },
   {
     name: "Outlook",
     category: "Email Processing & Automation",
-    connected: false,
-  },
-  {
-    name: "AWS Services",
-    category: "Textract, S3, Cloud Storage",
-    connected: true,
-  },
-  {
-    name: "OpenAI",
-    category: "AI-Powered Invoice Processing",
-    connected: true,
+    allowCollection: false,
   },
 ];
 
-const IntegrationCard = ({
-  name,
-  category,
-  connected,
+export default function IntegrationsTab({
+  integrations,
 }: {
-  name: string;
-  category: string;
-  connected: boolean;
-}) => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="text-lg">{name}</CardTitle>
-      <CardDescription>{category}</CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="flex items-center mb-4">
-        <span
-          className={cn(
-            "h-2 w-2 rounded-full mr-2",
-            connected ? "bg-green-500" : "bg-red-500"
-          )}
-        />
-        <span className="text-sm font-medium">
-          {connected ? "Connected" : "Not Connected"}
-        </span>
-      </div>
-      <div className="flex gap-2">
-        <Button size="sm">{connected ? "Configure" : "Connect"}</Button>
-        {connected && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="text-destructive border-destructive/50 hover:bg-destructive/10 hover:text-destructive"
-          >
-            Disconnect
-          </Button>
-        )}
-      </div>
-    </CardContent>
-  </Card>
-);
+  integrations: any[];
+}) {
+  const finalIntegrations = initialIntegrations.map((integration) => {
+    const existingIntegration = integrations.find(
+      (i: any) => i?.name?.toLowerCase() === integration.name?.toLowerCase()
+    );
 
-export default function IntegrationsTab() {
+    return {
+      ...integration,
+      status: existingIntegration?.status || "not_connected",
+    };
+  });
+
   return (
     <div className="grid gap-6">
       <Card>
@@ -95,24 +59,85 @@ export default function IntegrationsTab() {
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {integrations.map((integration) => (
-              <IntegrationCard key={integration.name} {...integration} />
+            {finalIntegrations.map((integration) => (
+              <IntegrationCard
+                key={integration.name}
+                {...integration}
+                onConnect={() => {}}
+                isPending={false}
+              />
             ))}
-            <Card className="flex items-center justify-center border-dashed">
+            {/* <Card className="flex items-center justify-center border-dashed">
               <div className="text-center">
                 <PlusCircle className="mx-auto h-8 w-8 text-muted-foreground" />
                 <h3 className="mt-2 text-sm font-semibold">Add Integration</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Connect a new service
-                </p>
-                <Button variant="outline" size="sm" className="mt-4">
-                  Browse Integrations
-                </Button>
+                <p className="mt-1 text-sm text-muted-foreground">Connect a new service</p>
+                <Button variant="outline" size="sm" className="mt-4">Browse Integrations</Button>
               </div>
-            </Card>
+            </Card> */}
           </div>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function IntegrationCard(integration: any) {
+  // const handleAuth = async () => {
+  //   const response = await client.get("api/v1/google/auth");
+  //   console.log(response);
+  // };
+  const integrationStatus =
+    integration.status === "success"
+      ? "Connected"
+      : integration.status === "failed"
+        ? "Failed"
+        : "Not Connected";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{integration.name}</CardTitle>
+        <CardDescription>{integration.category}</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center mb-4">
+          <span
+            className={cn(
+              "h-2 w-2 rounded-full mr-2",
+              integration.status === "success"
+                ? "bg-green-500"
+                : integration.status === "failed"
+                  ? "bg-red-500"
+                  : "bg-gray-500"
+            )}
+          />
+          <span className="text-sm font-medium">{integrationStatus}</span>
+        </div>
+        <div className="flex gap-2">
+          {integration?.status?.toLowerCase() !== "success" && (
+            <Button
+              size="sm"
+              asChild
+              className={cn(
+                "text-white",
+                !integration.allowCollection &&
+                  "cursor-not-allowed bg-black/70 hover:bg-black/70"
+              )}
+              disabled={!integration.allowCollection}
+            >
+              {integration.allowCollection ? (
+                <Link
+                  href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${integration.path}`}
+                >
+                  connect
+                </Link>
+              ) : (
+                <span>Not Allowed</span>
+              )}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

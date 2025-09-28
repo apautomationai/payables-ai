@@ -1,12 +1,13 @@
 import jwt, { Secret, SignOptions } from "jsonwebtoken";
-import crypto from 'crypto';
 
-
-// const JWT_SECRET = process.env.JWT_SECRET as string;
-const JWT_SECRET =  crypto.randomBytes(64).toString('hex') as string;
+const JWT_SECRET = process.env.JWT_SECRET as string;
+// export const JWT_SECRET =  crypto.randomBytes(64).toString('hex') as string;
 if (!JWT_SECRET) throw new Error("JWT_SECRET not set");
 
-export const signJwt = (payload: object, expiresIn: string | number = "1h") => {
+export const signJwt = (
+  payload: object,
+  expiresIn: string | number = "30d"
+) => {
   return jwt.sign(payload, JWT_SECRET as Secret, { expiresIn } as SignOptions);
 };
 

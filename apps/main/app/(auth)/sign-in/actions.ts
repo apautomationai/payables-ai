@@ -1,53 +1,136 @@
 "use server";
 
-import { z } from "zod";
 import { SignInSchema } from "@/lib/validators";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-// This is the shape of the state that will be returned from our server action
 export type SignInFormState = {
   message: string;
   errors?: {
     email?: string[];
     password?: string[];
+    _form?: string[];
   };
   success: boolean;
+  requiresTwoFactor?: boolean;
+  redirectTo?: string;
+  timestamp?: number;
 };
 
-// The server action itself
 export async function signInAction(
-  prevState: SignInFormState,
+  prevState: SignInFormState | null,
   formData: FormData
 ): Promise<SignInFormState> {
-  // 1. Convert FormData to a plain object
-  const rawFormData = Object.fromEntries(formData.entries());
+  const timestamp = Date.now();
 
-  // 2. Validate the data on the server using your Zod schema
-  const validatedFields = SignInSchema.safeParse(rawFormData);
+  const validatedFields = SignInSchema.safeParse(
+    Object.fromEntries(formData.entries())
+  );
 
-  // 3. If validation fails, return the errors
   if (!validatedFields.success) {
     return {
-      message: "Validation failed. Please check the fields.",
+      message: "Validation failed",
       errors: validatedFields.error.flatten().fieldErrors,
       success: false,
+      timestamp,
     };
   }
 
-  // 4. If validation succeeds, process the data
   const { email, password } = validatedFields.data;
 
-  // The output will now appear in your terminal's server console, not the browser console.
-  console.log("Server Action: Successfully validated sign-in data:", {
-    email,
-    password,
-  });
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/login`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      }
+    );
 
-  // In a real application, you would handle the actual authentication here.
-  // For example, querying your database or calling an auth service.
+    const data = await response.json();
 
-  // 5. Return a success message
-  return {
-    message: "Sign-in successful! Data logged on the server.",
-    success: true,
-  };
+    // Handle non-200 responses
+    if (!response.ok) {
+      // Handle various error scenarios from the API
+      if (response.status === 403 && data.requiresTwoFactor) {
+        return {
+          message: "Two-factor authentication required",
+          requiresTwoFactor: true,
+          success: false,
+          timestamp,
+        };
+      }
+      if (response.status === 423) {
+        return {
+          message: data.message || "Account is locked.",
+          errors: { _form: [data.message || "Account is locked"] },
+          success: false,
+          timestamp,
+        };
+      }
+      return {
+        message: data.message || "Invalid email or password",
+        errors: {
+          _form: [data.message || "Invalid email or password"],
+          ...(data.errors || {}),
+        },
+        success: false,
+        timestamp,
+      };
+    }
+
+    // Handle successful login
+    if (data.token) {
+      const cookieStore = await cookies();
+
+      // Set the token in an HTTP-only cookie for security
+      cookieStore.set("token", data.token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/",
+      });
+
+      // Set user ID in a separate cookie for client-side access
+      if (data.user?.id) {
+        cookieStore.set("userId", String(data.user.id), {
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          path: "/",
+        });
+      }
+
+      // This will throw a special NEXT_REDIRECT error
+      redirect("/dashboard");
+    }
+
+    // Fallback error if the server response is successful but invalid
+    return {
+      message: "Invalid response from server",
+      errors: { _form: ["Invalid response from server"] },
+      success: false,
+      timestamp,
+    };
+  } catch (error: any) {
+    // **THE FIX IS HERE**
+    // The `redirect()` function works by throwing an error. We must catch
+    // that specific error and re-throw it to allow Next.js to complete the redirect.
+    if (error.digest?.startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
+
+    console.error("Sign in error:", error);
+    return {
+      message: "Failed to connect to the server",
+      errors: {
+        _form: ["Failed to connect to the server. Please try again later."],
+      },
+      success: false,
+      timestamp,
+    };
+  }
 }

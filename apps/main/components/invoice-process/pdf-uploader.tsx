@@ -78,7 +78,16 @@ export default function PdfUploader({ onFileUpload }: PdfUploaderProps) {
         accept="application/pdf"
         className="hidden"
         onChange={handleFileChange}
+        id="pdf-upload"
+        aria-label="Upload PDF file"
+        title="Select a PDF file to upload"
       />
+      <label 
+        htmlFor="pdf-upload" 
+        className="sr-only"
+      >
+        Upload PDF file
+      </label>
     </div>
   );
 }

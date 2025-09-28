@@ -1,7 +1,8 @@
+// app/(auth)/sign-up/actions.ts
 "use server";
 
-import { z } from "zod";
 import { signUpSchema } from "@/lib/validators";
+
 
 export type SignUpFormState = {
   message: string;
@@ -9,44 +10,72 @@ export type SignUpFormState = {
     firstName?: string[];
     lastName?: string[];
     email?: string[];
-    // phone?: string[];
     password?: string[];
+    _form?: string[];
   };
   success: boolean;
+  redirectTo?: string;
 };
 
 export async function signUpAction(
-  prevState: SignUpFormState,
+  prevState: SignUpFormState | null,
   formData: FormData
 ): Promise<SignUpFormState> {
-  // Validate the form data
   const validatedFields = signUpSchema.safeParse(
     Object.fromEntries(formData.entries())
   );
 
-  // If validation fails, return the errors
   if (!validatedFields.success) {
     return {
-      message: "Form submission failed. Please check the errors.",
+      message: "Validation failed",
       errors: validatedFields.error.flatten().fieldErrors,
       success: false,
     };
   }
 
-  // --- Handle successful submission ---
-  // For demonstration, we'll log the data to the console.
-  // In a real application, you would create the user in your database here.
-  console.log("New user signed up with the following data:");
-  console.log({
-    firstName: validatedFields.data.firstName,
-    lastName: validatedFields.data.lastName,
-    email: validatedFields.data.email,
-    // phone: validatedFields.data.phone,
-  });
+  const { firstName, lastName, email, password } = validatedFields.data;
 
-  // Return a success message
-  return {
-    message: "Your account has been created successfully!",
-    success: true,
-  };
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/api/v1/users/register`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({ 
+          firstName, 
+          lastName, 
+          email, 
+          password 
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        message: data.message || "Registration failed",
+        errors: { _form: [data.message || "Registration failed"] },
+        success: false,
+      };
+    }
+
+    // On successful registration
+    return {
+      message: "Registration successful! Redirecting to sign in...",
+      success: true,
+      redirectTo: "/sign-in?signup=success",
+    };
+
+  } catch (error) {
+    console.error("Sign-up error:", error);
+    return {
+      message: "Could not connect to the server. Please try again.",
+      errors: { _form: ["An unexpected error occurred."] },
+      success: false,
+    };
+  }
 }

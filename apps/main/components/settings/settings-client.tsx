@@ -9,21 +9,30 @@ import {
 } from "@workspace/ui/components/tabs";
 import PlatformSettingsForm from "./platform-settings";
 import IntegrationsTab from "./integrations-settings";
+import BillingTab from "./billing"; // Import the new component
 
+interface SettingsClientProps {
+    integrations: any[];
+}
 // This is the main client component that manages the state for the tabs.
-export default function SettingsClient() {
+export default function SettingsClient({integrations}: SettingsClientProps) {
   return (
-    <Tabs defaultValue="platform">
+    <Tabs defaultValue="integrations">
       <TabsList>
-        <TabsTrigger value="platform">Platform Settings</TabsTrigger>
+        {/* <TabsTrigger value="platform">Platform Settings</TabsTrigger> */}
         <TabsTrigger value="integrations">Integrations</TabsTrigger>
+        {/* <TabsTrigger value="billing">Billing</TabsTrigger> */}
       </TabsList>
       <TabsContent value="platform">
         <PlatformSettingsForm />
       </TabsContent>
       <TabsContent value="integrations">
-        <IntegrationsTab />
+        <IntegrationsTab integrations={integrations}/>
+      </TabsContent>
+      <TabsContent value="billing">
+        <BillingTab />
       </TabsContent>
     </Tabs>
   );
 }
+

@@ -1,26 +1,37 @@
 import db from "@/lib/db";
-import { hashPassword } from "@/lib/utils/hash";
+import { hashPassword, verifyPassword } from "@/lib/utils/hash";
 import { eq, InferSelectModel } from "drizzle-orm";
-import { usersTable } from "@/models/users.model";
+import { usersModel } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
 import {
   BadRequestError,
   ConflictError,
   InternalServerError,
+  NotFoundError,
 } from "@/helpers/errors";
 
-type User = InferSelectModel<typeof usersTable>;
+type User = InferSelectModel<typeof usersModel>;
 
 type UpdateUser = Partial<User>;
 
 export class UserServices {
-  registerUser = async (
-    firstName: string,
-    lastName: string,
-    profileImage: string,
-    email: string,
-    password: string
-  ) => {
+  registerUser = async ({
+    firstName,
+    lastName,
+    avatar,
+    businessName,
+    email,
+    phone,
+    password,
+  }: {
+    firstName: string;
+    lastName: string;
+    avatar: string;
+    businessName: string;
+    email: string;
+    phone: string;
+    password: string;
+  }) => {
     try {
       if (!firstName || !email || !password) {
         throw new BadRequestError(
@@ -29,13 +40,12 @@ export class UserServices {
       }
 
       // Check if email already exists
-      const existingUser = await db
+      const [existingUser] = await db
         .select()
-        .from(usersTable)
-        .where(eq(usersTable.email, email))
-        .limit(1)
-        .then((r) => r[0]);
+        .from(usersModel)
+        .where(eq(usersModel.email, email));
       console.log("use exists", existingUser);
+
       if (existingUser) {
         throw new ConflictError("Email already in use");
       }
@@ -45,8 +55,17 @@ export class UserServices {
 
       // Insert the new user
       const inserted = await db
-        .insert(usersTable)
-        .values({ firstName, lastName, profileImage, email, passwordHash })
+        .insert(usersModel)
+        //@ts-ignore
+        .values({
+          firstName,
+          lastName,
+          avatar,
+          businessName,
+          email,
+          phone,
+          passwordHash,
+        })
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
@@ -59,8 +78,9 @@ export class UserServices {
           id: createdUser.id,
           firstName: createdUser.firstName,
           lastName: createdUser.lastName,
-          profileImage: createdUser.profileImage,
+          avatar: createdUser.avatar,
           email: createdUser.email,
+          phone: createdUser.phone,
         },
         token,
       };
@@ -70,22 +90,38 @@ export class UserServices {
   };
   getUsers = async () => {
     try {
-      const allUsers = await db.select().from(usersTable);
+      const allUsers = await db.select().from(usersModel);
 
       return allUsers;
     } catch (error) {
       return [];
     }
   };
-  updateUser = async (email: string, userData: UpdateUser) => {
-    if (!email) {
-      throw new BadRequestError("Email is required");
-    }
+  getUserWithId = async (userId: number) => {
     try {
+      const user = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+      return user;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "No user found");
+    }
+  };
+  updateUser = async (userId: number, userData: UpdateUser) => {
+    try {
+      const [user] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
       const updatedUser = await db
-        .update(usersTable)
+        .update(usersModel)
         .set(userData)
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.id, userId))
         .returning();
       return updatedUser;
     } catch (error: any) {
@@ -99,9 +135,9 @@ export class UserServices {
   updateLastLogin = async (email: string) => {
     try {
       const updatedLogin = await db
-        .update(usersTable)
+        .update(usersModel)
         .set({ lastLogin: new Date() })
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.email, email))
         .returning();
       console.log(updatedLogin);
       return updatedLogin;
@@ -120,9 +156,9 @@ export class UserServices {
 
     try {
       const newPassword = await db
-        .update(usersTable)
+        .update(usersModel)
         .set({ passwordHash })
-        .where(eq(usersTable.email, email))
+        .where(eq(usersModel.email, email))
         .returning();
 
       return newPassword;
@@ -131,6 +167,38 @@ export class UserServices {
         throw new InternalServerError("Users table not found in the database");
       }
       throw error;
+    }
+  };
+
+  changePassword = async (
+    userId: number,
+    oldPassword: string,
+    newPassword: string
+  ) => {
+    try {
+      const [user] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+      //@ts-ignore
+      const isMatch = await verifyPassword(oldPassword, user.passwordHash);
+      if (!isMatch) {
+        throw new BadRequestError("Old password is incorrect");
+      }
+      const hashed = await hashPassword(newPassword);
+
+      // 4. Update password
+      const response = await db
+        .update(usersModel)
+        .set({ passwordHash: hashed })
+        .where(eq(usersModel.id, userId));
+      return response;
+    } catch (error: any) {
+      throw new BadRequestError(error.message);
     }
   };
 }

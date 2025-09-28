@@ -122,9 +122,6 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));

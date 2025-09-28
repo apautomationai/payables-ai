@@ -1,6 +1,9 @@
-"use client";
+"use client"
 
-import { motion } from "framer-motion";
+import { Brain, Scan, Link2, CreditCard, Database, Bell  
+} from 'lucide-react';
+import { motion } from 'framer-motion'
+
 
 export function AnimatedRocket() {
   return (
@@ -12,12 +15,12 @@ export function AnimatedRocket() {
       xmlns="http://www.w3.org/2000/svg"
       animate={{
         y: [0, -10, 0],
-        rotate: [0, 5, -5, 0],
+        rotate: [0, 5, -5, 0]
       }}
       transition={{
         duration: 3,
         repeat: Infinity,
-        ease: "easeInOut",
+        ease: "easeInOut"
       }}
       className="drop-shadow-lg"
     >
@@ -50,7 +53,7 @@ export function AnimatedRocket() {
         </linearGradient>
       </defs>
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedChart() {
@@ -105,7 +108,7 @@ export function AnimatedChart() {
         transition={{ duration: 1.5, repeat: Infinity, delay: 0.6 }}
       />
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedShield() {
@@ -116,9 +119,9 @@ export function AnimatedShield() {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      animate={{
+      animate={{ 
         scale: [1, 1.05, 1],
-        rotate: [0, 2, -2, 0],
+        rotate: [0, 2, -2, 0]
       }}
       transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
     >
@@ -145,7 +148,7 @@ export function AnimatedShield() {
         </linearGradient>
       </defs>
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedUsers() {
@@ -188,7 +191,7 @@ export function AnimatedUsers() {
         transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
       />
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedWorkflow() {
@@ -243,7 +246,7 @@ export function AnimatedWorkflow() {
         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
       />
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedClock() {
@@ -299,7 +302,7 @@ export function AnimatedClock() {
         </linearGradient>
       </defs>
     </motion.svg>
-  );
+  )
 }
 
 export function AnimatedLightning() {
@@ -310,18 +313,18 @@ export function AnimatedLightning() {
       viewBox="0 0 100 100"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      animate={{
+      animate={{ 
         scale: [1, 1.1, 1],
-        rotate: [0, 5, -5, 0],
+        rotate: [0, 5, -5, 0]
       }}
       transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
     >
       <motion.path
         d="M55 10L30 45H45L40 90L70 55H55L55 10Z"
         fill="url(#lightningGradient)"
-        animate={{
+        animate={{ 
           opacity: [0.8, 1, 0.8],
-          filter: ["brightness(1)", "brightness(1.2)", "brightness(1)"],
+          filter: ["brightness(1)", "brightness(1.2)", "brightness(1)"]
         }}
         transition={{ duration: 1, repeat: Infinity }}
       />
@@ -333,30 +336,24 @@ export function AnimatedLightning() {
         stroke="#F59E0B"
         strokeWidth="2"
         strokeDasharray="8 8"
-        animate={{
+        animate={{ 
           rotate: [0, 360],
-          strokeDashoffset: [0, 16],
+          strokeDashoffset: [0, 16]
         }}
-        transition={{
+        transition={{ 
           rotate: { duration: 3, repeat: Infinity, ease: "linear" },
-          strokeDashoffset: { duration: 1, repeat: Infinity, ease: "linear" },
+          strokeDashoffset: { duration: 1, repeat: Infinity, ease: "linear" }
         }}
         opacity="0.3"
       />
       <defs>
-        <linearGradient
-          id="lightningGradient"
-          x1="0%"
-          y1="0%"
-          x2="100%"
-          y2="100%"
-        >
+        <linearGradient id="lightningGradient" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#F59E0B" />
           <stop offset="100%" stopColor="#D97706" />
         </linearGradient>
       </defs>
     </motion.svg>
-  );
+  )
 }
 
 export function ProfessionalWave() {
@@ -384,17 +381,17 @@ export function ProfessionalWave() {
           d: [
             "M0,100 C300,150 600,50 900,100 C1050,125 1150,75 1200,100 L1200,200 L0,200 Z",
             "M0,120 C300,70 600,150 900,80 C1050,55 1150,125 1200,90 L1200,200 L0,200 Z",
-            "M0,100 C300,150 600,50 900,100 C1050,125 1150,75 1200,100 L1200,200 L0,200 Z",
-          ],
+            "M0,100 C300,150 600,50 900,100 C1050,125 1150,75 1200,100 L1200,200 L0,200 Z"
+          ]
         }}
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: "easeInOut"
         }}
       />
     </motion.svg>
-  );
+  )
 }
 
 export function FloatingElements() {
@@ -404,24 +401,16 @@ export function FloatingElements() {
         className="absolute top-20 left-10"
         animate={{
           y: [0, -20, 0],
-          rotate: [0, 5, 0],
+          rotate: [0, 5, 0]
         }}
         transition={{
           duration: 6,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: "easeInOut"
         }}
       >
         <svg width="60" height="60" viewBox="0 0 60 60" className="opacity-20">
-          <circle
-            cx="30"
-            cy="30"
-            r="25"
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="2"
-            strokeDasharray="5,5"
-          >
+          <circle cx="30" cy="30" r="25" fill="none" stroke="#3B82F6" strokeWidth="2" strokeDasharray="5,5">
             <animateTransform
               attributeName="transform"
               type="rotate"
@@ -431,12 +420,7 @@ export function FloatingElements() {
             />
           </circle>
           <circle cx="30" cy="30" r="8" fill="#10B981" opacity="0.6">
-            <animate
-              attributeName="r"
-              values="8;12;8"
-              dur="3s"
-              repeatCount="indefinite"
-            />
+            <animate attributeName="r" values="8;12;8" dur="3s" repeatCount="indefinite" />
           </circle>
         </svg>
       </motion.div>
@@ -445,22 +429,17 @@ export function FloatingElements() {
         className="absolute top-40 right-20"
         animate={{
           y: [0, 15, 0],
-          x: [0, -10, 0],
+          x: [0, -10, 0]
         }}
         transition={{
           duration: 8,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 2,
+          delay: 2
         }}
       >
         <svg width="80" height="80" viewBox="0 0 80 80" className="opacity-15">
-          <polygon
-            points="40,10 60,30 40,50 20,30"
-            fill="none"
-            stroke="#8B5CF6"
-            strokeWidth="2"
-          >
+          <polygon points="40,10 60,30 40,50 20,30" fill="none" stroke="#8B5CF6" strokeWidth="2">
             <animateTransform
               attributeName="transform"
               type="rotate"
@@ -470,12 +449,7 @@ export function FloatingElements() {
             />
           </polygon>
           <circle cx="40" cy="40" r="15" fill="#F59E0B" opacity="0.3">
-            <animate
-              attributeName="opacity"
-              values="0.3;0.7;0.3"
-              dur="4s"
-              repeatCount="indefinite"
-            />
+            <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
           </circle>
         </svg>
       </motion.div>
@@ -484,45 +458,26 @@ export function FloatingElements() {
         className="absolute bottom-32 left-1/4"
         animate={{
           y: [0, -25, 0],
-          rotate: [0, -10, 0],
+          rotate: [0, -10, 0]
         }}
         transition={{
           duration: 7,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 4,
+          delay: 4
         }}
       >
         <svg width="50" height="50" viewBox="0 0 50 50" className="opacity-25">
-          <rect
-            x="15"
-            y="15"
-            width="20"
-            height="20"
-            fill="none"
-            stroke="#EF4444"
-            strokeWidth="2"
-            rx="5"
-          >
-            <animate
-              attributeName="stroke-width"
-              values="2;4;2"
-              dur="3s"
-              repeatCount="indefinite"
-            />
+          <rect x="15" y="15" width="20" height="20" fill="none" stroke="#EF4444" strokeWidth="2" rx="5">
+            <animate attributeName="stroke-width" values="2;4;2" dur="3s" repeatCount="indefinite" />
           </rect>
           <circle cx="25" cy="25" r="5" fill="#10B981">
-            <animate
-              attributeName="r"
-              values="5;8;5"
-              dur="2s"
-              repeatCount="indefinite"
-            />
+            <animate attributeName="r" values="5;8;5" dur="2s" repeatCount="indefinite" />
           </circle>
         </svg>
       </motion.div>
     </div>
-  );
+  )
 }
 
 export function GeometricPattern() {
@@ -530,24 +485,14 @@ export function GeometricPattern() {
     <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-5">
       <svg width="100%" height="100%" viewBox="0 0 400 400">
         <defs>
-          <pattern
-            id="grid"
-            width="40"
-            height="40"
-            patternUnits="userSpaceOnUse"
-          >
-            <path
-              d="M 40 0 L 0 0 0 40"
-              fill="none"
-              stroke="#3B82F6"
-              strokeWidth="1"
-            />
+          <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+            <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#3B82F6" strokeWidth="1"/>
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#grid)" />
       </svg>
     </div>
-  );
+  )
 }
 
 export function ProfessionalIcons() {
@@ -558,49 +503,19 @@ export function ProfessionalIcons() {
         className="absolute top-16 right-16"
         animate={{
           y: [0, -15, 0],
-          rotate: [0, 3, 0],
+          rotate: [0, 3, 0]
         }}
         transition={{
           duration: 5,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: "easeInOut"
         }}
       >
         <svg width="40" height="40" viewBox="0 0 40 40" className="opacity-20">
-          <rect
-            x="8"
-            y="6"
-            width="24"
-            height="28"
-            rx="2"
-            fill="none"
-            stroke="#3B82F6"
-            strokeWidth="2"
-          />
-          <line
-            x1="12"
-            y1="14"
-            x2="28"
-            y2="14"
-            stroke="#10B981"
-            strokeWidth="2"
-          />
-          <line
-            x1="12"
-            y1="20"
-            x2="24"
-            y2="20"
-            stroke="#10B981"
-            strokeWidth="2"
-          />
-          <line
-            x1="12"
-            y1="26"
-            x2="20"
-            y2="26"
-            stroke="#10B981"
-            strokeWidth="2"
-          />
+          <rect x="8" y="6" width="24" height="28" rx="2" fill="none" stroke="#3B82F6" strokeWidth="2"/>
+          <line x1="12" y1="14" x2="28" y2="14" stroke="#10B981" strokeWidth="2"/>
+          <line x1="12" y1="20" x2="24" y2="20" stroke="#10B981" strokeWidth="2"/>
+          <line x1="12" y1="26" x2="20" y2="26" stroke="#10B981" strokeWidth="2"/>
         </svg>
       </motion.div>
 
@@ -609,56 +524,21 @@ export function ProfessionalIcons() {
         className="absolute bottom-20 left-16"
         animate={{
           y: [0, 12, 0],
-          x: [0, 8, 0],
+          x: [0, 8, 0]
         }}
         transition={{
           duration: 6,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 1,
+          delay: 1
         }}
       >
         <svg width="45" height="45" viewBox="0 0 45 45" className="opacity-15">
-          <rect
-            x="8"
-            y="25"
-            width="6"
-            height="12"
-            fill="#8B5CF6"
-            opacity="0.6"
-          />
-          <rect
-            x="18"
-            y="15"
-            width="6"
-            height="22"
-            fill="#3B82F6"
-            opacity="0.6"
-          />
-          <rect
-            x="28"
-            y="20"
-            width="6"
-            height="17"
-            fill="#10B981"
-            opacity="0.6"
-          />
-          <line
-            x1="5"
-            y1="40"
-            x2="40"
-            y2="40"
-            stroke="#6B7280"
-            strokeWidth="2"
-          />
-          <line
-            x1="5"
-            y1="40"
-            x2="5"
-            y2="10"
-            stroke="#6B7280"
-            strokeWidth="2"
-          />
+          <rect x="8" y="25" width="6" height="12" fill="#8B5CF6" opacity="0.6"/>
+          <rect x="18" y="15" width="6" height="22" fill="#3B82F6" opacity="0.6"/>
+          <rect x="28" y="20" width="6" height="17" fill="#10B981" opacity="0.6"/>
+          <line x1="5" y1="40" x2="40" y2="40" stroke="#6B7280" strokeWidth="2"/>
+          <line x1="5" y1="40" x2="5" y2="10" stroke="#6B7280" strokeWidth="2"/>
         </svg>
       </motion.div>
 
@@ -666,35 +546,24 @@ export function ProfessionalIcons() {
       <motion.div
         className="absolute top-1/3 left-8"
         animate={{
-          rotate: [0, 360],
+          rotate: [0, 360]
         }}
         transition={{
           duration: 20,
           repeat: Infinity,
-          ease: "linear",
+          ease: "linear"
         }}
       >
         <svg width="35" height="35" viewBox="0 0 35 35" className="opacity-10">
-          <path d="M17.5 12.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" fill="#F59E0B" />
-          <path
-            d="M17.5 2.5l2.5 5h5l-2.5 7.5 7.5 2.5v5l-7.5 2.5 2.5 7.5h-5l-2.5-5-2.5 5h-5l2.5-7.5L5 25v-5l7.5-2.5L10 10h5l2.5-7.5z"
-            fill="none"
-            stroke="#EF4444"
-            strokeWidth="1.5"
-          />
+          <path d="M17.5 12.5a5 5 0 1 0 0 10 5 5 0 0 0 0-10z" fill="#F59E0B"/>
+          <path d="M17.5 2.5l2.5 5h5l-2.5 7.5 7.5 2.5v5l-7.5 2.5 2.5 7.5h-5l-2.5-5-2.5 5h-5l2.5-7.5L5 25v-5l7.5-2.5L10 10h5l2.5-7.5z" fill="none" stroke="#EF4444" strokeWidth="1.5"/>
         </svg>
       </motion.div>
     </div>
-  );
+  )
 }
 
-export function PulsingOrb({
-  color = "#3B82F6",
-  size = 40,
-}: {
-  color?: string;
-  size?: number;
-}) {
+export function PulsingOrb({ color = "#3B82F6", size = 40 }: { color?: string; size?: number }) {
   return (
     <motion.div
       className="relative flex items-center justify-center"
@@ -702,58 +571,318 @@ export function PulsingOrb({
     >
       <motion.div
         className="absolute rounded-full"
-        style={{
+        style={{ 
           width: size,
           height: size,
           backgroundColor: color,
-          opacity: 0.2,
+          opacity: 0.2
         }}
-        animate={{
+        animate={{ 
           scale: [1, 1.5, 1],
-          opacity: [0.2, 0.1, 0.2],
+          opacity: [0.2, 0.1, 0.2]
         }}
-        transition={{
+        transition={{ 
           duration: 2,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: "easeInOut"
         }}
       />
       <motion.div
         className="absolute rounded-full"
-        style={{
+        style={{ 
           width: size * 0.7,
           height: size * 0.7,
           backgroundColor: color,
-          opacity: 0.4,
+          opacity: 0.4
         }}
-        animate={{
+        animate={{ 
           scale: [1, 1.3, 1],
-          opacity: [0.4, 0.2, 0.4],
+          opacity: [0.4, 0.2, 0.4]
         }}
-        transition={{
+        transition={{ 
           duration: 2,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 0.3,
+          delay: 0.3
         }}
       />
       <motion.div
         className="rounded-full"
-        style={{
+        style={{ 
           width: size * 0.4,
           height: size * 0.4,
-          backgroundColor: color,
+          backgroundColor: color
         }}
-        animate={{
-          scale: [1, 1.1, 1],
+        animate={{ 
+          scale: [1, 1.1, 1]
         }}
-        transition={{
+        transition={{ 
           duration: 2,
           repeat: Infinity,
           ease: "easeInOut",
-          delay: 0.6,
+          delay: 0.6
         }}
       />
     </motion.div>
-  );
+  )
+}
+
+// New AP-specific animated icons
+export function AnimatedEmail() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          scale: [1, 1.1, 1],
+          rotate: [0, 5, -5, 0]
+        }}
+        transition={{ 
+          duration: 3, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <Scan className="w-full h-full text-blue-500" />
+      </motion.div>
+      <motion.div
+        className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"
+        animate={{ 
+          scale: [0, 1, 0],
+          opacity: [0, 1, 0]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      />
+    </motion.div>
+  )
+}
+
+export function AnimatedBrain() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          scale: [1, 1.05, 1],
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <Brain className="w-full h-full text-purple-500" />
+      </motion.div>
+      <motion.div
+        className="absolute top-2 left-2 w-2 h-2 bg-yellow-400 rounded-full"
+        animate={{ 
+          opacity: [0, 1, 0],
+          scale: [0.5, 1, 0.5]
+        }}
+        transition={{ 
+          duration: 1.5, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 0
+        }}
+      />
+      <motion.div
+        className="absolute top-4 right-3 w-1.5 h-1.5 bg-blue-400 rounded-full"
+        animate={{ 
+          opacity: [0, 1, 0],
+          scale: [0.5, 1, 0.5]
+        }}
+        transition={{ 
+          duration: 1.5, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 0.5
+        }}
+      />
+      <motion.div
+        className="absolute bottom-3 left-4 w-1 h-1 bg-green-400 rounded-full"
+        animate={{ 
+          opacity: [0, 1, 0],
+          scale: [0.5, 1, 0.5]
+        }}
+        transition={{ 
+          duration: 1.5, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 1
+        }}
+      />
+    </motion.div>
+  )
+}
+
+export function AnimatedIntegration() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          rotate: [0, 180, 360]
+        }}
+        transition={{ 
+          duration: 4, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <Link2 className="w-full h-full text-emerald-500" />
+      </motion.div>
+      <motion.div
+        className="absolute inset-0 border-2 border-blue-300 rounded-full"
+        animate={{ 
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.7, 0.3]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      />
+    </motion.div>
+  )
+}
+
+export function AnimatedPayment() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          y: [0, -2, 0],
+          rotateY: [0, 10, 0]
+        }}
+        transition={{ 
+          duration: 2.5, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <CreditCard className="w-full h-full text-green-500" />
+      </motion.div>
+      <motion.div
+        className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full flex items-center justify-center"
+        animate={{ 
+          scale: [0, 1, 0],
+          rotate: [0, 180, 360]
+        }}
+        transition={{ 
+          duration: 3, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <div className="w-2 h-2 bg-white rounded-full" />
+      </motion.div>
+    </motion.div>
+  )
+}
+
+export function AnimatedDatabase() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          scale: [1, 1.05, 1]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <Database className="w-full h-full text-indigo-500" />
+      </motion.div>
+      <motion.div
+        className="absolute top-1 left-1/2 -translate-x-1/2 w-8 h-1 bg-blue-400 rounded-full"
+        animate={{ 
+          scaleX: [0, 1, 0],
+          opacity: [0, 1, 0]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 0
+        }}
+      />
+      <motion.div
+        className="absolute top-3 left-1/2 -translate-x-1/2 w-6 h-1 bg-green-400 rounded-full"
+        animate={{ 
+          scaleX: [0, 1, 0],
+          opacity: [0, 1, 0]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 0.5
+        }}
+      />
+      <motion.div
+        className="absolute top-5 left-1/2 -translate-x-1/2 w-4 h-1 bg-purple-400 rounded-full"
+        animate={{ 
+          scaleX: [0, 1, 0],
+          opacity: [0, 1, 0]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut",
+          delay: 1
+        }}
+      />
+    </motion.div>
+  )
+}
+
+export function AnimatedNotification() {
+  return (
+    <motion.div className="relative w-16 h-16">
+      <motion.div
+        animate={{ 
+          rotate: [-10, 10, -10],
+          scale: [1, 1.1, 1]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        <Bell className="w-full h-full text-orange-500" />
+      </motion.div>
+      <motion.div
+        className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs font-bold"
+        animate={{ 
+          scale: [1, 1.3, 1],
+          rotate: [0, 15, -15, 0]
+        }}
+        transition={{ 
+          duration: 1, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      >
+        !
+      </motion.div>
+      <motion.div
+        className="absolute inset-0 border-2 border-orange-300 rounded-full"
+        animate={{ 
+          scale: [1, 1.5, 1],
+          opacity: [0, 0.5, 0]
+        }}
+        transition={{ 
+          duration: 2, 
+          repeat: Infinity, 
+          ease: "easeInOut" 
+        }}
+      />
+    </motion.div>
+  )
 }

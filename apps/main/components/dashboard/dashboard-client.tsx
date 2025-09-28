@@ -1,71 +1,77 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { Button } from "@workspace/ui/components/button";
-import { Plus, UploadCloud, ListFilter } from "lucide-react";
-import { motion } from "framer-motion";
+import { Attachment } from "@/lib/types";
+import EmptyState from "./empty-state";
+import DashboardDataView from "./dashboard-data-view";
+import { AlertCircle, X } from "lucide-react";
 
 interface DashboardClientProps {
   userName: string;
- 
+  attachments: Attachment[];
+  integrationError: string | null;
 }
 
-export default function DashboardClient({ userName }: DashboardClientProps) {
+const ErrorBanner = ({ message, onClose }: { message: string; onClose: () => void }) => (
+  <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-6 rounded-md">
+    <div className="flex">
+      <div className="flex-shrink-0">
+        <AlertCircle className="h-5 w-5 text-red-400" aria-hidden="true" />
+      </div>
+      <div className="ml-3 flex-1">
+        <p className="text-sm text-red-700">
+          {message} -{" "}
+          <Link href="/settings/integrations" className="font-medium underline hover:text-red-600">
+            Go to Settings
+          </Link>
+        </p>
+      </div>
+      <div className="ml-auto pl-3">
+        <div className="-mx-1.5 -my-1.5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex bg-red-50 rounded-md p-1.5 text-red-500 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-red-50 focus:ring-red-600"
+          >
+            <span className="sr-only">Dismiss</span>
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
 
+export default function DashboardClient({
+  userName,
+  attachments,
+  integrationError,
+}: DashboardClientProps) {
+  const [selectedAttachment, setSelectedAttachment] = useState<Attachment | null>(
+    attachments?.[0] || null
+  );
+  const [showError, setShowError] = useState(!!integrationError);
 
-  // You can use the userId for any client-side operations
- 
+  const handleCloseError = () => {
+    setShowError(false);
+  };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <header className="flex items-center justify-between py-4">
-        <h1 className="text-xl font-semibold text-foreground">
-          Accounts Payable Dashboard
-        </h1>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <ListFilter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Button size="sm" asChild>
-            <Link href="/invoice-review">
-              <Plus className="h-4 w-4 mr-2" />
-              New Invoice
-            </Link>
-          </Button>
-        </div>
-      </header>
-
-      {/* Main Content - Welcome Screen */}
-      <div className="flex-1 flex items-center justify-center">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex justify-center mb-4">
-            <div className="p-4 bg-muted rounded-full">
-              <UploadCloud className="h-8 w-8 text-primary" />
-            </div>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Welcome to PayableAI, {userName}!
-          </h2>
-          <p className="mt-2 text-muted-foreground">
-            You're all set up! Upload your first invoice to get started with
-            automated invoice processing.
-          </p>
-          <Button size="lg" className="mt-6" asChild>
-            <Link href="/invoice-review">
-              <UploadCloud className="h-4 w-4 mr-2" />
-              Upload Your First Invoice
-            </Link>
-          </Button>
-        </motion.div>
-      </div>
+    <div>
+      {showError && integrationError && (
+        <ErrorBanner message={integrationError} onClose={handleCloseError} />
+      )}
+      
+      {!attachments || attachments.length === 0 ? (
+        <EmptyState userName={userName} />
+      ) : (
+        <DashboardDataView
+          attachments={attachments}
+          selectedAttachment={selectedAttachment}
+          onSelectAttachment={setSelectedAttachment}
+        />
+      )}
     </div>
   );
 }

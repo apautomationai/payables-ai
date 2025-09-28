@@ -116,7 +116,7 @@ function IntegrationCard(integration: any) {
             <Button
               size="sm"
               asChild
-              className={cn("text-white", !integration.allowCollection && "cursor-not-allowed bg-black/70 hover:bg-black/70")}
+              className={cn("text-white dark:bg-white dark:text-black", !integration.allowCollection && "cursor-not-allowed bg-black/70 hover:bg-black/70")}
               disabled={!integration.allowCollection}
             >
               {integration.allowCollection ? (

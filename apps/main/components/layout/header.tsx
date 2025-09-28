@@ -133,7 +133,7 @@ export default function Header({
               <Button variant="secondary" size="icon" className="rounded-full">
                 <Avatar>
                   <AvatarImage
-                    src="https://placehold.co/32x32/a7a7a7/ffffff?text=U"
+                    src="https://www.shutterstock.com/image-vector/user-profile-icon-vector-avatar-600nw-2558760599.jpg"
                     alt="User"
                   />
                   <AvatarFallback>U</AvatarFallback>
@@ -178,3 +178,4 @@ export default function Header({
     </header>
   );
 }
+

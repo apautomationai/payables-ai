@@ -48,7 +48,7 @@ import { mockInvoiceDetails } from "@/data/invoice-data";
 
 async function getAttachments() {
   try {
-    const response = await client.get<{ data: Attachment[] }>('api/v1/google/attachments');
+    const response = await client.get<{ data: Attachment[] }>('api/v1/google/attachments', { cache: 'no-store' });
     return response.data || [];
   } catch (error) {
     console.error("Failed to fetch attachments:", error);

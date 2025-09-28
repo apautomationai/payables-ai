@@ -100,34 +100,25 @@ export function Hero() {
            Stop wasting time on manual invoice handling. Automatically capture, track, and pay your invoices — all in one streamlined platform.
           </motion.p>
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
             className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             {isLoggedIn ? (
-              // <Button
-              //   asChild
-              //   variant="outline"
-              //   size="lg"
-              //   className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
-              // >
-              //   <Link href="#demo">
-              //     <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-              //     Watch Demo Video
-              //   </Link>
-              // </Button>
               <Button
-              asChild
-              size="lg"
-              className="bg-gradient-to-r from-blue-600 from-10% via-sky-600 via-30% to-emerald-500 to-90% hover:from-blue-700 not-[]:hover:via-sky-700 hover:to-emerald-700 text-white px-8 py-4 text-lg font-medium rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 group"
-            >
-              <Link href="/sign-up">
-              Try for Free
-                <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </Link>
-            </Button>
+                asChild
+                variant="outline"
+                size="lg"
+                className="px-8 py-4 text-lg font-medium rounded-xl text-black hover:text-black dark:bg-white dark:hover:bg-gray-50 border-gray-300 dark:border-gray-300 hover:border-gray-400 dark:hover:border-gray-400 transition-all duration-300 group"
+              >
+                <Link href="#demo">
+                  <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                  Watch Demo Video
+                </Link>
+              </Button>
+            
             ) : (
               <>
                 <Button
@@ -140,7 +131,7 @@ export function Hero() {
                     <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                   </Link>
                 </Button>
-                {/* <Button
+                <Button
                   asChild
                   variant="outline"
                   size="lg"
@@ -150,12 +141,12 @@ export function Hero() {
                     <Play className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
                     Watch Demo Video
                   </Link>
-                </Button> */}
+                </Button>
               </>
             )}
-          </motion.div>
+          </motion.div> */}
 
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -173,7 +164,7 @@ export function Hero() {
               <Shield className="w-4 h-4" />
               <span>Enterprise Security</span>
             </div>
-          </motion.div>
+          </motion.div> */}
         </div>
 
         {/* Product Preview */}

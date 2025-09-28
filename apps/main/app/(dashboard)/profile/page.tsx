@@ -39,7 +39,7 @@ async function changeUserPassword(
   const { oldPassword, newPassword, confirmPassword } = validatedFields.data;
   
   try {
-    await client.patch('api/v1/users/changePassword', {
+    await client.patch('api/v1/users/change-password', {
       oldPassword,
       newPassword,
       confirmPassword,

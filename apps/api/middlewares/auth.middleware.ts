@@ -5,6 +5,7 @@ import { Request, Response, NextFunction } from "express-serve-static-core";
 
 const jwt = require("jsonwebtoken");
 
+//@ts-ignore
 export const authenticate = async (
   req: Request,
   res: Response,
@@ -43,12 +44,13 @@ export const authenticate = async (
 
     // Attach user to request object
     req.user = user;
+    //@ts-ignore
     req.token = token;
 
     next();
   } catch (error) {
     console.error("Authentication error:", error);
 
-    res.status(500).json({ message: "Authentication failed" });
+    return res.status(500).json({ message: "Authentication failed" });
   }
 };

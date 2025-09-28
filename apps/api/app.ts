@@ -38,9 +38,6 @@ app.use("/api/v1/google", googleRoutes);
 app.use("/api/v1/settings", settingsRoutes);
 
 
-
-
-
 // Apply error handlers
 app.use(notFoundHandler);
 app.use(errorHandler);

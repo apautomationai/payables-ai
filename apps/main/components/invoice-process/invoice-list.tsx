@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useState, useMemo } from "react";
+import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import {
   Card,
   CardContent,
@@ -6,69 +9,121 @@ import {
   CardTitle,
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
-import { Search } from "lucide-react";
-import { InvoiceListItem } from "@/lib/types/invoice";
+import { Search, FileText } from "lucide-react";
+import type { Attachment } from "@/lib/types/invoice";
 import { cn } from "@workspace/ui/lib/utils";
 import PdfUploader from "./pdf-uploader";
+import { formatDistanceToNow } from "date-fns";
 
-const statusColors = {
-  Completed: "text-green-500",
-  Pending: "text-yellow-500",
-  "Requires Attention": "text-red-500",
-};
+// Component for the "Supported" / "Not Supported" status
+const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
+  <div className="flex items-center gap-1.5">
+    <span className={cn("h-2 w-2 rounded-full", isSupported ? "bg-green-500" : "bg-red-500")} />
+    <span className="text-xs text-muted-foreground">
+      {isSupported ? "Supported" : "Not Supported"}
+    </span>
+  </div>
+);
+
+// Component for the "Pending" processing status
+const ProcessingStatus = () => (
+    <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
+      Pending
+    </span>
+);
+
 
 export default function InvoiceList({
-  invoices,
-  selectedInvoice,
-  onSelectInvoice,
+  attachments,
+  selectedAttachment,
+  onSelectAttachment,
   onFileUpload,
 }: {
-  invoices: InvoiceListItem[];
-  selectedInvoice: InvoiceListItem;
-  onSelectInvoice: (invoice: InvoiceListItem) => void;
+  attachments: Attachment[] | null;
+  selectedAttachment: Attachment | null;
+  onSelectAttachment: (attachment: Attachment) => void;
   onFileUpload: (file: File) => void;
 }) {
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const filteredAttachments = useMemo(() => {
+    if (!attachments) return [];
+    if (!searchTerm.trim()) return attachments;
+
+    const lowercasedFilter = searchTerm.toLowerCase();
+    return attachments.filter(
+      (attachment) =>
+        attachment.filename.toLowerCase().includes(lowercasedFilter) ||
+        attachment.id.toLowerCase().includes(lowercasedFilter)
+    );
+  }, [attachments, searchTerm]);
+
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Upload & Review</CardTitle>
         <div className="mt-4">
           <PdfUploader onFileUpload={onFileUpload} />
         </div>
       </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
+      <CardContent className="flex-1 flex flex-col min-h-0">
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Search invoices..." className="pl-8" />
+          <Input
+            placeholder="Search by name or ID..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
         </div>
-        <div className="flex-1 overflow-y-auto pr-2">
-          <h3 className="text-sm font-semibold mb-2">Invoices</h3>
-          <div className="flex flex-col space-y-2">
-            {invoices.map((invoice) => (
-              <button
-                key={invoice.id}
-                onClick={() => onSelectInvoice(invoice)}
-                className={cn(
-                  "rounded-md p-3 text-left transition-colors hover:bg-muted",
-                  selectedInvoice.id === invoice.id && "bg-muted"
-                )}
-              >
-                <p className="font-semibold">{invoice.number}</p>
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span
+        
+        <ScrollArea className="flex-1 -mx-2">
+          <div className="flex flex-col space-y-1 p-2">
+            {filteredAttachments.length > 0 ? (
+              filteredAttachments.map((attachment) => {
+                const isSupported = attachment.mimeType === "application/pdf";
+                return (
+                  <button
+                    key={attachment.id}
+                    onClick={() => onSelectAttachment(attachment)}
                     className={cn(
-                      "font-medium",
-                      statusColors[invoice.status] || "text-muted-foreground"
+                      "flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-muted",
+                      selectedAttachment?.id === attachment.id && "bg-muted"
                     )}
                   >
-                    {invoice.status}
-                  </span>
-                  <span>{invoice.date}</span>
-                </div>
-              </button>
-            ))}
+                    <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      {/* --- TOP ROW --- */}
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-semibold text-sm truncate" title={attachment.filename}>
+                          {attachment.filename}
+                        </p>
+                        <ProcessingStatus />
+                      </div>
+                      {/* --- BOTTOM ROW --- */}
+                      <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
+                        <p className="truncate" title={attachment.id}>
+                          ID: {attachment.id.substring(0, 8)}...
+                        </p>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <SupportStatus isSupported={isSupported} />
+                          <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                          <span title={new Date(attachment.created_at).toLocaleString()}>
+                            {formatDistanceToNow(new Date(attachment.created_at), { addSuffix: true })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })
+            ) : (
+              <div className="text-center text-sm text-muted-foreground py-10">
+                {searchTerm ? "No results found." : "No invoices to display."}
+              </div>
+            )}
           </div>
-        </div>
+        </ScrollArea>
       </CardContent>
     </Card>
   );

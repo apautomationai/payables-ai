@@ -1,9 +1,17 @@
-export type User = {
+export type Attachment = {
   id: string;
-  name: string;
+  userId: number;
   email: string;
-  avatarUrl?: string;
+  filename: string;
+  mimeType: string;
+  sender: string;
+  receiver: string;
+  s3Url: string;
+  created_at: string;
+  updated_at: string;
 };
+
+
 
 export type InvoiceListItem = {
   id: string;

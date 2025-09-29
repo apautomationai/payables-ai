@@ -121,7 +121,7 @@ export function Header() {
               </div>
               <div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Payable.ai
+                  Payables.ai
                 </span>
               </div>
             </Link>

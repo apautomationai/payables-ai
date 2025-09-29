@@ -10,6 +10,8 @@ export type SignUpFormState = {
     firstName?: string[];
     lastName?: string[];
     email?: string[];
+    phone?: string[];
+    businessName?: string[];
     password?: string[];
     _form?: string[];
   };
@@ -33,7 +35,7 @@ export async function signUpAction(
     };
   }
 
-  const { firstName, lastName, email, password } = validatedFields.data;
+  const { firstName, lastName, email, phone, businessName, password } = validatedFields.data;
 
   try {
     const response = await fetch(
@@ -47,7 +49,9 @@ export async function signUpAction(
         body: JSON.stringify({ 
           firstName, 
           lastName, 
-          email, 
+          email,
+          phone,
+          businessName, 
           password 
         }),
       }

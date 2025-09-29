@@ -1,19 +1,22 @@
-
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+
 const protectedRoutes = [
   "/dashboard",
   "/invoice-review",
   "/settings",
   "/profile",
 ];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get('token')?.value;
+
   // Check if the current route is protected
-  const isProtectedRoute = protectedRoutes.some(route =>
+  const isProtectedRoute = protectedRoutes.some(route => 
     pathname.startsWith(route)
   );
+
   // If it's a protected route and there's no token, redirect to sign-in
   if (isProtectedRoute && !token) {
     const signInUrl = new URL('/sign-in', request.url);
@@ -21,15 +24,19 @@ export async function middleware(request: NextRequest) {
     signInUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(signInUrl);
   }
+
   // If user is logged in and tries to access auth pages, redirect to dashboard
-  const isAuthPage = ['/sign-in', '/sign-up', '/forgot-password'].some(route =>
+  const isAuthPage = ['/sign-in', '/sign-up', '/forgot-password'].some(route => 
     pathname.startsWith(route)
   );
+  
   if (isAuthPage && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
+
   return NextResponse.next();
 }
+
 // Configure which paths the middleware should run on
 export const config = {
   matcher: [

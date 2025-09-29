@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
-import { eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -131,12 +131,16 @@ export class GoogleServices {
     }
   };
 
-  getAttachments = async (userId: number) => {
+  getAttachments = async (userId: number, page: number, pageSize: number) => {
+    const offset = (page - 1) * pageSize;
     try {
       const attachment = await db
         .select()
         .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.userId, userId));
+        .where(eq(emailAttachmentsModel.userId, userId))
+        .orderBy(asc(emailAttachmentsModel.created_at))
+        .limit(pageSize)
+        .offset(offset);
 
       return attachment;
     } catch (error: any) {

@@ -45,7 +45,7 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const OutlookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const MicrosoftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
     <path fill="#ff5722" d="M22 22H6V6h16v16z"/>
     <path fill="#4caf50" d="M42 22H26V6h16v16z"/>
@@ -145,6 +145,7 @@ function SignInFormComponent() {
           <div className="grid grid-cols-2 gap-3">
             <Button 
               variant="outline" 
+              disabled
               className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
@@ -153,11 +154,12 @@ function SignInFormComponent() {
             </Button>
             <Button 
               variant="outline" 
+              disabled
               className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
-              <OutlookIcon className="mr-2 h-4 w-4 relative z-10" /> 
-              <span className="relative z-10">Outlook</span>
+              <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" /> 
+              <span className="relative z-10">Microsoft</span>
             </Button>
           </div>
 

@@ -22,7 +22,7 @@ const ErrorBanner = ({ message, onClose }: { message: string; onClose: () => voi
       <div className="ml-3 flex-1">
         <p className="text-sm text-red-700">
           {message} -{" "}
-          <Link href="/settings/integrations" className="font-medium underline hover:text-red-600">
+          <Link href="/settings" className="font-medium underline hover:text-red-600">
             Go to Settings
           </Link>
         </p>

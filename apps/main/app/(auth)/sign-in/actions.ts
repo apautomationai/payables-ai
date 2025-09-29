@@ -115,8 +115,6 @@ export async function signInAction(
       timestamp,
     };
   } catch (error: any) {
-    // The `redirect()` function works by throwing an error. We must catch
-    // that specific error and re-throw it to allow Next.js to complete the redirect.
     if (error.digest?.startsWith("NEXT_REDIRECT")) {
       throw error;
     }

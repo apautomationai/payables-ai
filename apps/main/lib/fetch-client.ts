@@ -75,7 +75,7 @@ const request = async <T = unknown>(
       const errorData = (await response
         .json()
         .catch(() => ({ message: response.statusText }))) as unknown;
-      console.error("API Error Response:", errorData);
+      // console.error("API Error Response:", errorData);
       // Throw an error to be caught by the calling function's catch block.
       throw errorData as unknown;
     }
@@ -86,7 +86,7 @@ const request = async <T = unknown>(
     return data;
 
   } catch (error) {
-    console.error("Unexpected Error:", error);
+    // console.error("Unexpected Error:", error);
     // Re-throw the error so it can be handled by the component.
     // This makes sure that both network errors and our custom thrown errors are caught.
     throw error;

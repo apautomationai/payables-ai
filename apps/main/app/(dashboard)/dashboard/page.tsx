@@ -25,8 +25,10 @@ export default async function DashboardPage() {
           : "";
 
       if (errorMessage.includes("No integrations found for this user")) {
+        // Handled error, set for frontend banner
         integrationError = "Connect Email in Settings";
       } else {
+        // FIX: Only log the failure if it is NOT the handled integration error.
         console.error("Failed to fetch user data:", userResult.reason);
       }
     }
@@ -41,8 +43,10 @@ export default async function DashboardPage() {
           : "";
       
       if (errorMessage.includes("No integrations found for this user")) {
+        // Handled error, set for frontend banner
         integrationError = "Connect Email in Settings";
       } else {
+        // FIX: Only log the failure if it is NOT the handled integration error.
         console.error("Failed to fetch attachments:", attachmentsResult.reason);
       }
     }
@@ -52,4 +56,3 @@ export default async function DashboardPage() {
 
   return <DashboardClient userName={userName} attachments={attachments} integrationError={integrationError} />;
 }
-

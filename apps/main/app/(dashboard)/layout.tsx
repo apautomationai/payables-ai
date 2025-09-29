@@ -25,11 +25,12 @@ export default function DashboardLayout({
       )}
     >
       <SideMenuBar isCollapsed={isCollapsed} />
-      {/* This is the key change. By creating a grid layout here, we gain precise
-          control over the header, main content, and footer, preventing any overlap. */}
-      <div className="grid grid-rows-[auto_1fr_auto] h-screen">
+      
+      <div className="flex flex-col max-h-screen overflow-hidden">
         <Header isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
+        
         <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+        
         <Footer />
       </div>
     </div>

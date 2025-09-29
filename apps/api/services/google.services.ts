@@ -7,6 +7,7 @@ import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
+import { integrationsService } from "./integrations.service";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -107,6 +108,9 @@ export class GoogleServices {
               sender,
               receiver,
               s3Url,
+            });
+            await integrationsService.updateIntegration(userId, {
+              lastRead: new Date(),
             });
 
             results.push({

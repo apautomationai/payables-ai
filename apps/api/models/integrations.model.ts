@@ -1,9 +1,21 @@
 import { relations } from "drizzle-orm";
-import { integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 
-
-export const statusEnum = pgEnum("status", ["success", "failed", "not_connected"]);
+export const statusEnum = pgEnum("status", [
+  "success",
+  "failed",
+  "not_connected",
+  "disconnected",
+  "paused"
+]);
 
 export const integrationsModel = pgTable("integrations", {
   id: serial("id").primaryKey(),
@@ -16,11 +28,15 @@ export const integrationsModel = pgTable("integrations", {
   expiryDate: timestamp("expiry_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  lastRead: timestamp("last_read").defaultNow(),
 });
 
-export const integrationsRelations = relations(integrationsModel, ({ one }) => ({
+export const integrationsRelations = relations(
+  integrationsModel,
+  ({ one }) => ({
     user: one(usersModel, {
-        fields: [integrationsModel.userId],
-        references: [usersModel.id],
+      fields: [integrationsModel.userId],
+      references: [usersModel.id],
     }),
-}));
+  })
+);

@@ -11,7 +11,6 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
 import Link from "next/link";
-import client from "@/lib/axios-client";
 
 const initialIntegrations = [
   {
@@ -21,15 +20,16 @@ const initialIntegrations = [
     allowCollection: true,
   },
   {
-    name: "QuickBooks",
-    category: "Accounting & Financial Management",
-    allowCollection: false,
-  },
-  {
     name: "Outlook",
     category: "Email Processing & Automation",
     allowCollection: false,
   },
+  {
+    name: "QuickBooks",
+    category: "Accounting & Financial Management",
+    allowCollection: false,
+  },
+
 ];
 
 export default function IntegrationsTab({
@@ -41,12 +41,14 @@ export default function IntegrationsTab({
     const existingIntegration = integrations.find(
       (i: any) => i?.name?.toLowerCase() === integration.name?.toLowerCase()
     );
-
+    console.log("existingIntegration", existingIntegration);
     return {
       ...integration,
       status: existingIntegration?.status || "not_connected",
     };
   });
+
+  console.log("finalIntegrations", finalIntegrations);
 
   return (
     <div className="grid gap-6">
@@ -83,10 +85,6 @@ export default function IntegrationsTab({
 }
 
 function IntegrationCard(integration: any) {
-  // const handleAuth = async () => {
-  //   const response = await client.get("api/v1/google/auth");
-  //   console.log(response);
-  // };
   const integrationStatus =
     integration.status === "success"
       ? "Connected"
@@ -118,18 +116,14 @@ function IntegrationCard(integration: any) {
             <Button
               size="sm"
               asChild
-              className={cn(
-                "text-white",
-                !integration.allowCollection &&
-                  "cursor-not-allowed bg-black/70 hover:bg-black/70"
-              )}
+              className={cn("text-white dark:bg-white dark:text-black", !integration.allowCollection && "cursor-not-allowed bg-black/70 hover:bg-black/70")}
               disabled={!integration.allowCollection}
             >
               {integration.allowCollection ? (
                 <Link
                   href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${integration.path}`}
                 >
-                  connect
+                  Connect
                 </Link>
               ) : (
                 <span>Not Allowed</span>

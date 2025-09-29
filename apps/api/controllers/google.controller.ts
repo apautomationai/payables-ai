@@ -3,6 +3,9 @@ import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import { google } from "googleapis";
 import { integrationsService } from "@/services/integrations.service";
 import { googleServices } from "@/services/google.services";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client } from "@/helpers/s3upload";
+import { streamToBuffer } from "@/lib/utils/steamToBuffer";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID!,
@@ -103,6 +106,7 @@ export class GoogleController {
     try {
       //@ts-ignore
       const userId = req.user.id;
+      // const userId = 24;
 
       if (!userId) {
         throw new BadRequestError("Need a valid userId");
@@ -110,12 +114,22 @@ export class GoogleController {
 
       const integration = await integrationsService.getIntegrations(userId);
 
-      //@ts-ignore
-      if (!integration?.data || integration.data.length === 0) {
+      if (
+        //@ts-ignore
+        !integration?.data ||
+        //@ts-ignore
+        integration.data.length === 0
+      ) {
         throw new NotFoundError("No integrations found for this user");
       }
       //@ts-ignore
       const integrationInfo = integration?.data[0];
+      if (
+        integrationInfo.name !== "gmail" ||
+        integrationInfo.status !== "success"
+      ) {
+        throw new NotFoundError("Gmail isn't connected");
+      }
 
       const timeStampDate = integrationInfo.expiryDate;
       if (!timeStampDate) {
@@ -178,13 +192,29 @@ export class GoogleController {
   getAttachmentWithId = async (req: Request, res: Response) => {
     try {
       const id = req.params.id;
+      // const id =
+      //   "23e738d3b385ee10adb471e0d030442a1d23678a2252e081f808f9b79b4e13fb";
       if (!id) {
         throw new BadRequestError("No id found");
       }
       const response = await googleServices.getAttachmentWithId(id);
+      const att = response[0];
+      //convert s3Url to attachment
+      const s3Key = att.s3Url!.split(".amazonaws.com/")[1];
+      const command = new GetObjectCommand({
+        Bucket: process.env.S3_BUCKET_NAME!,
+        Key: s3Key,
+      });
+      const s3Object = await s3Client.send(command);
+      //@ts-ignore
+      const buffer = s3Object.Body ? await streamToBuffer(s3Object.Body) : null;
+      const fileData = buffer?.toString("base64") || null;
       const result = {
         status: "success",
-        data: response[0],
+        data: {
+          ...att,
+          fileData,
+        },
       };
       return res.status(200).send(result);
     } catch (error: any) {
@@ -195,6 +225,8 @@ export class GoogleController {
       return result;
     }
   };
+
+
 }
 
 export const googleController = new GoogleController();

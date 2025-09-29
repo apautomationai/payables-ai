@@ -44,7 +44,6 @@ export class UserServices {
         .select()
         .from(usersModel)
         .where(eq(usersModel.email, email));
-      console.log("use exists", existingUser);
 
       if (existingUser) {
         throw new ConflictError("Email already in use");
@@ -139,7 +138,6 @@ export class UserServices {
         .set({ lastLogin: new Date() })
         .where(eq(usersModel.email, email))
         .returning();
-      console.log(updatedLogin);
       return updatedLogin;
     } catch (error: any) {
       throw error;

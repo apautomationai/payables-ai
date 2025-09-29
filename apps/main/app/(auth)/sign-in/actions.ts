@@ -53,7 +53,6 @@ export async function signInAction(
 
     const data = await response.json();
 
-    // Handle non-200 responses
     if (!response.ok) {
       // Handle various error scenarios from the API
       if (response.status === 403 && data.requiresTwoFactor) {
@@ -103,7 +102,7 @@ export async function signInAction(
           path: "/",
         });
       }
-
+      
       // This will throw a special NEXT_REDIRECT error
       redirect("/dashboard");
     }
@@ -116,9 +115,6 @@ export async function signInAction(
       timestamp,
     };
   } catch (error: any) {
-    // **THE FIX IS HERE**
-    // The `redirect()` function works by throwing an error. We must catch
-    // that specific error and re-throw it to allow Next.js to complete the redirect.
     if (error.digest?.startsWith("NEXT_REDIRECT")) {
       throw error;
     }

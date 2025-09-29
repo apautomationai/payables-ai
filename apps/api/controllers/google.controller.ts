@@ -105,8 +105,8 @@ export class GoogleController {
   readEmails = async (req: Request, res: Response) => {
     try {
       //@ts-ignore
-      const userId = req.user.id;
-      // const userId = 24;
+      // const userId = req.user.id;
+      const userId = 24;
 
       if (!userId) {
         throw new BadRequestError("Need a valid userId");

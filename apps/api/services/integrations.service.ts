@@ -22,8 +22,6 @@ class IntegrationsService {
 
       return result;
     } catch (error: any) {
-      console.log("baler error");
-      console.log(error.message);
       const result = {
         success: false,
         message: error.message,
@@ -44,8 +42,6 @@ class IntegrationsService {
           eq(integrationsModel.userId, userId)
         )
         .returning();
-
-      console.log("updatedData", updatesData);
 
       const result = {
         success: true,

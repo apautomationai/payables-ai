@@ -10,26 +10,29 @@ export default function InvoiceReviewClient({
   attachments,
   initialInvoiceDetails,
   currentPage,
+  totalPages, // Accept totalPages prop
 }: {
   attachments: Attachment[];
   initialInvoiceDetails: InvoiceDetails;
   currentPage: number;
+  totalPages: number; // Define prop type
 }) {
   const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
-    attachments.length > 0 ? attachments[0]!.id : null
-  );
+  const [selectedAttachmentId, setSelectedAttachmentId] = useState<
+    string | null
+  >(attachments.length > 0 ? attachments[0]!.id : null);
 
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
     [attachments, selectedAttachmentId]
   );
-  
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
+
+  const [invoiceDetails, setInvoiceDetails] =
+    useState<InvoiceDetails | null>(initialInvoiceDetails);
   const [selectedFields, setSelectedFields] = useState<string[]>(() =>
     initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
   );
@@ -46,10 +49,12 @@ export default function InvoiceReviewClient({
 
   const handleSelectAttachment = (attachment: Attachment) => {
     setSelectedAttachmentId(attachment.id);
-    setUploadedPdfUrl(null); 
+    setUploadedPdfUrl(null);
   };
-  
-  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+
+  const handleDetailsChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     if (!invoiceDetails) return;
     const { name, value } = e.target;
     setInvoiceDetails((prevDetails) =>
@@ -76,34 +81,35 @@ export default function InvoiceReviewClient({
           onSelectAttachment={handleSelectAttachment}
           onFileUpload={handleFileUpload}
           currentPage={currentPage}
+          totalPages={totalPages} // Pass totalPages down
         />
       </div>
       <div className="md:col-span-5">
         {selectedAttachment ? (
-            <PdfViewer
-              attachment={selectedAttachment}
-              pdfUrl={uploadedPdfUrl || selectedAttachment.s3Url}
-            />
+          <PdfViewer
+            attachment={selectedAttachment}
+            pdfUrl={uploadedPdfUrl || selectedAttachment.s3Url}
+          />
         ) : (
           <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-             <p>Select or upload an invoice to begin.</p>
+            <p>Select or upload an invoice to begin.</p>
           </div>
         )}
       </div>
       <div className="md:col-span-4">
         {invoiceDetails ? (
-           <InvoiceDetailsForm
-              invoiceDetails={invoiceDetails}
-              isEditing={isEditing}
-              setIsEditing={setIsEditing}
-              onDetailsChange={handleDetailsChange}
-              selectedFields={selectedFields}
-              setSelectedFields={setSelectedFields}
-            />
+          <InvoiceDetailsForm
+            invoiceDetails={invoiceDetails}
+            isEditing={isEditing}
+            setIsEditing={setIsEditing}
+            onDetailsChange={handleDetailsChange}
+            selectedFields={selectedFields}
+            setSelectedFields={setSelectedFields}
+          />
         ) : (
-           <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-              <p>Could not load invoice details.</p>
-            </div>
+          <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
+            <p>Could not load invoice details.</p>
+          </div>
         )}
       </div>
     </div>

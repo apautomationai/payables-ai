@@ -125,6 +125,27 @@ class IntegrationsService {
       throw new NotFoundError(error.message || "Unable to update status");
     }
   };
+  getStartedReadingAt = async (userId: number, name: string) => {
+    try {
+      const startedReadingAt = await db
+        .select()
+        .from(integrationsModel)
+        .where(
+          and(
+            eq(integrationsModel.userId, userId),
+            eq(integrationsModel.name, name)
+          )
+        );
+
+      return startedReadingAt;
+    } catch (error: any) {
+      const result = {
+        status: false,
+        data: error.message,
+      };
+      return result;
+    }
+  };
 }
 
 export const integrationsService = new IntegrationsService();

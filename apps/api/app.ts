@@ -16,6 +16,7 @@ import helloRouter from "@/routes/hello.route";
 import usersRoutes from "@/routes/users.route";
 import googleRoutes from "@/routes/google.routes";
 import settingsRoutes from "@/routes/settings.route";
+import uploadRoutes from "@/routes/upload.routes"
 
 const app = express();
 
@@ -36,6 +37,8 @@ app.use("/hello", helloRouter);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/google", googleRoutes);
 app.use("/api/v1/settings", settingsRoutes);
+app.use("/api/v1/upload", uploadRoutes);
+
 
 
 // Apply error handlers

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { settingsService } from "@/services/settings.service";
-import { NotFoundError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import { integrationsService } from "@/services/integrations.service";
 
 class SettingsController {
@@ -37,6 +37,35 @@ class SettingsController {
         data: response,
       };
       return res.status(200).send(result);
+    } catch (error: any) {
+      const result = {
+        status: false,
+        data: error.message,
+      };
+      return result;
+    }
+  };
+  getStartedReadingAt = async (req: Request, res: Response) => {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      // const userId = 24;
+      const name = "gmail";
+
+      if (!userId) {
+        throw new BadRequestError("Need a valid userId");
+      }
+
+      const integrations = await integrationsService.getStartedReadingAt(
+        userId,
+        name
+      );
+      const result = {
+        status: "success",
+        //@ts-ignore
+        data: readingStartedAt,
+      };
+      return result;
     } catch (error: any) {
       const result = {
         status: false,

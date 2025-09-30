@@ -128,6 +128,7 @@ export class GoogleServices {
               sender: sender,
               receiver: receiver,
               s3Url: s3Url,
+              provider: "gmail",
             });
           }
         }

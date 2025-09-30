@@ -171,6 +171,8 @@ export class GoogleController {
     if (!userId) {
       throw new BadRequestError("Need a valid userId");
     }
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 20;
     try {
       const integration = await integrationsService.getIntegrations(userId);
 
@@ -178,7 +180,11 @@ export class GoogleController {
       if (!integration?.data || integration.data.length === 0) {
         throw new NotFoundError("No integrations found for this user");
       }
-      const attachments = await googleServices.getAttachments(userId);
+      const attachments = await googleServices.getAttachments(
+        userId,
+        page,
+        pageSize
+      );
       const result = {
         status: "success",
         data: attachments,
@@ -225,8 +231,6 @@ export class GoogleController {
       return result;
     }
   };
-
-
 }
 
 export const googleController = new GoogleController();

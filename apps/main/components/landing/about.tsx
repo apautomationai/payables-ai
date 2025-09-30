@@ -7,9 +7,9 @@ import {
   FileText,
   Target,
   Users,
-  Brain,
+
   ArrowRight,
-  Sparkles,
+ 
   Eye,
 } from "lucide-react";
 import { PulsingOrb } from "./animated-icons";

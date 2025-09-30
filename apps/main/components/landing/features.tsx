@@ -154,10 +154,10 @@ export function Features() {
                   ))}
                 </ul>
 
-                <div className="flex items-center text-blue-600 font-medium text-sm group-hover:text-blue-700 transition-colors duration-300">
+                {/* <div className="flex items-center text-blue-600 font-medium text-sm group-hover:text-blue-700 transition-colors duration-300">
                   Learn more
                   <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
-                </div>
+                </div> */}
               </Card>
             </motion.div>
           ))}

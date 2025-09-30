@@ -151,32 +151,6 @@ const client = {
 
 export default client;
 
-/*
-  // HOW TO USE IT IN YOUR NEXT.JS COMPONENTS/PAGES:
 
-  import client from './path/to/your/client';
-
-  // Example GET request in a Server Component or Client Component
-  const fetchUsers = async () => {
-    try {
-      // The 'next' object allows you to control caching behavior.
-      // For example, revalidate every 60 seconds.
-      const users = await client.get('users', { next: { revalidate: 60 } });
-      console.log(users);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    }
-  };
-
-  // Example POST request in a Client Component
-  const createUser = async (userData) => {
-    try {
-      const newUser = await client.post('users', userData);
-      console.log('User created:', newUser);
-    } catch (error) {
-      console.error("Failed to create user:", error);
-    }
-  };
-*/
 
 

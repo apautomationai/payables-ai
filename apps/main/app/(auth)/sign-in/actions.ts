@@ -17,6 +17,30 @@ export type SignInFormState = {
   timestamp?: number;
 };
 
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  // Extract data from form
+  const email = formData.get('email');
+  const password = formData.get('password');
+  
+  // Basic validation (You should use a proper validator like Zod here)
+  if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
+    return 'Invalid form submission: Email and password are required.';
+  }
+
+  // NOTE: Add your actual authentication and session logic here.
+  // Example placeholder logic:
+  if (email === "test@example.com" && password === "password123") {
+    // console.log("Authentication successful.");
+    
+    return undefined; 
+  } else {
+    return 'Invalid Credentials. Please check your email and password.';
+  }
+}
+
 export async function signInAction(
   prevState: SignInFormState | null,
   formData: FormData

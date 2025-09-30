@@ -152,7 +152,7 @@ export default function AuthLayout({
               </motion.div>
 
               {/* CTA Button */}
-              <motion.div
+              {/* <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.9 }}
@@ -160,7 +160,7 @@ export default function AuthLayout({
               >
                 <Link href="/" className="font-medium">Learn More</Link>
                 <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </motion.div>
+              </motion.div> */}
             </motion.div>
 
            {/* Right Side - Login Form with Glowing Dot Spline */}

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -84,10 +84,17 @@ export class GoogleServices {
             });
             const data = attachment.data.data;
             //hash id
+            const partInfo = `${msg.id}-${part.filename}-${part.mimeType}-${part.body?.size}`;
             const id = crypto
               .createHash("sha256")
-              .update(`${msg.id}-${part.body.attachmentId}`)
+              .update(partInfo)
               .digest("hex");
+
+            const isExists = await googleServices.getAttachmentWithId(id);
+
+            if (isExists.length > 0) {
+              throw new BadRequestError("attachment already exists");
+            }
 
             // upload to S3
             const buffer = Buffer.from(data!, "base64url");
@@ -131,18 +138,23 @@ export class GoogleServices {
     }
   };
 
-  getAttachments = async (userId: number, page: number, pageSize: number) => {
-    const offset = (page - 1) * pageSize;
+  getAttachments = async (userId: number, page: number, limit: number) => {
+    const offset = (page - 1) * limit;
     try {
       const attachment = await db
         .select()
         .from(emailAttachmentsModel)
         .where(eq(emailAttachmentsModel.userId, userId))
         .orderBy(asc(emailAttachmentsModel.created_at))
-        .limit(pageSize)
+        .limit(limit)
         .offset(offset);
+      const [attachmentCount] = await db
+        .select({ count: count() })
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.userId, userId));
+      const totalAttachments = attachmentCount.count;
 
-      return attachment;
+      return [attachment, totalAttachments];
     } catch (error: any) {
       const result = {
         success: false,
@@ -151,7 +163,6 @@ export class GoogleServices {
       return result;
     }
   };
-
   getAttachmentWithId = async (id: string) => {
     try {
       const response = await db

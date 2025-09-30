@@ -9,7 +9,8 @@ interface AttachmentViewerProps {
 export default function AttachmentViewer({ selectedAttachment }: AttachmentViewerProps) {
   return (
     <Card className="flex-1 flex flex-col h-full overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between">
+      {/* --- UPDATED: Reduced padding to increase content height --- */}
+      <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           Invoice Attachment
         </CardTitle>
@@ -23,7 +24,7 @@ export default function AttachmentViewer({ selectedAttachment }: AttachmentViewe
         {selectedAttachment ? (
           <iframe
             src={selectedAttachment.s3Url}
-            className="w-full h-full border-0"
+            className="w-full min-h-[600px] border-0"
             title="Invoice Preview"
           />
         ) : (

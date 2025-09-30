@@ -5,6 +5,6 @@ import { authenticate } from "@/middlewares/auth.middleware";
 const router = Router();
 
 router.get("/integrations", authenticate, settingsController.getIntegrations);
-router.patch("/update-status", settingsController.updateStatus);
+router.patch("/update-status", authenticate, settingsController.updateStatus);
 
 export default router;

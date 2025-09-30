@@ -172,7 +172,7 @@ export class GoogleController {
       throw new BadRequestError("Need a valid userId");
     }
     const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 20;
+    const limit = parseInt(req.query.limit as string) || 20;
     try {
       const integration = await integrationsService.getIntegrations(userId);
 
@@ -180,14 +180,25 @@ export class GoogleController {
       if (!integration?.data || integration.data.length === 0) {
         throw new NotFoundError("No integrations found for this user");
       }
-      const attachments = await googleServices.getAttachments(
+      const attachmentsData = await googleServices.getAttachments(
         userId,
         page,
-        pageSize
+        limit
       );
       const result = {
         status: "success",
-        data: attachments,
+        data: {
+          //@ts-ignore
+          attachments: attachmentsData[0],
+          pagination: {
+            //@ts-ignore
+            totalAttachments: attachmentsData[1] || 0,
+            page,
+            limit,
+            //@ts-ignore
+            totalPages: Math.ceil((attachmentsData[1] || 0) / limit),
+          },
+        },
       };
       res.status(200).send(result);
     } catch (error: any) {
@@ -198,8 +209,6 @@ export class GoogleController {
   getAttachmentWithId = async (req: Request, res: Response) => {
     try {
       const id = req.params.id;
-      // const id =
-      //   "23e738d3b385ee10adb471e0d030442a1d23678a2252e081f808f9b79b4e13fb";
       if (!id) {
         throw new BadRequestError("No id found");
       }

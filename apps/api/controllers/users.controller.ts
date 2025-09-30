@@ -6,7 +6,6 @@ import { NextFunction, Request, Response } from "express";
 import passport from "@/lib/passport";
 import {
   BadRequestError,
-  ConflictError,
   InternalServerError,
   NotFoundError,
 } from "@/helpers/errors";
@@ -40,7 +39,9 @@ export class UserController {
         timestamp: new Date().toISOString(),
       });
     } catch (err: any) {
-      throw new ConflictError(err.message || "Unable to connect to the server");
+      throw new InternalServerError(
+        err.message || "Unable to connect to the server"
+      );
     }
   };
 
@@ -85,10 +86,16 @@ export class UserController {
   getUsers = async (req: Request, res: Response) => {
     try {
       const allUsers = await userServices.getUsers();
+      const result = {
+        success: "success",
+        data: allUsers,
+      };
 
-      return res.status(200).send(allUsers);
-    } catch (error) {
-      return new InternalServerError("Unable to connect to the server");
+      return res.status(200).send(result);
+    } catch (error: any) {
+      return new InternalServerError(
+        error.message || "Unable to connect to the server"
+      );
     }
   };
   getUserWithId = async (req: Request, res: Response) => {

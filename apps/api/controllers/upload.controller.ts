@@ -3,15 +3,8 @@ import { uploadServices } from "@/services/upload.services";
 import { Request, Response } from "express";
 export class UploadController {
   uploadAttachment = async (req: Request, res: Response) => {
-    //@ts-ignore
-    // const userId = req.user.id;
-    const userId = 24;
-    if (!userId) {
-      throw new BadRequestError("Need a valid userId");
-    }
     try {
       const buffer = Buffer.from(req.body!, "base64url");
-      console.log(buffer);
 
       if (!buffer || buffer.length === 0) {
         throw new BadRequestError("Upload an attachment");
@@ -50,8 +43,8 @@ export class UploadController {
   createDbRecord = async (req: Request, res: Response) => {
     try {
       //@ts-ignore
-      // const userId = req.user.id;
-      const userId = 24;
+      const userId = req.user.id;
+      // const userId = 24;
       const bodyData = req.body;
       if (!userId) {
         throw new BadRequestError("Need a valid userId");
@@ -64,7 +57,7 @@ export class UploadController {
         mimeType: bodyData.mimetype,
         s3Url: bodyData.s3Url,
       };
-      console.log(attInfo)
+      console.log(attInfo);
 
       const response = await uploadServices.createDbRecord(attInfo);
       const result = {

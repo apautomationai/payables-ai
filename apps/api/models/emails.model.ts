@@ -1,10 +1,11 @@
 import { relations } from "drizzle-orm";
-import { integer, pgEnum, pgTable, text, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 export const providerEnum = pgEnum("provider", ["local", "gmail", "outlook"]);
 
 export const emailAttachmentsModel = pgTable("email_attachments", {
-  id: text("id").primaryKey(),
+  id: serial("id").primaryKey(),
+  hashId: text("hash_id"),
   userId: integer("user_id").notNull(),
   emailId: text("email_id"),
   filename: text("filename").notNull(),

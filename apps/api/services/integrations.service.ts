@@ -30,17 +30,13 @@ class IntegrationsService {
     }
   }
 
-  async updateIntegration(userId: number, data: any) {
+  async updateIntegration(id: number, data: any) {
     try {
       data.updatedAt = new Date();
       const updatesData = await db
         .update(integrationsModel)
         .set(data)
-        .where(
-          // eq(integrationsModel.id, id),
-          //@ts-ignore
-          eq(integrationsModel.userId, userId)
-        )
+        .where(eq(integrationsModel.id, id))
         .returning();
 
       const result = {
@@ -68,6 +64,23 @@ class IntegrationsService {
       const result = {
         success: true,
         data: integrations,
+      };
+      return result;
+    } catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
+
+  async getAllIntegration() {
+    try {
+      const allIntegrations = await db.select().from(integrationsModel);
+      const result = {
+        success: true,
+        data: allIntegrations,
       };
       return result;
     } catch (error: any) {
@@ -127,7 +140,7 @@ class IntegrationsService {
   };
   getStartedReadingAt = async (userId: number, name: string) => {
     try {
-      const startedReadingAt = await db
+      const [startedReadingAt] = await db
         .select()
         .from(integrationsModel)
         .where(
@@ -137,7 +150,28 @@ class IntegrationsService {
           )
         );
 
-      return startedReadingAt;
+      return startedReadingAt.startReading;
+    } catch (error: any) {
+      const result = {
+        status: false,
+        data: error.message,
+      };
+      return result;
+    }
+  };
+  getLastReadAt = async (userId: number, name: string) => {
+    try {
+      const [lastReadAt] = await db
+        .select()
+        .from(integrationsModel)
+        .where(
+          and(
+            eq(integrationsModel.userId, userId),
+            eq(integrationsModel.name, name)
+          )
+        );
+
+      return lastReadAt.lastRead;
     } catch (error: any) {
       const result = {
         status: false,

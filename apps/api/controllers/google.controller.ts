@@ -104,58 +104,52 @@ export class GoogleController {
 
   readEmails = async (req: Request, res: Response) => {
     try {
-      //@ts-ignore
-      const userId = req.user.id;
-      // const userId = 24;
-
-      if (!userId) {
-        throw new BadRequestError("Need a valid userId");
+      const data: any = await integrationsService.getAllIntegration();
+      if (!data.success) {
+        throw new BadRequestError(data.message as string);
       }
+      const integrations = data.data;
 
-      const integration = await integrationsService.getIntegrations(userId);
-
-      if (
-        //@ts-ignore
-        !integration?.data ||
-        //@ts-ignore
-        integration.data.length === 0
-      ) {
-        throw new NotFoundError("No integrations found for this user");
-      }
-      //@ts-ignore
-      const integrationInfo = integration?.data[0];
-      if (
-        integrationInfo.name !== "gmail" ||
-        integrationInfo.status !== "success"
-      ) {
-        throw new NotFoundError("Gmail isn't connected");
-      }
-
-      const timeStampDate = integrationInfo.expiryDate;
-      if (!timeStampDate) {
-        throw new Error("No expiry date found in database");
-      }
-      const date = new Date(timeStampDate);
-      const expiryDate = date.getTime();
-
-      const tokens = {
-        access_token: integrationInfo.accessToken,
-        refresh_token: integrationInfo.refreshToken,
-        token_type: integrationInfo.tokenType,
-        expiry_date: expiryDate,
-      };
-
-      if (!tokens) {
-        throw new BadRequestError("Need valid tokens");
-      }
-      const attachments = await googleServices.getEmailsWithAttachments(
-        tokens,
-        userId
-      );
       const result = {
         status: "success",
-        data: attachments,
+        data: [],
       };
+
+      for (const integration of integrations) {
+        // const integrationInfo = integration?.data[0];
+        if (integration.name !== "gmail" || integration.status !== "success") {
+          throw new NotFoundError("Gmail isn't connected");
+        }
+
+        const timeStampDate = integration.expiryDate;
+        if (!timeStampDate) {
+          throw new Error("No expiry date found in database");
+        }
+        const date = new Date(timeStampDate);
+        const expiryDate = date.getTime();
+
+        const tokens = {
+          access_token: integration.accessToken,
+          refresh_token: integration.refreshToken,
+          token_type: integration.tokenType,
+          expiry_date: expiryDate,
+        };
+
+        if (!tokens) {
+          throw new BadRequestError("Need valid tokens");
+        }
+
+        const attachments = await googleServices.getEmailsWithAttachments(
+          tokens,
+          integration.userId,
+          integration.id,
+          integration.startReading
+          // "2025-09-01"
+        );
+        //@ts-ignore
+        result.data.push(attachments);
+      }
+
       return res.status(200).send(result);
     } catch (error: any) {
       throw new BadRequestError(

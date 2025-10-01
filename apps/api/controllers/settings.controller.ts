@@ -60,12 +60,21 @@ class SettingsController {
         userId,
         name
       );
+      //@ts-ignore
+      const readingStartedAt = integrations[0]?.startReading;
+      //@ts-ignore
+      const lastReadAt = integrations[0]?.lastRead;
+
+      const readings = {
+        readingStartedAt,
+        lastReadAt,
+      };
       const result = {
         status: "success",
         //@ts-ignore
-        data: readingStartedAt,
+        data: readings,
       };
-      return result;
+      return res.status(200).send(result);
     } catch (error: any) {
       const result = {
         status: false,

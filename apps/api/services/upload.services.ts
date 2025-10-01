@@ -17,7 +17,7 @@ export class UploadServices {
       const existing = await db
         .select()
         .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.id, hash));
+        .where(eq(emailAttachmentsModel.hashId, hash));
 
       if (existing.length > 0) {
         throw new BadRequestError("Attachment already exists in the database");
@@ -42,7 +42,7 @@ export class UploadServices {
       const existing = await db
         .select()
         .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.id, attInfo.id));
+        .where(eq(emailAttachmentsModel.hashId, attInfo.hash));
 
       if (existing.length > 0) {
         throw new BadRequestError("Attachment already exists in the database");
@@ -50,7 +50,7 @@ export class UploadServices {
       const uploadToDb = await db
         .insert(emailAttachmentsModel)
         .values({
-          id: attInfo.id,
+          hashId: attInfo.hash,
           userId: attInfo.userId,
           filename: attInfo.filename,
           mimeType: attInfo.mimeType,

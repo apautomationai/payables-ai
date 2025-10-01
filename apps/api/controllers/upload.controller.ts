@@ -51,7 +51,7 @@ export class UploadController {
       }
 
       const attInfo = {
-        id: bodyData.hash,
+        hash: bodyData.hash,
         userId: userId,
         filename: bodyData.filename,
         mimeType: bodyData.mimetype,

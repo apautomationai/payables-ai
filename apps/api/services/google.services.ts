@@ -50,14 +50,32 @@ export class GoogleServices {
     return oAuth2Client;
   };
 
-  getEmailsWithAttachments = async (tokens: any, userId: number) => {
+  getEmailsWithAttachments = async (
+    tokens: any,
+    userId: number,
+    integrationId: number,
+    startedReadingAt: string 
+  ) => {
     try {
       const auth = this.getOAuthClient(tokens);
       const gmail = google.gmail({ version: "v1", auth });
+      let query = "has:attachment";
+
+ 
+
+      if (!startedReadingAt) {
+        throw new BadRequestError("Select a starting date");
+      }
+      const startDate = new Date(startedReadingAt);
+      if (isNaN(startDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
+      const afterTimestamp = Math.floor(startDate.getTime() / 1000);
+      query = `after:${afterTimestamp} has:attachment`;
 
       const res = await gmail.users.messages.list({
         userId: "me",
-        q: "has:attachment",
+        q: query,
       });
 
       const messages = res.data.messages || [];
@@ -85,12 +103,12 @@ export class GoogleServices {
             const data = attachment.data.data;
             //hash id
             const partInfo = `${msg.id}-${part.filename}-${part.mimeType}-${part.body?.size}`;
-            const id = crypto
+            const hashId = crypto
               .createHash("sha256")
               .update(partInfo)
               .digest("hex");
 
-            const isExists = await googleServices.getAttachmentWithId(id);
+            const isExists = await googleServices.getAttachmentWithId(hashId);
 
             if (isExists.length > 0) {
               throw new BadRequestError("attachment already exists");
@@ -100,28 +118,30 @@ export class GoogleServices {
             const buffer = Buffer.from(data!, "base64url");
             const s3Url = await uploadBufferToS3(
               buffer,
-              `attachments/${id}-${part.filename}`,
+              `attachments/${hashId}-${part.filename}`,
               part.mimeType || "application/pdf"
             );
 
             // insert meta data to database
             //@ts-ignore
             await db.insert(emailAttachmentsModel).values({
-              id,
+              hashId,
               userId,
               emailId: msg.id!,
               filename: part.filename,
               mimeType: part.mimeType || "application/octet-stream",
               sender,
               receiver,
+              provider: "gmail",
               s3Url,
             });
-            await integrationsService.updateIntegration(userId, {
+            await integrationsService.updateIntegration(integrationId, {
               lastRead: new Date(),
+              startReading: new Date(),
             });
 
             results.push({
-              id,
+              hashId,
               emailId: msg.id,
               filename: part.filename,
               mimeType: part.mimeType,
@@ -164,12 +184,12 @@ export class GoogleServices {
       return result;
     }
   };
-  getAttachmentWithId = async (id: string) => {
+  getAttachmentWithId = async (hashId: string) => {
     try {
       const response = await db
         .select()
         .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.id, id));
+        .where(eq(emailAttachmentsModel.hashId, hashId));
       return response;
     } catch (error: any) {
       throw new BadRequestError(error.message || "No attachment found");

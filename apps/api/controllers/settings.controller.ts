@@ -83,6 +83,37 @@ class SettingsController {
       return result;
     }
   };
+
+  async deleteIntegration(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      // const userId = 33;
+      const deleted = await integrationsService.deleteIntegration(
+        userId,
+        "gmail"
+      );
+      if (!deleted.success) {
+        return res.send({
+          success: false,
+          //@ts-ignore
+          error: deleted.message,
+        });
+      }
+
+      return res.send({
+        success: true,
+        //@ts-ignore
+        data: deleted.data,
+      });
+    } catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
 }
 
 export const settingsController = new SettingsController();

@@ -66,6 +66,7 @@ export class UploadServices {
       throw new InternalServerError("Internal server error");
     }
   };
+  
 }
 
 export const uploadServices = new UploadServices();

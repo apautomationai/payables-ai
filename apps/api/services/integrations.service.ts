@@ -180,6 +180,41 @@ class IntegrationsService {
       return result;
     }
   };
+
+  async deleteIntegration(userId: number, name: string) {
+    try {
+      const integrations = await this.getIntegrations(userId);
+      //@ts-ignore
+      const integration = integrations?.data?.find(
+        (int: any) => int.name === name
+      );
+      if (!integration) {
+        throw new NotFoundError(`No ${name} integration found for this user`);
+      }
+      const [deleted] = await db
+        .delete(integrationsModel)
+        //@ts-ignore
+        .where(eq(integrationsModel.id, integration.id))
+        .returning();
+
+      if (!deleted) {
+        return {
+          success: false,
+          error: `No ${name} integration found for this user`,
+        };
+      }
+      return {
+        success: true,
+        data: { message: `Successfully deleted ${name} integration ` },
+      };
+    } catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
 }
 
 export const integrationsService = new IntegrationsService();

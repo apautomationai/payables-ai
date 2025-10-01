@@ -11,5 +11,10 @@ router.get(
   authenticate,
   settingsController.getStartedReadingAt
 );
+router.delete(
+  "/integration",
+  authenticate,
+  settingsController.deleteIntegration
+);
 
 export default router;

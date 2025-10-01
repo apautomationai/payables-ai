@@ -3,11 +3,10 @@ import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { eq } from "drizzle-orm";
-import { BadRequestError } from "@/helpers/errors";
+import { BadRequestError, InternalServerError } from "@/helpers/errors";
 
 export class UploadServices {
   uploadAttachment = async (
-    userId: number,
     buffer: Buffer,
     filename: string,
     mimetype: string
@@ -26,21 +25,45 @@ export class UploadServices {
 
       const key = `attachments/${Date.now()}-${filename}`;
       const s3Url = await uploadBufferToS3(buffer, key, mimetype);
+      const attachmentData = {
+        hash,
+        filename,
+        mimetype,
+        s3Url,
+      };
 
+      return attachmentData;
+    } catch (error: any) {
+      throw error;
+    }
+  };
+  createDbRecord = async (attInfo: any) => {
+    try {
+      const existing = await db
+        .select()
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.id, attInfo.id));
+
+      if (existing.length > 0) {
+        throw new BadRequestError("Attachment already exists in the database");
+      }
       const uploadToDb = await db
         .insert(emailAttachmentsModel)
         .values({
-          id: hash,
-          userId,
-          filename,
-          mimeType: mimetype,
-          s3Url,
+          id: attInfo.id,
+          userId: attInfo.userId,
+          filename: attInfo.filename,
+          mimeType: attInfo.mimeType,
+          s3Url: attInfo.s3Url,
         })
         .returning();
 
       return uploadToDb;
     } catch (error: any) {
-      throw error;
+      if (error.isOperational) {
+        return error.message;
+      }
+      throw new InternalServerError("Internal server error");
     }
   };
 }

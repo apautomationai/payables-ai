@@ -105,7 +105,7 @@ export default function InvoiceDetailsForm({
   const progress = (completedMandatoryFields / mandatoryFields.length) * 100;
 
   return (
-    <Card className="h-[800px] flex flex-col">
+    <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Invoice Information</CardTitle>
       </CardHeader>

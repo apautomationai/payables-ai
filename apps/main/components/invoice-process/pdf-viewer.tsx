@@ -32,7 +32,7 @@ export default function PdfViewer({
   const isViewable = pdfUrl && !pdfUrl.startsWith("/path/to/");
 
   return (
-    <Card className="h-full flex flex-col overflow-hidden">
+    <Card className="h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
         <CardTitle className="truncate text-base">
           Invoice ID: {attachment.id}

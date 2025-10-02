@@ -16,5 +16,6 @@ router.delete(
   authenticate,
   settingsController.deleteIntegration
 );
+router.patch("/update-start", settingsController.updateStartTime);
 
 export default router;

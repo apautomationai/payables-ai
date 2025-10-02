@@ -114,6 +114,34 @@ class SettingsController {
       return result;
     }
   }
+  async updateStartTime(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const startTime = req.body;
+      // const userId = 33;
+      // const startTime = "2025-05-09";
+      if (!userId) {
+        throw new BadRequestError("Need valid userId");
+      }
+      const updateStartTime = await integrationsService.updateStartTime(
+        userId,
+        "gmail",
+        startTime
+      );
+      const result = {
+        success: true,
+        data: updateStartTime,
+      };
+      return res.send(result);
+    } catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
 }
 
 export const settingsController = new SettingsController();

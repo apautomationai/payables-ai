@@ -6,5 +6,16 @@ const router = Router();
 
 router.get("/integrations", authenticate, settingsController.getIntegrations);
 router.patch("/update-status", authenticate, settingsController.updateStatus);
+router.get(
+  "/started-reading",
+  authenticate,
+  settingsController.getStartedReadingAt
+);
+router.delete(
+  "/integration",
+  authenticate,
+  settingsController.deleteIntegration
+);
+router.patch("/update-start", settingsController.updateStartTime);
 
 export default router;

@@ -57,7 +57,7 @@ export class UploadController {
         mimeType: bodyData.mimetype,
         s3Url: bodyData.s3Url,
       };
-      console.log(attInfo);
+      
 
       const response = await uploadServices.createDbRecord(attInfo);
       const result = {

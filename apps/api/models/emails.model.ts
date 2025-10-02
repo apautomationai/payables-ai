@@ -1,6 +1,8 @@
-import { relations } from "drizzle-orm";
+
 import { integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
+import { invoiceModel } from "./invoice.model";
+import { relations } from "drizzle-orm";
 export const providerEnum = pgEnum("provider", ["local", "gmail", "outlook"]);
 
 export const emailAttachmentsModel = pgTable("email_attachments", {
@@ -20,10 +22,11 @@ export const emailAttachmentsModel = pgTable("email_attachments", {
 
 export const emailAttachmentsRelations = relations(
   emailAttachmentsModel,
-  ({ one }) => ({
+  ({ one , many}) => ({
     user: one(usersModel, {
       fields: [emailAttachmentsModel.userId],
       references: [usersModel.id],
     }),
+    invoice : many(invoiceModel)
   })
 );

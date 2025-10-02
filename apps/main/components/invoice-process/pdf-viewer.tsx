@@ -26,31 +26,33 @@ export default function PdfViewer({
   attachment,
   pdfUrl,
 }: {
-  attachment: Attachment;
-  pdfUrl: string;
+  attachment: Attachment | null; // MODIFIED: Allow attachment to be null
+  pdfUrl: string | null;       // MODIFIED: Allow pdfUrl to be null
 }) {
-  const isViewable = pdfUrl && !pdfUrl.startsWith("/path/to/");
-
   return (
     <Card className="h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
         <CardTitle className="truncate text-base">
-          Invoice ID: {attachment.id}
+          {/* MODIFIED: Safely access attachment ID or show fallback text */}
+          {attachment ? `Invoice ID: ${attachment.id}` : "New Invoice Preview"}
         </CardTitle>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href={pdfUrl} target="_blank" rel="noopener noreferrer">
-              <ExternalLink className="h-4 w-4" />
-            </Link>
-          </Button>
+          {pdfUrl && (
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-0 flex flex-col min-h-0">
-        {isViewable ? (
+        {pdfUrl ? (
           <div className="relative h-full w-full">
             <iframe
               src={pdfUrl}
-              title={`PDF Preview for ${attachment.filename}`}
+              // MODIFIED: Safely access filename for the title
+              title={attachment ? `PDF Preview for ${attachment.filename}` : "PDF Preview"}
               className="w-full h-full border-none"
             />
           </div>

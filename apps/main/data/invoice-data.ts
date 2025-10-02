@@ -4,7 +4,10 @@ import { InvoiceListItem, InvoiceDetails } from "../lib/types/invoice";
 const rawInvoices: InvoiceDetails[] = [
   {
     id: "inv-001",
+    userId: "user-001",
     invoiceNumber: "2024-5892",
+    description: "Cloud Hosting Services - Pro Plan",
+    costCode: "12345",
     vendorName: "Tech Solutions Inc.",
     customerName: "Innovate Corp.",
     invoiceDate: "2024-08-15",
@@ -32,7 +35,10 @@ const rawInvoices: InvoiceDetails[] = [
   },
   {
     id: "inv-002",
+    userId: "user-002",
     invoiceNumber: "B-2024-034",
+    description: "Office Supplies Co.",
+    costCode: "12345",
     vendorName: "Office Supplies Co.",
     customerName: "Innovate Corp.",
     invoiceDate: "2024-08-20",
@@ -67,7 +73,10 @@ const rawInvoices: InvoiceDetails[] = [
   },
   {
     id: "inv-003",
+    userId: "user-003",
     invoiceNumber: "INV-781-C",
+    description: "Website Redesign Project - Final Milestone",
+    costCode: "12345",
     vendorName: "Creative Designs Ltd.",
     customerName: "Innovate Corp.",
     invoiceDate: "2024-08-22",

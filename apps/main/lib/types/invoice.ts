@@ -30,7 +30,10 @@ export interface LineItem {
 
 export interface InvoiceDetails {
   id: string;
+  userId: string;
   invoiceNumber: string;
+  description: string;
+  costCode: string;
   vendorName: string;
   customerName: string;
   invoiceDate: string;

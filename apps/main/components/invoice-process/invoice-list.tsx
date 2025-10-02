@@ -16,7 +16,13 @@ import type { Attachment } from "@/lib/types/invoice";
 import { cn } from "@workspace/ui/lib/utils";
 import PdfUploader from "./pdf-uploader";
 import { formatDistanceToNow } from "date-fns";
-import Link from "next/link";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from "@workspace/ui/components/pagination"; // MODIFIED: Added Pagination imports
 
 const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
   <div className="flex items-center gap-1.5">
@@ -43,6 +49,7 @@ export default function InvoiceList({
   selectedAttachment,
   onSelectAttachment,
   onFileUpload,
+  isUploading,
   currentPage,
   totalPages,
 }: {
@@ -50,6 +57,7 @@ export default function InvoiceList({
   selectedAttachment: Attachment | null;
   onSelectAttachment: (attachment: Attachment) => void;
   onFileUpload: (file: File) => void;
+  isUploading: boolean;
   currentPage: number;
   totalPages: number;
 }) {
@@ -63,7 +71,7 @@ export default function InvoiceList({
     return attachments.filter(
       (attachment) =>
         attachment.filename.toLowerCase().includes(lowercasedFilter) ||
-        attachment.id.toLowerCase().includes(lowercasedFilter)
+        String(attachment.id).toLowerCase().includes(lowercasedFilter)
     );
   }, [attachments, searchTerm]);
 
@@ -75,7 +83,7 @@ export default function InvoiceList({
       <CardHeader>
         <CardTitle>Upload & Review</CardTitle>
         <div className="mt-4">
-          <PdfUploader onFileUpload={onFileUpload} />
+          <PdfUploader onFileUpload={onFileUpload} isUploading={isUploading} />
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
@@ -94,7 +102,6 @@ export default function InvoiceList({
             {filteredAttachments.length > 0 ? (
               filteredAttachments.map((attachment) => {
                 const isSupported = attachment.mimeType === "application/pdf";
-
                 const displayName =
                   attachment.filename.length > 25
                     ? `${attachment.filename.substring(0, 22)}...`
@@ -121,8 +128,8 @@ export default function InvoiceList({
                         <ProcessingStatus />
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
-                        <p className="truncate" title={attachment.id}>
-                          ID: {attachment.id.substring(0, 8)}...
+                        <p className="truncate" title={String(attachment.id)}>
+                          ID: {String(attachment.id).substring(0, 8)}...
                         </p>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <SupportStatus isSupported={isSupported} />
@@ -152,37 +159,35 @@ export default function InvoiceList({
         </ScrollArea>
       </CardContent>
 
-      <CardFooter className="border-t p-2 flex justify-between">
-        <Button
-          asChild
-          variant="outline"
-          size="sm"
-          disabled={!hasPreviousPage}
-        >
-          <Link
-            href={`/invoice-review?page=${currentPage - 1}`}
-            className={cn(
-              // Add these classes manually to ensure the link is disabled
-              !hasPreviousPage && "pointer-events-none opacity-50"
-            )}
-          >
-            Previous
-          </Link>
-        </Button>
-        <span className="text-sm text-muted-foreground">
-          Page {currentPage} of {totalPages > 0 ? totalPages : 1}
-        </span>
-        <Button asChild variant="outline" size="sm" disabled={!hasNextPage}>
-          <Link
-            href={`/invoice-review?page=${currentPage + 1}`}
-            className={cn(
-              // Add these classes manually to ensure the link is disabled
-              !hasNextPage && "pointer-events-none opacity-50"
-            )}
-          >
-            Next
-          </Link>
-        </Button>
+      {/* MODIFIED: Replaced custom buttons with shadcn/ui Pagination */}
+      <CardFooter className="border-t p-2">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={`/invoice-review?page=${currentPage - 1}`}
+                aria-disabled={!hasPreviousPage}
+                className={
+                  !hasPreviousPage ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <span className="text-sm font-medium text-muted-foreground">
+                Page {currentPage} of {totalPages > 0 ? totalPages : 1}
+              </span>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                href={`/invoice-review?page=${currentPage + 1}`}
+                aria-disabled={!hasNextPage}
+                className={
+                  !hasNextPage ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
       </CardFooter>
     </Card>
   );

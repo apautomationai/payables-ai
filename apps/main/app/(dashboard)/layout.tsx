@@ -1,38 +1,30 @@
-"use client";
+import React from "react";
+import client from "@/lib/fetch-client";
+import { User, ApiResponse } from "@/lib/types";
+import DashboardClientLayout from "@/components/dashboard/DashboardClientLayout"; // Adjust path if needed
 
-import React, { useState } from "react";
-import SideMenuBar from "@/components/layout/side-menubar";
-import Header from "@/components/layout/header";
-import Footer from "@/components/layout/footer";
-import { cn } from "@workspace/ui/lib/utils";
-
-export default function DashboardLayout({
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  let userName = "User";
+  let userEmail = "";
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+  try {
+    const userResult = await client.get<ApiResponse<User>>("api/v1/users/me");
+    if (userResult.data) {
+      const user = userResult.data;
+      userName = `${user.firstName} ${user.lastName}`.trim();
+      userEmail = user.email;
+    }
+  } catch (error) {
+    console.error("Failed to fetch user data in layout:", error);
+  }
 
   return (
-    <div
-      className={cn(
-        "grid min-h-screen w-full transition-[grid-template-columns] duration-300 ease-in-out",
-        isCollapsed ? "md:grid-cols-[80px_1fr]" : "md:grid-cols-[240px_1fr]"
-      )}
-    >
-      <SideMenuBar isCollapsed={isCollapsed} />
-      
-      <div className="flex flex-col max-h-screen overflow-hidden">
-        <Header isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
-        
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
-        
-        <Footer />
-      </div>
-    </div>
+    <DashboardClientLayout userName={userName} userEmail={userEmail}>
+      {children}
+    </DashboardClientLayout>
   );
 }

@@ -9,14 +9,14 @@ interface AttachmentViewerProps {
 export default function AttachmentViewer({ selectedAttachment }: AttachmentViewerProps) {
   return (
     <Card className="flex-1 flex flex-col h-full overflow-hidden">
-      {/* --- UPDATED: Reduced padding to increase content height --- */}
       <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
         <CardTitle className="flex items-center gap-2 text-base font-semibold">
           Invoice Attachment
         </CardTitle>
         {selectedAttachment && (
           <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md font-mono">
-            ID: {selectedAttachment.id.substring(0, 12)}...
+            {/* FIX: Convert the number to a string before calling .substring() */}
+            ID: {String(selectedAttachment.id).substring(0, 12)}...
           </div>
         )}
       </CardHeader>

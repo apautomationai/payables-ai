@@ -28,7 +28,7 @@ async function getAttachments(page: number): Promise<AttachmentsApiResponse> {
       }
     );
   } catch (error) {
-    console.error("Failed to fetch attachments:", error);
+    // console.error("Failed to fetch attachments:", error);
     return {
       attachments: [],
       pagination: { totalPages: 1 },
@@ -77,3 +77,4 @@ export default async function InvoiceReviewPage({
     />
   );
 }
+

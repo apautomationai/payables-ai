@@ -44,7 +44,7 @@ const ProcessingStatus = () => (
   </span>
 );
 
-export default function InvoiceList({
+export default function AttachmentsList({
   attachments,
   selectedAttachment,
   onSelectAttachment,

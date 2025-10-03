@@ -69,19 +69,19 @@ const initialIntegrations: Omit<
     path: "google/auth",
     category: "Email Processing & Automation",
     allowCollection: true,
-  },
-  {
-    name: "Outlook",
-    path: "outlook/auth",
-    category: "Email Processing & Automation",
-    allowCollection: false,
-  },
-  {
-    name: "QuickBooks",
-    path: "quickbooks/auth",
-    category: "Accounting & Financial Management",
-    allowCollection: false,
-  },
+   },
+  // {
+  //   name: "Outlook",
+  //   path: "outlook/auth",
+  //   category: "Email Processing & Automation",
+  //   allowCollection: false,
+  // },
+  // {
+  //   name: "QuickBooks",
+  //   path: "quickbooks/auth",
+  //   category: "Accounting & Financial Management",
+  //   allowCollection: false,
+  // },
 ];
 
 interface IntegrationsTabProps {
@@ -244,7 +244,7 @@ function IntegrationCard({
           <div className="text-sm text-muted-foreground border-l-2 pl-3 mb-4">
             Start Date:{" "}
             <span className="font-semibold text-primary">
-              {format(new Date(startReading), "LLL d, yyyy")}
+              {startReading}
             </span>
           </div>
         )}

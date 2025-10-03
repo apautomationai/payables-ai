@@ -22,7 +22,7 @@ const PdfPlaceholder = () => (
   </div>
 );
 
-export default function PdfViewer({
+export default function AttachmentViewer({
   attachment,
   pdfUrl,
 }: {

@@ -1,5 +1,6 @@
 import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
+import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
 import { asc, count, eq } from "drizzle-orm";
 
@@ -25,8 +26,20 @@ export class InvoiceServices {
     try {
       const offset = (page - 1) * limit;
       const allInvoices = await db
-        .select()
+        .select({
+          id: invoiceModel.id,
+          userId: invoiceModel.userId,
+          invoiceNumber: invoiceModel.invoiceNumber,
+          totalAmount: invoiceModel.totalAmount,
+          attachmentId: invoiceModel.attachmentId,
+          attachmentUrl: emailAttachmentsModel.s3Url,
+          createdAt: invoiceModel.createdAt,
+        })
         .from(invoiceModel)
+        .leftJoin(
+          emailAttachmentsModel,
+          eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
+        )
         .where(eq(invoiceModel.userId, userId))
         .orderBy(asc(invoiceModel.createdAt))
         .limit(limit)

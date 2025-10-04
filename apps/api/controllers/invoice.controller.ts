@@ -32,7 +32,6 @@ class InvoiceController {
       const dueDateTimestamp = new Date(dueDate);
 
       const exists = await invoiceServices.getInvoice(invoiceNumber);
-      console.log("exists", exists);
       if (exists.success) {
         throw new BadRequestError("Invoice already exists");
       }
@@ -56,41 +55,60 @@ class InvoiceController {
       });
 
       if (!response.success) {
-        return res.send({
+        return res.json({
           success: false,
           //@ts-ignore
           error: response.error,
         });
       }
-      return res.send({
+      return res.json({
         success: true,
         //@ts-ignore
         data: response.data,
       });
     } catch (error: any) {
-      return res.send({
+      return res.json({
         success: false,
         error: error.message,
       });
     }
   }
   async getAllInvoices(req: Request, res: Response) {
+    //@ts-ignore
+    const userId = req.user.id;
+    // const userId = 33;
     try {
-      const response = await invoiceServices.getAllInvoices();
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+      const response = await invoiceServices.getAllInvoices(
+        userId,
+        page,
+        limit
+      );
       if (!response.success) {
-        return res.send({
+        return res.json({
           success: false,
           //@ts-ignore
           error: response.error,
         });
       }
-      return res.send({
+      return res.json({
         success: true,
-        //@ts-ignore
-        data: response.data,
+        data: {
+          //@ts-ignore
+          invoices: response.data[0],
+          pagination: {
+            //@ts-ignore
+            totalInvoices: response.data[1] || 0,
+            page,
+            limit,
+            //@ts-ignore
+            totalPages: Math.ceil((response.data[1] || 0) / limit),
+          },
+        },
       });
     } catch (error: any) {
-      return res.send({
+      return res.json({
         success: false,
         error: error.message,
       });
@@ -103,19 +121,19 @@ class InvoiceController {
 
       const response = await invoiceServices.getInvoice(invoiceNumber);
       if (!response.success) {
-        return res.send({
+        return res.json({
           success: false,
           //@ts-ignore
           error: response.error,
         });
       }
-      return res.send({
+      return res.json({
         success: true,
         //@ts-ignore
         data: response.data,
       });
     } catch (error: any) {
-      return res.send({
+      return res.json({
         success: false,
         error: error.message,
       });
@@ -126,21 +144,20 @@ class InvoiceController {
     try {
       const invoiceInfo = req.body;
       const response = await invoiceServices.updateInvoice(invoiceInfo);
-      console.log("controller", response);
       if (!response.success) {
-        return res.send({
+        return res.json({
           success: false,
           //@ts-ignore
           error: response.error,
         });
       }
-      return res.send({
+      return res.json({
         success: true,
         //@ts-ignore
         data: response.data,
       });
     } catch (error: any) {
-      return res.send({
+      return res.json({
         success: false,
         error: error.message,
       });

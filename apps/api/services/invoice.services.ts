@@ -1,7 +1,7 @@
 import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { invoiceModel } from "@/models/invoice.model";
-import { eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 
 export class InvoiceServices {
   async insertInvoice(data: any) {
@@ -21,13 +21,28 @@ export class InvoiceServices {
     }
   }
 
-  async getAllInvoices() {
+  async getAllInvoices(userId: number, page: number, limit: number) {
     try {
-      const allInvoices = await db.select().from(invoiceModel);
+      const offset = (page - 1) * limit;
+      const allInvoices = await db
+        .select()
+        .from(invoiceModel)
+        .where(eq(invoiceModel.userId, userId))
+        .orderBy(asc(invoiceModel.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      const [invoices] = await db
+        .select({ count: count() })
+        .from(invoiceModel)
+        .where(eq(invoiceModel.userId, userId));
+
+      const totalInvoice = invoices.count;
       const result = {
         success: true,
-        data: allInvoices,
+        data: [allInvoices, totalInvoice],
       };
+
       return result;
     } catch (error: any) {
       const result = {

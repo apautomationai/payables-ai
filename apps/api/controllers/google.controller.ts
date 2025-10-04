@@ -144,7 +144,6 @@ export class GoogleController {
           integration.userId,
           integration.id,
           integration.startReading
-          // "2025-09-01"
         );
         //@ts-ignore
         result.data.push(attachments);
@@ -231,7 +230,7 @@ export class GoogleController {
         status: false,
         data: error.message,
       };
-      return result;
+      return res.send(result);
     }
   };
 }

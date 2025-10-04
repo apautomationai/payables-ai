@@ -220,7 +220,6 @@ class IntegrationsService {
   async updateStartTime(userId: number, name: string, startTime: string) {
     try {
       const timestamp = new Date(startTime);
-      console.log(timestamp);
       const integrations = await this.getIntegrations(userId);
       //@ts-ignore
       const integration = integrations?.data?.find(

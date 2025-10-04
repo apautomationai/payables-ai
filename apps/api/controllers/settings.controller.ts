@@ -118,9 +118,8 @@ class SettingsController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      const startTime = req.body;
+      const { startTime } = req.body;
       // const userId = 33;
-      // const startTime = "2025-05-09";
       if (!userId) {
         throw new BadRequestError("Need valid userId");
       }
@@ -131,7 +130,8 @@ class SettingsController {
       );
       const result = {
         success: true,
-        data: updateStartTime,
+        //@ts-ignore
+        data: updateStartTime.data,
       };
       return res.send(result);
     } catch (error: any) {
@@ -139,7 +139,7 @@ class SettingsController {
         success: false,
         message: error.message,
       };
-      return result;
+      return res.send(result);
     }
   }
 }

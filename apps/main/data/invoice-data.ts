@@ -4,10 +4,13 @@ import { InvoiceListItem, InvoiceDetails } from "../lib/types/invoice";
 const rawInvoices: InvoiceDetails[] = [
   {
     id: "inv-001",
+    userId: "user-001",
     invoiceNumber: "2024-5892",
+    description: "Cloud Hosting Services - Pro Plan",
+    costCode: "12345",
     vendorName: "Tech Solutions Inc.",
     customerName: "Innovate Corp.",
-    invoiceDate: "2024-08-15",
+    invoiceDate: "2024-08-15T14:30:00Z",
     dueDate: "2024-09-14",
     totalAmount: 4500.0,
     currency: "USD",
@@ -28,14 +31,18 @@ const rawInvoices: InvoiceDetails[] = [
         total: 1500.0,
       },
     ],
-    pdfUrl: "/path/to/demo-invoice-1.pdf",
+    pdfUrl: "/files/sunbelt.pdf",
+    sourcePdfUrl: "/files/invoice3.pdf",
   },
   {
     id: "inv-002",
+    userId: "user-002",
     invoiceNumber: "B-2024-034",
+    description: "Office Supplies Co.",
+    costCode: "12345",
     vendorName: "Office Supplies Co.",
     customerName: "Innovate Corp.",
-    invoiceDate: "2024-08-20",
+    invoiceDate: "2024-08-20T10:00:00Z",
     dueDate: "2024-09-19",
     totalAmount: 375.5,
     currency: "USD",
@@ -63,14 +70,18 @@ const rawInvoices: InvoiceDetails[] = [
         total: 50.0,
       },
     ],
-    pdfUrl: "/path/to/demo-invoice-2.pdf",
+    pdfUrl: "/files/invoice4.pdf",
+    sourcePdfUrl: "/files/invoice3.pdf",
   },
   {
     id: "inv-003",
+    userId: "user-003",
     invoiceNumber: "INV-781-C",
+    description: "Website Redesign Project - Final Milestone",
+    costCode: "12345",
     vendorName: "Creative Designs Ltd.",
     customerName: "Innovate Corp.",
-    invoiceDate: "2024-08-22",
+    invoiceDate: "2024-08-22T18:45:00Z",
     dueDate: "2024-09-05",
     totalAmount: 12500.0,
     currency: "USD",
@@ -84,7 +95,8 @@ const rawInvoices: InvoiceDetails[] = [
         total: 12500.0,
       },
     ],
-    pdfUrl: "/path/to/demo-invoice-3.pdf",
+    pdfUrl: "/files/invoice2.pdf",
+    sourcePdfUrl: "/files/invoice2.pdf",
   },
 ];
 
@@ -94,6 +106,7 @@ export const mockInvoices: InvoiceListItem[] = rawInvoices.map((invoice) => ({
   number: invoice.invoiceNumber,
   status: invoice.status,
   date: invoice.invoiceDate,
+  vendorName: invoice.vendorName, // This was added back to match the type
 }));
 
 // Transformed data for the invoice details component

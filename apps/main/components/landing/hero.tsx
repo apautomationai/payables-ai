@@ -7,16 +7,16 @@ import {
   AnimatedChart,
   PulsingOrb,
   FloatingElements,
-  GeometricPattern,
+  // GeometricPattern,
   ProfessionalIcons,
 } from "./animated-icons";
 import {
   ArrowRight,
   Play,
-  Star,
-  Users,
-  TrendingUp,
-  Shield,
+  // Star,
+  // Users,
+  // TrendingUp,
+  // Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -146,7 +146,7 @@ export function Hero() {
             )}
           </motion.div> 
 
-           <motion.div
+           {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -164,7 +164,7 @@ export function Hero() {
               <Shield className="w-4 h-4" />
               <span>Enterprise Security</span>
             </div>
-          </motion.div>
+          </motion.div> */}
         </div>
 
         {/* Product Preview */}

@@ -171,23 +171,6 @@ export default function AuthLayout({
   className="flex justify-center lg:justify-end"
 >
   <div className="relative w-full max-w-md">
-    {/* Glowing Dot running around the border */}
-    <motion.div
-      className="absolute -inset-[2px] rounded-2xl"
-      animate={{ rotate: 360 }}
-      transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-    >
-      <div className="absolute top-0 left-1/2 w-3 h-3 bg-blue-400 rounded-full shadow-lg shadow-blue-400/50 transform -translate-x-1/2 -translate-y-1/2"></div>
-    </motion.div>
-
-    {/* Secondary Glowing Dot */}
-    <motion.div
-      className="absolute -inset-[2px] rounded-2xl"
-      animate={{ rotate: -360 }}
-      transition={{ duration: 3, repeat: Infinity, ease: "linear", delay: 1 }}
-    >
-      <div className="absolute bottom-0 right-0 w-2 h-2 bg-purple-400 rounded-full shadow-lg shadow-purple-400/50 transform translate-x-1/2 translate-y-1/2"></div>
-    </motion.div>
 
     {/* Main Card Container */}
     <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-2xl">

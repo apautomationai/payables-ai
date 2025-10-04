@@ -33,10 +33,7 @@ export default function DashboardDataView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <ListFilter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          
           <Button size="sm" asChild>
             <Link href="/invoice-review">
               <Plus className="h-4 w-4 mr-2" />

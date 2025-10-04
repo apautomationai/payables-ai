@@ -4,31 +4,20 @@ import { Request, Response } from "express";
 export class UploadController {
   uploadAttachment = async (req: Request, res: Response) => {
     try {
-      const buffer = Buffer.from(req.body!, "base64url");
+      const { filename, mimetype } = req.body;
 
-      if (!buffer || buffer.length === 0) {
-        throw new BadRequestError("Upload an attachment");
-      }
-
-      const mimetype =
-        (req.headers["content-type"] as string) || "application/octet-stream";
-
-      // Auto-generate filename if not provided
-      const filename =
-        (req.headers["x-filename"] as string) || `file-${Date.now()}`;
-      //@ts-ignore
-      const attachmentData = await uploadServices.uploadAttachment(
-        buffer,
+      const response = await uploadServices.uploadAttachment(
         filename,
         mimetype
       );
-
-      const result = {
-        status: "success",
-        data: attachmentData,
-      };
-
-      return res.status(200).send(result);
+      if (!response.success) {
+        return res.json({
+          success: false,
+          //@ts-ignore
+          error: response.error,
+        });
+      }
+      return res.json(response.data);
     } catch (error: any) {
       if (error.isOperational) {
         return res.status(error.statusCode || 400).json({
@@ -44,31 +33,29 @@ export class UploadController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      // const userId = 24;
+      // const userId = 33
       const bodyData = req.body;
       if (!userId) {
         throw new BadRequestError("Need a valid userId");
       }
 
       const attInfo = {
-        hash: bodyData.hash,
         userId: userId,
         filename: bodyData.filename,
         mimeType: bodyData.mimetype,
         s3Url: bodyData.s3Url,
       };
-      
 
-      const response = await uploadServices.createDbRecord(attInfo);
+      const [response] = await uploadServices.createDbRecord(attInfo);
       const result = {
-        success: "success",
+        success: true,
         data: response,
       };
       return res.status(200).send(result);
     } catch (error: any) {
       if (error.isOperational) {
         return res.status(error.statusCode || 400).json({
-          status: "error",
+          success: false,
           message: error.message,
         });
       }

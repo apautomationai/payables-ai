@@ -1,59 +1,109 @@
+// import React, { Suspense } from "react";
+// import SettingsView from "@/components/settings/settings-view";
+// import client from "@/lib/fetch-client";
+// import {
+//   updateIntegrationStatusAction,
+//   updateStartTimeAction,
+// } from "@/app/(dashboard)/settings/actions";
+
+// export const dynamic = "force-dynamic";
+
+// // Data fetching is done on the server
+// async function getIntegrations(): Promise<any[]> {
+//   try {
+//     const response = await client.get("api/v1/settings/integrations");
+//     return response?.data || [];
+//   } catch (error) {
+//     console.error("Failed to fetch integrations:", error);
+//     return [];
+//   }
+// }
+
+// interface ResolvedSearchParams {
+//   [key: string]: string | string[] | undefined;
+// }
+
+// // This is the clean Server Component
+// export default async function SettingsPage({
+//   searchParams,
+// }: {
+//   searchParams: ResolvedSearchParams;
+// }) {
+//   // Fetch data directly on the server before rendering
+//   const integrations = await getIntegrations();
+
+//   return (
+//     <Suspense fallback={<SettingsSkeleton />}>
+//       {/* Pass the server-fetched data and actions as props to the client component */}
+//       <SettingsView
+//         integrations={integrations}
+//         searchParams={searchParams}
+//         updateIntegrationStatusAction={updateIntegrationStatusAction}
+//         updateStartTimeAction={updateStartTimeAction}
+//       />
+//     </Suspense>
+//   );
+// }
+
+// const SettingsSkeleton = () => (
+//   <div className="space-y-6">
+//     <div className="h-10 w-48 bg-muted rounded-md animate-pulse"></div>
+//     <div className="border rounded-lg p-6">
+//       <div className="h-8 w-1/3 bg-muted rounded-md animate-pulse mb-2"></div>
+//       <div className="h-4 w-1/2 bg-muted rounded-md animate-pulse"></div>
+//     </div>
+//   </div>
+// );
+
 import React, { Suspense } from "react";
-
-import { Alert, AlertDescription, AlertTitle } from "@workspace/ui/components/alert";
-
-import SettingsClient from "@/components/settings/settings-client";
+import SettingsView from "@/components/settings/settings-view";
 import client from "@/lib/fetch-client";
+import {
+  updateIntegrationStatusAction,
+  updateStartTimeAction,
+} from "@/app/(dashboard)/settings/actions";
+
+export const dynamic = "force-dynamic";
 
 async function getIntegrations(): Promise<any[]> {
-    try { 
-      const response = await client.get('api/v1/settings/integrations');
-      return response?.data || [];
-    } catch (error) {
-      return []
-    }
+  try {
+    const response = await client.get("api/v1/settings/integrations");
+    return response?.data || [];
+  } catch (error) {
+    console.error("Failed to fetch integrations:", error);
+    return [];
+  }
 }
 
-// This is the main server component for the settings page.
-export default async function SettingsPage({searchParams}: {searchParams: any}) {
+interface ResolvedSearchParams {
+  [key: string]: string | string[] | undefined;
+}
+
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: ResolvedSearchParams;
+}) {
   const integrations = await getIntegrations();
 
-console.log(integrations)
-
-  const params = await searchParams;
-  console.log(params);
-
-    return (
-      <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">
-          Manage your platform configuration and integrations.
-        </p>
-      </div>
-      {/* This Suspense boundary is crucial for child components that use useSearchParams */}
-      <Suspense fallback={<SettingsSkeleton />}>
-        <SettingsClient integrations={integrations}/>
-      </Suspense>
-      {params?.message && (
-        <Alert
-          variant={params?.type.includes("success") ? "default" : "destructive"}
-        >
-          <AlertTitle>{params?.type}</AlertTitle>
-          <AlertDescription>{params?.message}</AlertDescription>
-        </Alert>
-      )}
-    </div>
+  return (
+    <Suspense fallback={<SettingsSkeleton />}>
+      <SettingsView
+        integrations={integrations}
+        searchParams={searchParams}
+        updateIntegrationStatusAction={updateIntegrationStatusAction}
+        updateStartTimeAction={updateStartTimeAction}
+      />
+    </Suspense>
   );
 }
 
-// A simple skeleton loader to show while the settings page is loading.
 const SettingsSkeleton = () => (
-    <div className="space-y-6">
-        <div className="h-10 w-48 bg-muted rounded-md animate-pulse"></div>
-        <div className="border rounded-lg p-6">
-            <div className="h-8 w-1/3 bg-muted rounded-md animate-pulse mb-2"></div>
-            <div className="h-4 w-1/2 bg-muted rounded-md animate-pulse"></div>
-        </div>
+  <div className="space-y-6">
+    <div className="h-10 w-48 bg-muted rounded-md animate-pulse"></div>
+    <div className="border rounded-lg p-6">
+      <div className="h-8 w-1/3 bg-muted rounded-md animate-pulse mb-2"></div>
+      <div className="h-4 w-1/2 bg-muted rounded-md animate-pulse"></div>
     </div>
+  </div>
 );

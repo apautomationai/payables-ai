@@ -1,8 +1,16 @@
-export type User = {
+// @/lib/types/invoice.ts
+
+export type Attachment = {
   id: string;
-  name: string;
+  userId: number;
   email: string;
-  avatarUrl?: string;
+  filename: string;
+  mimeType: string;
+  sender: string;
+  receiver: string;
+  s3Url: string;
+  created_at: string;
+  updated_at: string;
 };
 
 export type InvoiceListItem = {
@@ -10,6 +18,7 @@ export type InvoiceListItem = {
   number: string;
   status: "Completed" | "Pending" | "Requires Attention";
   date: string;
+  vendorName: string; // Added this property
 };
 
 export interface LineItem {
@@ -22,7 +31,10 @@ export interface LineItem {
 
 export interface InvoiceDetails {
   id: string;
+  userId: string;
   invoiceNumber: string;
+  description: string;
+  costCode: string;
   vendorName: string;
   customerName: string;
   invoiceDate: string;
@@ -32,4 +44,5 @@ export interface InvoiceDetails {
   status: "Completed" | "Pending" | "Requires Attention";
   lineItems: LineItem[];
   pdfUrl: string;
+  sourcePdfUrl: string;
 }

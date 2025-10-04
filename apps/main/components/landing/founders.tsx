@@ -156,14 +156,14 @@ export function Founders() {
                     >
                       <Linkedin className="h-5 w-5" />
                     </motion.a>
-                    <motion.a
+                    {/* <motion.a
                       href={`mailto:${founder.email}`}
                       whileHover={{ scale: 1.1, y: -2 }}
                       whileTap={{ scale: 0.95 }}
                       className="p-2 bg-purple-100 text-purple-600 rounded-full hover:bg-purple-200 transition-colors"
                     >
                       <Mail className="h-5 w-5" />
-                    </motion.a>
+                    </motion.a> */}
                   </div>
                 </div>
               </Card>

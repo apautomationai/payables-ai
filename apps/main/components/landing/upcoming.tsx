@@ -8,11 +8,9 @@ import {
   FileText, 
   Receipt, 
   Zap,
-  ArrowRight,
   Clock,
-  Sparkles
 } from "lucide-react";
-import { PulsingOrb, AnimatedWorkflow, GeometricPattern } from "./animated-icons";
+import { PulsingOrb, GeometricPattern } from "./animated-icons";
 
 export function ComingSoon() {
   const upcomingFeatures = [
@@ -133,7 +131,7 @@ export function ComingSoon() {
                 <p className="text-gray-600 mb-4">{feature.description}</p>
                 
                 {/* Progress indicator */}
-                <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                {/* <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
                   <div 
                     className={`h-2 rounded-full ${
                       feature.status === "In Development" ? "bg-blue-600 w-3/4" :
@@ -141,16 +139,16 @@ export function ComingSoon() {
                       "bg-emerald-600 w-1/4"
                     }`}
                   ></div>
-                </div>
+                </div> */}
                 
-                <div className="flex items-center text-sm text-gray-500">
+                {/* <div className="flex items-center text-sm text-gray-500">
                   <Clock className="h-4 w-4 mr-1" />
                   <span>
                     {feature.status === "In Development" ? "Expected Q2 2025" :
                      feature.status === "Coming Soon" ? "Expected Q3 2025" :
                      "Planning Phase"}
                   </span>
-                </div>
+                </div> */}
               </Card>
             </motion.div>
           ))}

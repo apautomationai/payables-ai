@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, Suspense, useActionState  } from "react";
+import React, { useEffect, Suspense, useActionState, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
-import { AtSign, Lock, Loader2 } from "lucide-react";
+import { AtSign, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
@@ -45,21 +45,21 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const OutlookIcon = (props: React.SVGProps<SVGSVGElement>) => (
+const MicrosoftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
-    <path fill="#ff5722" d="M22 22H6V6h16v16z" />
-    <path fill="#4caf50" d="M42 22H26V6h16v16z" />
-    <path fill="#ffc107" d="M42 42H26V26h16v16z" />
-    <path fill="#03a9f4" d="M22 42H6V26h16v16z" />
+    <path fill="#ff5722" d="M22 22H6V6h16v16z"/>
+    <path fill="#4caf50" d="M42 22H26V6h16v16z"/>
+    <path fill="#ffc107" d="M42 42H26V26h16v16z"/>
+    <path fill="#03a9f4" d="M22 42H6V26h16v16z"/>
   </svg>
 );
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button
+    <Button 
       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-      type="submit"
+      type="submit" 
       disabled={pending}
     >
       {pending ? (
@@ -79,6 +79,7 @@ function SignInFormComponent() {
     message: "",
     success: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -96,6 +97,7 @@ function SignInFormComponent() {
       toast.success("Login Successful", {
         description: "You have been successfully logged in!",
       });
+      
       // Redirect if needed
       if (state.redirectTo) {
         router.push(state.redirectTo);
@@ -113,15 +115,16 @@ function SignInFormComponent() {
       {/* Animated Gradient Background Effect */}
       <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl opacity-75 blur-xl animate-pulse-slow"></div>
       <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl opacity-50 blur-lg animate-rotate"></div>
+      
       {/* Main Card with Gradient Border */}
       <Card className="relative w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl overflow-hidden">
         {/* Animated Gradient Shine Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 animate-shine"></div>
-
+        
         {/* Subtle Corner Accents */}
         <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
         <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-purple-500/20 to-transparent rounded-full blur-2xl"></div>
-
+        
         <CardHeader className="text-center pb-6 relative z-10">
           <div className="mb-4">
             <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-3 relative overflow-hidden">
@@ -136,25 +139,27 @@ function SignInFormComponent() {
             Sign in to your account to continue
           </CardDescription>
         </CardHeader>
-
+        
         <CardContent className="space-y-6 relative z-10">
           {/* Social Login Buttons */}
           <div className="grid grid-cols-2 gap-3">
-            <Button
-              variant="outline"
+            <Button 
+              variant="outline" 
+              disabled
               className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
-              <GoogleIcon className="mr-2 h-4 w-4 relative z-10" />
+              <GoogleIcon className="mr-2 h-4 w-4 relative z-10" /> 
               <span className="relative z-10">Google</span>
             </Button>
-            <Button
-              variant="outline"
+            <Button 
+              variant="outline" 
+              disabled
               className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
-              <OutlookIcon className="mr-2 h-4 w-4 relative z-10" />
-              <span className="relative z-10">Outlook</span>
+              <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" /> 
+              <span className="relative z-10">Microsoft</span>
             </Button>
           </div>
 
@@ -173,10 +178,7 @@ function SignInFormComponent() {
           {/* Sign In Form */}
           <form action={formAction} className="space-y-5">
             <div className="space-y-3">
-              <Label
-                htmlFor="email"
-                className="text-gray-300 font-medium text-sm"
-              >
+              <Label htmlFor="email" className="text-gray-300 font-medium text-sm">
                 Email Address
               </Label>
               <div className="relative">
@@ -192,18 +194,13 @@ function SignInFormComponent() {
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
               </div>
               {state.errors?.email && (
-                <p className="text-sm text-red-400 mt-1">
-                  {state.errors.email[0]}
-                </p>
+                <p className="text-sm text-red-400 mt-1">{state.errors.email[0]}</p>
               )}
             </div>
 
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label
-                  htmlFor="password"
-                  className="text-gray-300 font-medium text-sm"
-                >
+                <Label htmlFor="password" className="text-gray-300 font-medium text-sm">
                   Password
                 </Label>
                 <Link
@@ -218,27 +215,36 @@ function SignInFormComponent() {
                 <Input
                   id="password"
                   name="password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                  className="pl-10 pr-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
                   required
                   minLength={6}
                 />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent text-gray-400 hover:text-gray-300 z-20"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
               </div>
               {state.errors?.password && (
-                <p className="text-sm text-red-400 mt-1">
-                  {state.errors.password[0]}
-                </p>
+                <p className="text-sm text-red-400 mt-1">{state.errors.password[0]}</p>
               )}
             </div>
 
             {state.errors?._form && (
               <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10"></div>
-                <p className="text-sm text-red-400 text-center relative z-10">
-                  {state.errors._form[0]}
-                </p>
+                <p className="text-sm text-red-400 text-center relative z-10">{state.errors._form[0]}</p>
               </div>
             )}
 
@@ -277,8 +283,7 @@ function SignInFormComponent() {
           }
         }
         @keyframes pulse-slow {
-          0%,
-          100% {
+          0%, 100% {
             opacity: 0.75;
           }
           50% {
@@ -301,21 +306,19 @@ function SignInFormComponent() {
 
 export default function SignInForm() {
   return (
-    <Suspense
-      fallback={
-        <div className="w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl p-8 animate-pulse relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 animate-shine"></div>
-          <div className="w-16 h-16 bg-gray-700 rounded-2xl mx-auto mb-4"></div>
-          <div className="h-8 bg-gray-700 rounded-lg mb-2"></div>
-          <div className="h-4 bg-gray-700 rounded-lg mb-6"></div>
-          <div className="space-y-4">
-            <div className="h-10 bg-gray-700 rounded-xl"></div>
-            <div className="h-10 bg-gray-700 rounded-xl"></div>
-            <div className="h-12 bg-gray-700 rounded-xl"></div>
-          </div>
+    <Suspense fallback={
+      <div className="w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl p-8 animate-pulse relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 animate-shine"></div>
+        <div className="w-16 h-16 bg-gray-700 rounded-2xl mx-auto mb-4"></div>
+        <div className="h-8 bg-gray-700 rounded-lg mb-2"></div>
+        <div className="h-4 bg-gray-700 rounded-lg mb-6"></div>
+        <div className="space-y-4">
+          <div className="h-10 bg-gray-700 rounded-xl"></div>
+          <div className="h-10 bg-gray-700 rounded-xl"></div>
+          <div className="h-12 bg-gray-700 rounded-xl"></div>
         </div>
-      }
-    >
+      </div>
+    }>
       <SignInFormComponent />
     </Suspense>
   );

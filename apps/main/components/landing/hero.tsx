@@ -7,16 +7,16 @@ import {
   AnimatedChart,
   PulsingOrb,
   FloatingElements,
-  GeometricPattern,
+  // GeometricPattern,
   ProfessionalIcons,
 } from "./animated-icons";
 import {
   ArrowRight,
   Play,
-  Star,
-  Users,
-  TrendingUp,
-  Shield,
+  // Star,
+  // Users,
+  // TrendingUp,
+  // Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -63,7 +63,7 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mx-auto max-w-4xl text-center">
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
@@ -75,7 +75,7 @@ export function Hero() {
               <Star className="w-4 h-4 mr-2 fill-yellow-400 text-yellow-400" />
               Trusted by 10,000+ businesses worldwide
             </Badge>
-          </motion.div>
+          </motion.div> */}
 
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -118,6 +118,7 @@ export function Hero() {
                   Watch Demo Video
                 </Link>
               </Button>
+            
             ) : (
               <>
                 <Button
@@ -143,9 +144,9 @@ export function Hero() {
                 </Button>
               </>
             )}
-          </motion.div>
+          </motion.div> 
 
-          <motion.div
+           {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
@@ -163,7 +164,7 @@ export function Hero() {
               <Shield className="w-4 h-4" />
               <span>Enterprise Security</span>
             </div>
-          </motion.div>
+          </motion.div> */}
         </div>
 
         {/* Product Preview */}

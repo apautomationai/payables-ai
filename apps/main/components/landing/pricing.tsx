@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import Link from "next/link";
 
 // Define the type for pricing plans
 interface PricingPlan {
@@ -298,13 +299,16 @@ export function Pricing() {
                     </div>
                   </div>
 
+                  <Link href="/contact-us">
                   <Button
                     size="lg"
                     className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 group"
                   >
+                   
                     Contact Sales
                     <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
                   </Button>
+                  </Link>
                 </div>
 
                 {/* Right side - Features */}
@@ -348,7 +352,7 @@ export function Pricing() {
           </motion.div>
         </div>
 
-        <motion.div
+        {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
@@ -374,7 +378,7 @@ export function Pricing() {
               99.9% uptime SLA
             </div>
           </div>
-        </motion.div>
+        </motion.div> */}
       </div>
     </section>
   );

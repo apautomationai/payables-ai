@@ -1,6 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useActionState, useMemo } from "react";
+import { useFormStatus } from "react-dom";
+import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { toast } from "sonner";
 import {
   Card,
   CardContent,
@@ -8,44 +12,108 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
+import { Calendar } from "@workspace/ui/components/calendar";
 import { cn } from "@workspace/ui/lib/utils";
 import Link from "next/link";
-import client from "@/lib/axios-client";
+import { Settings } from "lucide-react";
 
-const initialIntegrations = [
+type IntegrationStatus =
+  | "success"
+  | "disconnected"
+  | "failed"
+  | "not_connected"
+  | "paused";
+
+interface Integration {
+  name: string;
+  path: string;
+  category: string;
+  allowCollection: boolean;
+  status: IntegrationStatus;
+  backendName: "gmail" | "outlook" | "quickbooks";
+  startReading?: string | null;
+}
+
+type ActionState =
+  | {
+      success?: boolean;
+      error?: string;
+      message?: string;
+    }
+  | undefined;
+
+const initialState: ActionState = undefined;
+
+const BACKEND_NAMES_MAP = {
+  Gmail: "gmail",
+  Outlook: "outlook",
+  QuickBooks: "quickbooks",
+} as const;
+
+const initialIntegrations: Omit<
+  Integration,
+  "status" | "backendName" | "startReading"
+>[] = [
   {
     name: "Gmail",
     path: "google/auth",
     category: "Email Processing & Automation",
     allowCollection: true,
-  },
-  {
-    name: "QuickBooks",
-    category: "Accounting & Financial Management",
-    allowCollection: false,
-  },
-  {
-    name: "Outlook",
-    category: "Email Processing & Automation",
-    allowCollection: false,
-  },
+   },
+  // {
+  //   name: "Outlook",
+  //   path: "outlook/auth",
+  //   category: "Email Processing & Automation",
+  //   allowCollection: false,
+  // },
+  // {
+  //   name: "QuickBooks",
+  //   path: "quickbooks/auth",
+  //   category: "Accounting & Financial Management",
+  //   allowCollection: false,
+  // },
 ];
 
-export default function IntegrationsTab({
-  integrations,
-}: {
+interface IntegrationsTabProps {
   integrations: any[];
-}) {
-  const finalIntegrations = initialIntegrations.map((integration) => {
-    const existingIntegration = integrations.find(
-      (i: any) => i?.name?.toLowerCase() === integration.name?.toLowerCase()
+  updateAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+  updateStartTimeAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+}
+
+export default function IntegrationsTab({
+  integrations: initialBackendIntegrations,
+  updateAction,
+  updateStartTimeAction,
+}: IntegrationsTabProps) {
+  const integrations: Integration[] = initialIntegrations.map((integration) => {
+    const backendName =
+      BACKEND_NAMES_MAP[integration.name as keyof typeof BACKEND_NAMES_MAP];
+    const existingIntegration = initialBackendIntegrations.find(
+      (i: any) => i?.name === backendName
     );
 
     return {
       ...integration,
+      backendName: backendName,
       status: existingIntegration?.status || "not_connected",
-    };
+      startReading: existingIntegration?.startReading,
+    } as Integration;
   });
 
   return (
@@ -59,22 +127,14 @@ export default function IntegrationsTab({
         </CardHeader>
         <CardContent>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {finalIntegrations.map((integration) => (
+            {integrations.map((integration) => (
               <IntegrationCard
                 key={integration.name}
-                {...integration}
-                onConnect={() => {}}
-                isPending={false}
+                integration={integration}
+                updateAction={updateAction}
+                updateStartTimeAction={updateStartTimeAction}
               />
             ))}
-            {/* <Card className="flex items-center justify-center border-dashed">
-              <div className="text-center">
-                <PlusCircle className="mx-auto h-8 w-8 text-muted-foreground" />
-                <h3 className="mt-2 text-sm font-semibold">Add Integration</h3>
-                <p className="mt-1 text-sm text-muted-foreground">Connect a new service</p>
-                <Button variant="outline" size="sm" className="mt-4">Browse Integrations</Button>
-              </div>
-            </Card> */}
           </div>
         </CardContent>
       </Card>
@@ -82,62 +142,272 @@ export default function IntegrationsTab({
   );
 }
 
-function IntegrationCard(integration: any) {
-  // const handleAuth = async () => {
-  //   const response = await client.get("api/v1/google/auth");
-  //   console.log(response);
-  // };
-  const integrationStatus =
-    integration.status === "success"
-      ? "Connected"
-      : integration.status === "failed"
-        ? "Failed"
-        : "Not Connected";
+function SubmitButton({
+  label,
+  variant,
+  disabled,
+  name,
+  value,
+  className,
+}: {
+  label: string;
+  variant:
+    | "default"
+    | "destructive"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link";
+  disabled?: boolean;
+  name?: string;
+  value?: string;
+  className?: string;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      size="sm"
+      type="submit"
+      variant={variant}
+      disabled={disabled || pending}
+      name={name}
+      value={value}
+      className={cn(className)}
+    >
+      {pending ? "Loading..." : label}
+    </Button>
+  );
+}
+
+interface IntegrationCardProps {
+  integration: Integration;
+  updateAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+  updateStartTimeAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+}
+
+function IntegrationCard({
+  integration,
+  updateAction,
+  updateStartTimeAction,
+}: IntegrationCardProps) {
+  const {
+    name,
+    status,
+    allowCollection,
+    path,
+    backendName,
+    category,
+    startReading,
+  } = integration;
+
+  const integrationStatusText =
+    {
+      success: "Connected",
+      disconnected: "Not Connected",
+      failed: "Failed",
+      not_connected: "Not Connected",
+      paused: "Paused",
+    }[status] || "Unknown";
+
+  const statusColorClass =
+    {
+      success: "bg-green-500",
+      disconnected: "bg-gray-500",
+      failed: "bg-red-500",
+      not_connected: "bg-gray-500",
+      paused: "bg-yellow-500",
+    }[status] || "bg-gray-500";
+
+  const isConnectActionVisible = status !== "success" && status !== "paused";
+  const showConfigureButton = status === "success" && !startReading;
+  const showStartDate = status === "success" && startReading;
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg">{integration.name}</CardTitle>
-        <CardDescription>{integration.category}</CardDescription>
+        <CardTitle className="text-lg">{name}</CardTitle>
+        <CardDescription>{category}</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="flex items-center mb-4">
-          <span
-            className={cn(
-              "h-2 w-2 rounded-full mr-2",
-              integration.status === "success"
-                ? "bg-green-500"
-                : integration.status === "failed"
-                  ? "bg-red-500"
-                  : "bg-gray-500"
-            )}
-          />
-          <span className="text-sm font-medium">{integrationStatus}</span>
+          <span className={cn("h-2 w-2 rounded-full mr-2", statusColorClass)} />
+          <span className="text-sm font-medium">{integrationStatusText}</span>
         </div>
-        <div className="flex gap-2">
-          {integration?.status?.toLowerCase() !== "success" && (
-            <Button
-              size="sm"
-              asChild
-              className={cn(
-                "text-white",
-                !integration.allowCollection &&
-                  "cursor-not-allowed bg-black/70 hover:bg-black/70"
-              )}
-              disabled={!integration.allowCollection}
-            >
-              {integration.allowCollection ? (
-                <Link
-                  href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${integration.path}`}
-                >
-                  connect
-                </Link>
+
+        {showStartDate && startReading && (
+          <div className="text-sm text-muted-foreground border-l-2 pl-3 mb-4">
+            Start Date:{" "}
+            <span className="font-semibold text-primary">
+              {startReading}
+            </span>
+          </div>
+        )}
+
+        {/* @ts-ignore */}
+        <form action={updateAction} className="flex flex-wrap gap-2">
+          <input type="hidden" name="name" value={backendName} />
+
+          {isConnectActionVisible && (
+            <>
+              {allowCollection ? (
+                <Button size="sm" asChild>
+                  <Link
+                    href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`}
+                  >
+                    Connect
+                  </Link>
+                </Button>
               ) : (
-                <span>Not Allowed</span>
+                <Button size="sm" disabled>
+                  Not Allowed
+                </Button>
               )}
-            </Button>
+            </>
           )}
-        </div>
+
+          {status === "success" && (
+            <>
+              {showConfigureButton && (
+                <ConfigureDialog
+                  backendName={backendName}
+                  updateStartTimeAction={updateStartTimeAction}
+                />
+              )}
+              <SubmitButton
+                name="status"
+                value="paused"
+                label="Pause"
+                variant="outline"
+                className="border-red-600 text-red-600 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20"
+              />
+              <SubmitButton
+                name="status"
+                value="disconnected"
+                label="Disconnect"
+                variant="destructive"
+                className="text-white"
+              />
+            </>
+          )}
+
+          {status === "paused" && (
+            <>
+              <SubmitButton
+                name="status"
+                value="success"
+                label="Resume"
+                variant="outline"
+                className="border-green-600 text-green-600 hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20"
+              />
+              <SubmitButton
+                name="status"
+                value="disconnected"
+                label="Disconnect"
+                variant="destructive"
+                className="text-white"
+              />
+            </>
+          )}
+        </form>
       </CardContent>
     </Card>
+  );
+}
+
+function ConfigureDialog({
+  backendName,
+  updateStartTimeAction,
+}: {
+  backendName: string;
+  updateStartTimeAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+}) {
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState(false);
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [state, formAction] = useActionState(
+    updateStartTimeAction,
+    initialState
+  );
+
+  const dateString = useMemo(() => {
+    if (!date) return "";
+    return date.toISOString().split("T")[0];
+  }, [date]);
+
+  useEffect(() => {
+    if (state?.success) {
+      toast.success(state.message || "Start date saved successfully!");
+      setIsOpen(false);
+      router.refresh();
+    }
+    if (state?.error) {
+      toast.error("Failed to save date", {
+        description: state.error,
+      });
+    }
+  }, [state, router]);
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button variant="outline" size="sm">
+          <Settings className="mr-2 h-4 w-4" />
+          Configure
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Configure Start Date</DialogTitle>
+          <DialogDescription>
+            Select the date from which to start processing emails.
+          </DialogDescription>
+        </DialogHeader>
+        <form action={formAction} className="grid gap-4">
+          <input type="hidden" name="name" value={backendName} />
+          <input type="hidden" name="startTime" value={dateString} />
+
+          <div className="flex flex-col items-center">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="rounded-md border"
+            />
+            {!date && (
+              <p className="text-sm text-yellow-600 mt-2">
+                Please select a date to continue.
+              </p>
+            )}
+          </div>
+
+          {state?.error && (
+            <p className="text-sm text-red-500">{state.error}</p>
+          )}
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setIsOpen(false)}
+            >
+              Cancel
+            </Button>
+            <SubmitButton
+              label="Save"
+              variant="default"
+              disabled={!date}
+            />
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

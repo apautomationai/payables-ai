@@ -7,9 +7,9 @@ import {
   FileText,
   Target,
   Users,
-  Brain,
+
   ArrowRight,
-  Sparkles,
+ 
   Eye,
 } from "lucide-react";
 import { PulsingOrb } from "./animated-icons";
@@ -89,66 +89,67 @@ export function About() {
             </motion.button>
           </motion.div>
 
-          {/* Right column - Stats */}
+          {/* Right column - Image */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="space-y-6"
           >
             <Image
               src={"/images/Payables.png"}
               alt="Payables.ai"
               height={500}
               width={500}
-              className="w-full h-auto rounded-xl shadow-lg border border-gray-200 dark:border-gray-200"
-            />
-
-            {/* Mission and Vision Cards */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-1 gap-6"
-            >
-              {/* Mission Card */}
-              <Card className="p-6 dark:border-blue-100 border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                    <Target className="h-6 w-6 text-blue-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Our Mission
-                    </h3>
-                    <p className="text-gray-600 text-sm leading-6">
-                      To take the headache out of accounts payable by giving builders, contractors, and small businesses the tools to manage invoices effortlessly, pay vendors on time, and keep every project moving forward.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Vision Card */}
-              <Card className="p-6 dark:border-purple-100 border-purple-100 bg-gradient-to-br from-purple-50 to-white hover:shadow-lg transition-shadow duration-300">
-                <div className="flex items-start space-x-4">
-                  <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100">
-                    <Eye className="h-6 w-6 text-purple-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      Our Vision
-                    </h3>
-                    <p className="text-gray-600 text-sm leading-6">
-                      A world where no business loses time, money, or opportunities because of messy invoice processes. We're building the future of accounts payable — faster, smarter, and built for the trades.
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            </motion.div>
+              className="w-auto h-auto rounded-xl shadow-lg border border-gray-200 dark:border-gray-200"
+            />  
           </motion.div>
         </div>
+
+        {/* Mission and Vision Cards - Now in their own row */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          viewport={{ once: true }}
+          className="mt-16"
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Mission Card */}
+            <Card className="p-6 dark:border-blue-100 border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
+                  <Target className="h-6 w-6 text-blue-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Our Mission
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-6">
+                    To take the headache out of accounts payable by giving builders, contractors, and small businesses the tools to manage invoices effortlessly, pay vendors on time, and keep every project moving forward.
+                  </p>
+                </div>
+              </div>
+            </Card>
+
+            {/* Vision Card */}
+            <Card className="p-6 dark:border-purple-100 border-purple-100 bg-gradient-to-br from-purple-50 to-white hover:shadow-lg transition-shadow duration-300">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100">
+                  <Eye className="h-6 w-6 text-purple-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                    Our Vision
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-6">
+                    A world where no business loses time, money, or opportunities because of messy invoice processes. We're building the future of accounts payable — faster, smarter, and built for the trades.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

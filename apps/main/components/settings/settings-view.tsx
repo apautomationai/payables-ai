@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Alert,
   AlertDescription,
@@ -32,12 +32,14 @@ export default function SettingsView({
   const { message, type } = searchParams;
   const [isRedirectDialogOpen, setRedirectDialogOpen] = useState(false);
 
+  // Effect to open the dialog if redirect params are in the URL
   useEffect(() => {
     if (message && type) {
       setRedirectDialogOpen(true);
     }
   }, [message, type]);
 
+  // Logic for the top warning alert
   const needsGmailConfig = integrations.some(
     (i) => i.name === "gmail" && i.status === "success" && !i.startReading
   );
@@ -55,6 +57,7 @@ export default function SettingsView({
         </p>
       </div>
 
+      {/* Top "Configuration Required" Alert */}
       {needsGmailConfig && (
         <Alert
           variant="destructive"
@@ -75,6 +78,7 @@ export default function SettingsView({
         updateStartTimeAction={updateStartTimeAction}
       />
 
+      {/* Pop-up Dialog for Redirect Feedback */}
       <Dialog open={isRedirectDialogOpen} onOpenChange={setRedirectDialogOpen}>
         <DialogContent>
           <DialogHeader>

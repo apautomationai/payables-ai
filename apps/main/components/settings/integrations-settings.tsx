@@ -21,7 +21,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@workspace/ui/components/dialog";
-import { Button } from "@workspace/ui/components/button";
+import { Button, ButtonProps } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
 import { cn } from "@workspace/ui/lib/utils";
 import Link from "next/link";
@@ -42,6 +42,8 @@ interface Integration {
   status: IntegrationStatus;
   backendName: "gmail" | "outlook" | "quickbooks";
   startReading?: string | null;
+  createdAt?: string | null;
+  lastRead?: string | null;
 }
 
 type ActionState =
@@ -51,6 +53,24 @@ type ActionState =
       message?: string;
     }
   | undefined;
+
+// Prop types for custom components to fix TypeScript errors
+interface SubmitButtonProps {
+  label: string;
+  variant: ButtonProps["variant"];
+  disabled?: boolean;
+  name?: string;
+  value?: string;
+  className?: string;
+}
+
+interface ConfigureDialogProps {
+  backendName: "gmail" | "outlook" | "quickbooks";
+  updateStartTimeAction: (
+    prevState: ActionState,
+    formData: FormData
+  ) => Promise<ActionState>;
+}
 
 const initialState: ActionState = undefined;
 
@@ -62,34 +82,32 @@ const BACKEND_NAMES_MAP = {
 
 const initialIntegrations: Omit<
   Integration,
-  "status" | "backendName" | "startReading"
+  "status" | "backendName" | "startReading" | "createdAt" | "lastRead"
 >[] = [
   {
     name: "Gmail",
     path: "google/auth",
     category: "Email Processing & Automation",
     allowCollection: true,
-   },
-  // {
-  //   name: "Outlook",
-  //   path: "outlook/auth",
-  //   category: "Email Processing & Automation",
-  //   allowCollection: false,
-  // },
-  // {
-  //   name: "QuickBooks",
-  //   path: "quickbooks/auth",
-  //   category: "Accounting & Financial Management",
-  //   allowCollection: false,
-  // },
+  },
+  {
+    name: "Outlook",
+    path: "outlook/auth",
+    category: "Email Processing & Automation",
+    allowCollection: false,
+  },
+  {
+    name: "QuickBooks",
+    path: "quickbooks/auth",
+    category: "Accounting & Bookkeeping",
+    allowCollection: false,
+  },
 ];
 
 interface IntegrationsTabProps {
   integrations: any[];
-  updateAction: (
-    prevState: ActionState,
-    formData: FormData
-  ) => Promise<ActionState>;
+  // This type now correctly matches the `formAction` dispatcher from the parent
+  updateAction: (formData: FormData) => void;
   updateStartTimeAction: (
     prevState: ActionState,
     formData: FormData
@@ -107,12 +125,13 @@ export default function IntegrationsTab({
     const existingIntegration = initialBackendIntegrations.find(
       (i: any) => i?.name === backendName
     );
-
     return {
       ...integration,
       backendName: backendName,
       status: existingIntegration?.status || "not_connected",
       startReading: existingIntegration?.startReading,
+      createdAt: existingIntegration?.createdAt,
+      lastRead: existingIntegration?.lastRead,
     } as Integration;
   });
 
@@ -149,20 +168,7 @@ function SubmitButton({
   name,
   value,
   className,
-}: {
-  label: string;
-  variant:
-    | "default"
-    | "destructive"
-    | "outline"
-    | "secondary"
-    | "ghost"
-    | "link";
-  disabled?: boolean;
-  name?: string;
-  value?: string;
-  className?: string;
-}) {
+}: SubmitButtonProps) {
   const { pending } = useFormStatus();
   return (
     <Button
@@ -181,10 +187,7 @@ function SubmitButton({
 
 interface IntegrationCardProps {
   integration: Integration;
-  updateAction: (
-    prevState: ActionState,
-    formData: FormData
-  ) => Promise<ActionState>;
+  updateAction: (formData: FormData) => void;
   updateStartTimeAction: (
     prevState: ActionState,
     formData: FormData
@@ -196,37 +199,15 @@ function IntegrationCard({
   updateAction,
   updateStartTimeAction,
 }: IntegrationCardProps) {
-  const {
-    name,
-    status,
-    allowCollection,
-    path,
-    backendName,
-    category,
-    startReading,
-  } = integration;
+  const { name, status, allowCollection, path, backendName, category, startReading, createdAt, lastRead } = integration;
 
-  const integrationStatusText =
-    {
-      success: "Connected",
-      disconnected: "Not Connected",
-      failed: "Failed",
-      not_connected: "Not Connected",
-      paused: "Paused",
-    }[status] || "Unknown";
-
-  const statusColorClass =
-    {
-      success: "bg-green-500",
-      disconnected: "bg-gray-500",
-      failed: "bg-red-500",
-      not_connected: "bg-gray-500",
-      paused: "bg-yellow-500",
-    }[status] || "bg-gray-500";
-
+  const integrationStatusText = { success: "Connected", disconnected: "Not Connected", failed: "Failed", not_connected: "Not Connected", paused: "Paused" }[status] || "Unknown";
+  const statusColorClass = { success: "bg-green-500", disconnected: "bg-gray-500", failed: "bg-red-500", not_connected: "bg-gray-500", paused: "bg-yellow-500" }[status] || "bg-gray-500";
+  
   const isConnectActionVisible = status !== "success" && status !== "paused";
   const showConfigureButton = status === "success" && !startReading;
-  const showStartDate = status === "success" && startReading;
+  const showDates = status === "success" && startReading; // CORRECTED LOGIC
+  const dateTimeFormat = "LLL d, yyyy 'at' p";
 
   return (
     <Card>
@@ -240,33 +221,25 @@ function IntegrationCard({
           <span className="text-sm font-medium">{integrationStatusText}</span>
         </div>
 
-        {showStartDate && startReading && (
-          <div className="text-sm text-muted-foreground border-l-2 pl-3 mb-4">
-            Start Date:{" "}
-            <span className="font-semibold text-primary">
-              {startReading}
-            </span>
+        {/* This section will now only show after startReading is configured */}
+        {showDates && (
+          <div className="space-y-2 text-sm text-muted-foreground border-l-2 pl-3 mb-4">
+            {createdAt && <div>Connected: <span className="font-medium text-primary">{format(new Date(createdAt), dateTimeFormat)}</span></div>}
+            {startReading && <div>Start Reading: <span className="font-medium text-primary">{format(new Date(startReading), dateTimeFormat)}</span></div>}
+            {lastRead && <div>Last Read: <span className="font-medium text-primary">{format(new Date(lastRead), dateTimeFormat)}</span></div>}
           </div>
         )}
 
-        {/* @ts-ignore */}
         <form action={updateAction} className="flex flex-wrap gap-2">
           <input type="hidden" name="name" value={backendName} />
-
           {isConnectActionVisible && (
             <>
               {allowCollection ? (
                 <Button size="sm" asChild>
-                  <Link
-                    href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`}
-                  >
-                    Connect
-                  </Link>
+                  <Link href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`}>Connect</Link>
                 </Button>
               ) : (
-                <Button size="sm" disabled>
-                  Not Allowed
-                </Button>
+                <Button size="sm" disabled>Not Allowed</Button>
               )}
             </>
           )}
@@ -274,44 +247,17 @@ function IntegrationCard({
           {status === "success" && (
             <>
               {showConfigureButton && (
-                <ConfigureDialog
-                  backendName={backendName}
-                  updateStartTimeAction={updateStartTimeAction}
-                />
+                <ConfigureDialog backendName={backendName} updateStartTimeAction={updateStartTimeAction} />
               )}
-              <SubmitButton
-                name="status"
-                value="paused"
-                label="Pause"
-                variant="outline"
-                className="border-red-600 text-red-600 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20"
-              />
-              <SubmitButton
-                name="status"
-                value="disconnected"
-                label="Disconnect"
-                variant="destructive"
-                className="text-white"
-              />
+              <SubmitButton name="status" value="paused" label="Pause" variant="outline" className="border-red-600 text-red-600 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/20" />
+              <SubmitButton name="status" value="disconnected" label="Disconnect" variant="destructive" className="text-white" />
             </>
           )}
 
           {status === "paused" && (
             <>
-              <SubmitButton
-                name="status"
-                value="success"
-                label="Resume"
-                variant="outline"
-                className="border-green-600 text-green-600 hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20"
-              />
-              <SubmitButton
-                name="status"
-                value="disconnected"
-                label="Disconnect"
-                variant="destructive"
-                className="text-white"
-              />
+              <SubmitButton name="status" value="success" label="Resume" variant="outline" className="border-green-600 text-green-600 hover:bg-green-100 hover:text-green-600 dark:hover:bg-green-900/20" />
+              <SubmitButton name="status" value="disconnected" label="Disconnect" variant="destructive" className="text-white" />
             </>
           )}
         </form>
@@ -323,20 +269,11 @@ function IntegrationCard({
 function ConfigureDialog({
   backendName,
   updateStartTimeAction,
-}: {
-  backendName: string;
-  updateStartTimeAction: (
-    prevState: ActionState,
-    formData: FormData
-  ) => Promise<ActionState>;
-}) {
+}: ConfigureDialogProps) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [date, setDate] = useState<Date | undefined>(new Date());
-  const [state, formAction] = useActionState(
-    updateStartTimeAction,
-    initialState
-  );
+  const [state, formAction] = useActionState(updateStartTimeAction, initialState);
 
   const dateString = useMemo(() => {
     if (!date) return "";
@@ -347,12 +284,10 @@ function ConfigureDialog({
     if (state?.success) {
       toast.success(state.message || "Start date saved successfully!");
       setIsOpen(false);
-      router.refresh();
+      router.refresh(); 
     }
     if (state?.error) {
-      toast.error("Failed to save date", {
-        description: state.error,
-      });
+      toast.error("Failed to save date", { description: state.error });
     }
   }, [state, router]);
 
@@ -374,40 +309,18 @@ function ConfigureDialog({
         <form action={formAction} className="grid gap-4">
           <input type="hidden" name="name" value={backendName} />
           <input type="hidden" name="startTime" value={dateString} />
-
           <div className="flex flex-col items-center">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-            />
-            {!date && (
-              <p className="text-sm text-yellow-600 mt-2">
-                Please select a date to continue.
-              </p>
-            )}
+            <Calendar mode="single" selected={date} onSelect={setDate} className="rounded-md border" />
+            {!date && <p className="text-sm text-yellow-600 mt-2">Please select a date to continue.</p>}
           </div>
-
-          {state?.error && (
-            <p className="text-sm text-red-500">{state.error}</p>
-          )}
+          {state?.error && <p className="text-sm text-red-500">{state.error}</p>}
           <DialogFooter>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setIsOpen(false)}
-            >
-              Cancel
-            </Button>
-            <SubmitButton
-              label="Save"
-              variant="default"
-              disabled={!date}
-            />
+            <Button type="button" variant="secondary" onClick={() => setIsOpen(false)}>Cancel</Button>
+            <SubmitButton label="Save" variant="default" disabled={!date} />
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
+

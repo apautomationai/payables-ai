@@ -4,7 +4,7 @@ import React from "react";
 import { Attachment } from "@/lib/types";
 import { Button } from "@workspace/ui/components/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { Plus, ListFilter } from "lucide-react";
+import { Plus } from "lucide-react";
 import Link from "next/link";
 import StatsCards from "./stats-cards";
 import InvoiceList from "./invoice-list";

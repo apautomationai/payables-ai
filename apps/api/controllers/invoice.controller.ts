@@ -17,7 +17,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        pdfUrl,
+        invoiceUrl,
         costCode,
         quantity,
         rate,
@@ -47,7 +47,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        pdfUrl,
+        invoiceUrl,
         costCode,
         quantity,
         rate,
@@ -75,8 +75,8 @@ class InvoiceController {
   }
   async getAllInvoices(req: Request, res: Response) {
     //@ts-ignore
-    const userId = req.user.id;
-    // const userId = 33;
+    // const userId = req.user.id;
+    const userId = 33;
     try {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;

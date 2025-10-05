@@ -7,42 +7,59 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardFooter,
 } from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Search, FileText } from "lucide-react";
 import type { Attachment } from "@/lib/types/invoice";
 import { cn } from "@workspace/ui/lib/utils";
 import PdfUploader from "./pdf-uploader";
 import { formatDistanceToNow } from "date-fns";
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationPrevious,
+  PaginationNext,
+} from "@workspace/ui/components/pagination"; // MODIFIED: Added Pagination imports
 
-// Component for the "Supported" / "Not Supported" status
 const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
   <div className="flex items-center gap-1.5">
-    <span className={cn("h-2 w-2 rounded-full", isSupported ? "bg-green-500" : "bg-red-500")} />
+    <span
+      className={cn(
+        "h-2 w-2 rounded-full",
+        isSupported ? "bg-green-500" : "bg-red-500"
+      )}
+    />
     <span className="text-xs text-muted-foreground">
       {isSupported ? "Supported" : "Not Supported"}
     </span>
   </div>
 );
 
-// Component for the "Pending" processing status
 const ProcessingStatus = () => (
-    <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
-      Pending
-    </span>
+  <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
+    Pending
+  </span>
 );
 
-
-export default function InvoiceList({
+export default function AttachmentsList({
   attachments,
   selectedAttachment,
   onSelectAttachment,
   onFileUpload,
+  isUploading,
+  currentPage,
+  totalPages,
 }: {
   attachments: Attachment[] | null;
   selectedAttachment: Attachment | null;
   onSelectAttachment: (attachment: Attachment) => void;
   onFileUpload: (file: File) => void;
+  isUploading: boolean;
+  currentPage: number;
+  totalPages: number;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -54,16 +71,19 @@ export default function InvoiceList({
     return attachments.filter(
       (attachment) =>
         attachment.filename.toLowerCase().includes(lowercasedFilter) ||
-        attachment.id.toLowerCase().includes(lowercasedFilter)
+        String(attachment.id).toLowerCase().includes(lowercasedFilter)
     );
   }, [attachments, searchTerm]);
+
+  const hasNextPage = currentPage < totalPages;
+  const hasPreviousPage = currentPage > 1;
 
   return (
     <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Upload & Review</CardTitle>
         <div className="mt-4">
-          <PdfUploader onFileUpload={onFileUpload} />
+          <PdfUploader onFileUpload={onFileUpload} isUploading={isUploading} />
         </div>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
@@ -76,12 +96,17 @@ export default function InvoiceList({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        
+
         <ScrollArea className="flex-1 -mx-2">
           <div className="flex flex-col space-y-1 p-2">
             {filteredAttachments.length > 0 ? (
               filteredAttachments.map((attachment) => {
                 const isSupported = attachment.mimeType === "application/pdf";
+                const displayName =
+                  attachment.filename.length > 25
+                    ? `${attachment.filename.substring(0, 22)}...`
+                    : attachment.filename;
+
                 return (
                   <button
                     key={attachment.id}
@@ -93,23 +118,31 @@ export default function InvoiceList({
                   >
                     <FileText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
                     <div className="flex-1 min-w-0">
-                      {/* --- TOP ROW --- */}
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-sm truncate" title={attachment.filename}>
-                          {attachment.filename}
+                        <p
+                          className="font-semibold text-sm truncate"
+                          title={attachment.filename}
+                        >
+                          {displayName}
                         </p>
                         <ProcessingStatus />
                       </div>
-                      {/* --- BOTTOM ROW --- */}
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
-                        <p className="truncate" title={attachment.id}>
-                          ID: {attachment.id.substring(0, 8)}...
+                        <p className="truncate" title={String(attachment.id)}>
+                          ID: {String(attachment.id).substring(0, 8)}...
                         </p>
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <SupportStatus isSupported={isSupported} />
                           <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
-                          <span title={new Date(attachment.created_at).toLocaleString()}>
-                            {formatDistanceToNow(new Date(attachment.created_at), { addSuffix: true })}
+                          <span
+                            title={new Date(
+                              attachment.created_at
+                            ).toLocaleString()}
+                          >
+                            {formatDistanceToNow(
+                              new Date(attachment.created_at),
+                              { addSuffix: true }
+                            )}
                           </span>
                         </div>
                       </div>
@@ -119,12 +152,43 @@ export default function InvoiceList({
               })
             ) : (
               <div className="text-center text-sm text-muted-foreground py-10">
-                {searchTerm ? "No results found." : "No invoices to display."}
+                {searchTerm ? "No results found." : "No invoices found."}
               </div>
             )}
           </div>
         </ScrollArea>
       </CardContent>
+
+      {/* MODIFIED: Replaced custom buttons with shadcn/ui Pagination */}
+      <CardFooter className="border-t p-2">
+        <Pagination>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href={`/invoice-review?page=${currentPage - 1}`}
+                aria-disabled={!hasPreviousPage}
+                className={
+                  !hasPreviousPage ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+            <PaginationItem>
+              <span className="text-sm font-medium text-muted-foreground">
+                Page {currentPage} of {totalPages > 0 ? totalPages : 1}
+              </span>
+            </PaginationItem>
+            <PaginationItem>
+              <PaginationNext
+                href={`/invoice-review?page=${currentPage + 1}`}
+                aria-disabled={!hasNextPage}
+                className={
+                  !hasNextPage ? "pointer-events-none opacity-50" : ""
+                }
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      </CardFooter>
     </Card>
   );
 }

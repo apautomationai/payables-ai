@@ -1,7 +1,18 @@
 import React from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
-import client from "@/lib/fetch-client"; // Adjust this path if your client is elsewhere
-import { User, Attachment, ApiResponse } from "@/lib/types"; // Adjust this path to your types file
+import client from "@/lib/fetch-client";
+import { User, Attachment, ApiResponse } from "@/lib/types";
+
+// Define a more specific type for the attachments response payload
+interface AttachmentsPayload {
+  attachments: Attachment[];
+  pagination: {
+    totalAttachments: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
 
 export default async function DashboardPage() {
   let userName = "User";
@@ -11,13 +22,15 @@ export default async function DashboardPage() {
   try {
     const [userResult, attachmentsResult] = await Promise.allSettled([
       client.get<ApiResponse<User>>("api/v1/users/me"),
-      client.get<ApiResponse<Attachment[]>>("api/v1/google/attachments"),
+      // Updated to expect the more specific payload type
+      client.get<ApiResponse<AttachmentsPayload>>("api/v1/google/attachments"),
     ]);
 
     if (userResult.status === "fulfilled" && userResult.value?.data) {
       const user = userResult.value.data;
       userName = `${user.firstName} ${user.lastName}`.trim();
     } else if (userResult.status === "rejected") {
+      // User fetch rejection logic remains the same
       const errorReason = userResult.reason as any;
       const errorMessage =
         errorReason?.error?.message && typeof errorReason.error.message === "string"
@@ -25,17 +38,17 @@ export default async function DashboardPage() {
           : "";
 
       if (errorMessage.includes("No integrations found for this user")) {
-        // Handled error, set for frontend banner
         integrationError = "Connect Email in Settings";
       } else {
-        // FIX: Only log the failure if it is NOT the handled integration error.
-        console.error("Failed to fetch user data:", userResult.reason);
+        // console.error("Failed to fetch user data:", userResult.reason);
       }
     }
 
-    if (attachmentsResult.status === "fulfilled" && attachmentsResult.value?.data) {
-      attachments = attachmentsResult.value.data;
+    if (attachmentsResult.status === "fulfilled" && attachmentsResult.value?.data?.attachments) {
+      // --- FIX: Correctly access the nested 'attachments' array ---
+      attachments = attachmentsResult.value.data.attachments;
     } else if (attachmentsResult.status === "rejected") {
+      // Attachments fetch rejection logic remains the same
       const errorReason = attachmentsResult.reason as any;
       const errorMessage =
         errorReason?.error?.message && typeof errorReason.error.message === "string"
@@ -43,11 +56,9 @@ export default async function DashboardPage() {
           : "";
       
       if (errorMessage.includes("No integrations found for this user")) {
-        // Handled error, set for frontend banner
         integrationError = "Connect Email in Settings";
       } else {
-        // FIX: Only log the failure if it is NOT the handled integration error.
-        console.error("Failed to fetch attachments:", attachmentsResult.reason);
+        // console.error("Failed to fetch attachments:", attachmentsResult.reason);
       }
     }
   } catch (error) {

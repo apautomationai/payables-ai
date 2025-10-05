@@ -14,7 +14,7 @@ export const statusEnum = pgEnum("status", [
   "failed",
   "not_connected",
   "disconnected",
-  "paused"
+  "paused",
 ]);
 
 export const integrationsModel = pgTable("integrations", {
@@ -28,6 +28,7 @@ export const integrationsModel = pgTable("integrations", {
   expiryDate: timestamp("expiry_date"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+  startReading: timestamp("start_reading"),
   lastRead: timestamp("last_read").defaultNow(),
 });
 

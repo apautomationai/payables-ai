@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -50,14 +50,32 @@ export class GoogleServices {
     return oAuth2Client;
   };
 
-  getEmailsWithAttachments = async (tokens: any, userId: number) => {
+  getEmailsWithAttachments = async (
+    tokens: any,
+    userId: number,
+    integrationId: number,
+    startedReadingAt: string 
+  ) => {
     try {
       const auth = this.getOAuthClient(tokens);
       const gmail = google.gmail({ version: "v1", auth });
+      let query = "has:attachment";
+
+ 
+
+      if (!startedReadingAt) {
+        throw new BadRequestError("Select a starting date");
+      }
+      const startDate = new Date(startedReadingAt);
+      if (isNaN(startDate.getTime())) {
+        throw new Error("Invalid date format");
+      }
+      const afterTimestamp = Math.floor(startDate.getTime() / 1000);
+      query = `after:${afterTimestamp} has:attachment`;
 
       const res = await gmail.users.messages.list({
         userId: "me",
-        q: "has:attachment",
+        q: query,
       });
 
       const messages = res.data.messages || [];
@@ -84,43 +102,53 @@ export class GoogleServices {
             });
             const data = attachment.data.data;
             //hash id
-            const id = crypto
+            const partInfo = `${msg.id}-${part.filename}-${part.mimeType}-${part.body?.size}`;
+            const hashId = crypto
               .createHash("sha256")
-              .update(`${msg.id}-${part.body.attachmentId}`)
+              .update(partInfo)
               .digest("hex");
+
+            const isExists = await googleServices.getAttachmentWithId(hashId);
+
+            if (isExists.length > 0) {
+              throw new BadRequestError("attachment already exists");
+            }
 
             // upload to S3
             const buffer = Buffer.from(data!, "base64url");
             const s3Url = await uploadBufferToS3(
               buffer,
-              `attachments/${id}-${part.filename}`,
+              `attachments/${hashId}-${part.filename}`,
               part.mimeType || "application/pdf"
             );
 
             // insert meta data to database
             //@ts-ignore
             await db.insert(emailAttachmentsModel).values({
-              id,
+              hashId,
               userId,
               emailId: msg.id!,
               filename: part.filename,
               mimeType: part.mimeType || "application/octet-stream",
               sender,
               receiver,
+              provider: "gmail",
               s3Url,
             });
-            await integrationsService.updateIntegration(userId, {
+            await integrationsService.updateIntegration(integrationId, {
               lastRead: new Date(),
+              startReading: new Date(),
             });
 
             results.push({
-              id,
+              hashId,
               emailId: msg.id,
               filename: part.filename,
               mimeType: part.mimeType,
               sender: sender,
               receiver: receiver,
               s3Url: s3Url,
+              provider: "gmail",
             });
           }
         }
@@ -131,18 +159,23 @@ export class GoogleServices {
     }
   };
 
-  getAttachments = async (userId: number, page: number, pageSize: number) => {
-    const offset = (page - 1) * pageSize;
+  getAttachments = async (userId: number, page: number, limit: number) => {
+    const offset = (page - 1) * limit;
     try {
       const attachment = await db
         .select()
         .from(emailAttachmentsModel)
         .where(eq(emailAttachmentsModel.userId, userId))
         .orderBy(asc(emailAttachmentsModel.created_at))
-        .limit(pageSize)
+        .limit(limit)
         .offset(offset);
+      const [attachmentCount] = await db
+        .select({ count: count() })
+        .from(emailAttachmentsModel)
+        .where(eq(emailAttachmentsModel.userId, userId));
+      const totalAttachments = attachmentCount.count;
 
-      return attachment;
+      return [attachment, totalAttachments];
     } catch (error: any) {
       const result = {
         success: false,
@@ -151,13 +184,12 @@ export class GoogleServices {
       return result;
     }
   };
-
-  getAttachmentWithId = async (id: string) => {
+  getAttachmentWithId = async (hashId: string) => {
     try {
       const response = await db
         .select()
         .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.id, id));
+        .where(eq(emailAttachmentsModel.hashId, hashId));
       return response;
     } catch (error: any) {
       throw new BadRequestError(error.message || "No attachment found");

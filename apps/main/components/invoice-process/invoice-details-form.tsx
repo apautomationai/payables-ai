@@ -1,16 +1,20 @@
+"use client";
+
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
 import { Progress } from "@workspace/ui/components/progress";
-import { InvoiceDetails, LineItem } from "@/lib/types/invoice";
+import { InvoiceDetails } from "@/lib/types/invoice";
 import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
 
 const formatLabel = (key: string) => {
-  return key.replace(/([A-Z])/g, " $1").replace(/^./, (str) => str.toUpperCase());
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (str) => str.toUpperCase());
 };
 
 const FormField = ({
@@ -24,7 +28,7 @@ const FormField = ({
 }: {
   fieldKey: string;
   label: string;
-  value: string | number | LineItem[];
+  value: string | number | any[] | null | undefined;
   isEditing: boolean;
   isSelected: boolean;
   onToggle: (fieldKey: string) => void;
@@ -32,7 +36,7 @@ const FormField = ({
 }) => {
   const displayValue = Array.isArray(value)
     ? `${value.length} item(s)`
-    : String(value);
+    : value ?? "N/A";
 
   return (
     <div className="flex items-start gap-4">
@@ -55,7 +59,7 @@ const FormField = ({
         <Input
           id={fieldKey}
           name={fieldKey}
-          value={displayValue}
+          value={String(displayValue)}
           readOnly={!isEditing || Array.isArray(value)}
           onChange={onChange}
           className={cn(
@@ -70,6 +74,16 @@ const FormField = ({
   );
 };
 
+interface InvoiceDetailsFormProps {
+  invoiceDetails: InvoiceDetails;
+  isEditing: boolean;
+  setIsEditing: (isEditing: boolean) => void;
+  onDetailsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  selectedFields: string[];
+  setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
+  onSave: () => Promise<void>;
+}
+
 export default function InvoiceDetailsForm({
   invoiceDetails,
   isEditing,
@@ -77,14 +91,9 @@ export default function InvoiceDetailsForm({
   onDetailsChange,
   selectedFields,
   setSelectedFields,
-}: {
-  invoiceDetails: InvoiceDetails;
-  isEditing: boolean;
-  setIsEditing: (isEditing: boolean) => void;
-  onDetailsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  selectedFields: string[];
-  setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
-}) {
+  onSave,
+}: InvoiceDetailsFormProps) {
+
   const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) =>
       prev.includes(fieldKey)
@@ -93,31 +102,42 @@ export default function InvoiceDetailsForm({
     );
   };
 
-  const allFields = Object.keys(invoiceDetails);
+  // UPDATED: Filter out the fields that should not be displayed in the form
+  const allFields = Object.keys(invoiceDetails || {});
+  const hiddenFields = ["id", "userId", "attachmentId"];
+  const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 
   const mandatoryFields = [
-    "invoiceNumber", "vendorName", "customerName",
-    "invoiceDate", "dueDate", "totalAmount",
+    "invoiceNumber",
+    "vendorName",
+    "customerName",
+    "invoiceDate",
+    "dueDate",
+    "totalAmount",
   ];
+
   const completedMandatoryFields = mandatoryFields.filter((field) =>
-    selectedFields.includes(field)
+    selectedFields.includes(field) && invoiceDetails[field as keyof InvoiceDetails]
   ).length;
-  const progress = (completedMandatoryFields / mandatoryFields.length) * 100;
+
+  const progress =
+    (completedMandatoryFields / (mandatoryFields.length || 1)) * 100;
 
   return (
-    <Card className="h-[800px] flex flex-col">
+    <Card className="h-[750px] flex flex-col">
       <CardHeader>
         <CardTitle>Invoice Information</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         <ScrollArea className="flex-grow pr-4 -mr-4">
           <div className="space-y-4">
-            {allFields.map((key) => (
+            {/* UPDATED: Loop over the filtered list of fields */}
+            {fieldsToDisplay.map((key) => (
               <FormField
                 key={key}
                 fieldKey={key}
                 label={formatLabel(key)}
-                value={invoiceDetails[key as keyof InvoiceDetails]}
+                value={invoiceDetails[key as keyof InvoiceDetails] ?? null}
                 isEditing={isEditing}
                 isSelected={selectedFields.includes(key)}
                 onToggle={handleFieldToggle}
@@ -126,13 +146,13 @@ export default function InvoiceDetailsForm({
             ))}
           </div>
         </ScrollArea>
-        
+
         <div className="flex-shrink-0 mt-auto pt-4 border-t">
           <div className="space-y-2">
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Field Completion</span>
               <span>
-                {completedMandatoryFields} of {mandatoryFields.length} mandatory fields completed
+                {completedMandatoryFields} of {mandatoryFields.length}
               </span>
             </div>
             <Progress value={progress} />
@@ -142,10 +162,10 @@ export default function InvoiceDetailsForm({
             setIsEditing={setIsEditing}
             invoiceDetails={invoiceDetails}
             selectedFields={selectedFields}
+            onSave={onSave}
           />
         </div>
       </CardContent>
     </Card>
   );
 }
-

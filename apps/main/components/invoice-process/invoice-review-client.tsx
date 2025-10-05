@@ -1,243 +1,325 @@
-// "use client";
-
-// import React, { useState, useMemo, useEffect } from "react";
-// import InvoiceList from "./invoice-list";
-// import PdfViewer from "./pdf-viewer";
-// import InvoiceDetailsForm from "./invoice-details-form";
-// import { InvoiceListItem, InvoiceDetails } from "@/lib/types/invoice";
-// import { mockInvoiceDetails } from "@/data/invoice-data";
-
-// export default function InvoiceReviewClient({
-//   invoices,
-//   initialInvoiceDetails,
-// }: {
-//   invoices: InvoiceListItem[];
-//   initialInvoiceDetails: InvoiceDetails;
-// }) {
-//   const [isClient, setIsClient] = useState(false);
-
-//   useEffect(() => {
-//     setIsClient(true);
-//   }, []);
-
-//   const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>(
-//     invoices[0]!.id
-//   );
-//   const selectedInvoice = useMemo(
-//     () => invoices.find((invoice) => invoice.id === selectedInvoiceId)!,
-//     [invoices, selectedInvoiceId]
-//   );
-
-//   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(
-//     initialInvoiceDetails
-//   );
-//   const [selectedFields, setSelectedFields] = useState<string[]>(() =>
-//     initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
-//   );
-//   const [isEditing, setIsEditing] = useState(false);
-//   const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
-
-//   useEffect(() => {
-//     return () => {
-//       if (uploadedPdfUrl) {
-//         URL.revokeObjectURL(uploadedPdfUrl);
-//       }
-//     };
-//   }, [uploadedPdfUrl]);
-
-//   const handleSelectInvoice = (invoice: InvoiceListItem) => {
-//     setSelectedInvoiceId(invoice.id);
-//     const details = mockInvoiceDetails[invoice.id];
-//     setInvoiceDetails(details || null);
-//     setSelectedFields(details ? Object.keys(details) : []);
-//     setIsEditing(false);
-//     setUploadedPdfUrl(null);
-//   };
-
-//   const handleDetailsChange = (
-//     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-//   ) => {
-//     if (!invoiceDetails) return;
-//     const { name, value } = e.target;
-//     setInvoiceDetails((prevDetails) =>
-//       prevDetails ? { ...prevDetails, [name]: value } : null
-//     );
-//   };
-
-//   // This handler now correctly accepts a File object
-//   const handleFileUpload = (file: File) => {
-//     if (uploadedPdfUrl) {
-//       URL.revokeObjectURL(uploadedPdfUrl);
-//     }
-//     const url = URL.createObjectURL(file);
-//     setUploadedPdfUrl(url);
-//     console.log("File uploaded and ready for viewing:", file.name);
-//   };
-
-//   if (!isClient) {
-//     return null;
-//   }
-
-//   if (!invoices || invoices.length === 0) {
-//     return (
-//       <div className="flex items-center justify-center h-full col-span-full">
-//         <p className="text-muted-foreground">No invoices to display.</p>
-//       </div>
-//     );
-//   }
-
-//   if (!selectedInvoice) {
-//     return (
-//       <div className="flex items-center justify-center h-full col-span-full">
-//         <p className="text-red-500">
-//           Error: Could not find the selected invoice.
-//         </p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <div className="grid h-96 grid-cols-1 gap-4 md:grid-cols-12">
-//       <div className="md:col-span-3 lg:col-span-3">
-//         <InvoiceList
-//           invoices={invoices}
-//           selectedInvoice={selectedInvoice}
-//           onSelectInvoice={handleSelectInvoice}
-//           onFileUpload={handleFileUpload}
-//         />
-//       </div>
-//       {invoiceDetails ? (
-//         <>
-//           <div className="md:col-span-5 lg:col-span-5">
-//             <PdfViewer
-//               invoice={invoiceDetails}
-//               pdfUrl={uploadedPdfUrl || invoiceDetails.pdfUrl}
-//             />
-//           </div>
-//           <div className="md:col-span-4 lg:col-span-4">
-//             <InvoiceDetailsForm
-//               invoiceDetails={invoiceDetails}
-//               isEditing={isEditing}
-//               setIsEditing={setIsEditing}
-//               onDetailsChange={handleDetailsChange}
-//               selectedFields={selectedFields}
-//               setSelectedFields={setSelectedFields}
-//             />
-//           </div>
-//         </>
-//       ) : (
-//         <div className="md:col-span-9 flex items-center justify-center text-muted-foreground">
-//           <p>Could not load details for the selected invoice.</p>
-//         </div>
-//       )}
-//     </div>
-//   );
-// }
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
-import InvoiceList from "./invoice-list";
-import PdfViewer from "./pdf-viewer";
+import React, { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { client } from "@/lib/axios-client";
+import axios from "axios";
+import AttachmentsList from "./attachments-list";
+import AttachmentViewer from "./attachment-viewer";
 import InvoiceDetailsForm from "./invoice-details-form";
-import type { Attachment, InvoiceDetails } from "@/lib/types/invoice";
+import InvoicesList from "./invoices-list";
+import InvoicePdfViewer from "./invoice-pdf-viewer";
+import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
+
+// Define the shape of the API response for a single invoice
+interface InvoiceApiResponse {
+  success: boolean;
+  data: InvoiceDetails;
+}
 
 export default function InvoiceReviewClient({
   attachments,
   initialInvoiceDetails,
+  currentPage,
+  totalPages,
+  invoices,
+  invoiceCurrentPage,
+  invoiceTotalPages,
+  initialSelectedInvoice,
 }: {
   attachments: Attachment[];
-  initialInvoiceDetails: InvoiceDetails;
+  initialInvoiceDetails: InvoiceDetails | null;
+  currentPage: number;
+  totalPages: number;
+  invoices: InvoiceListItem[];
+  invoiceCurrentPage: number;
+  invoiceTotalPages: number;
+  initialSelectedInvoice: InvoiceListItem | null | undefined;
 }) {
   const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
+  const router = useRouter();
 
+  const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("attachments");
+  
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments.length > 0 ? attachments[0]!.id : null
   );
+  const [isUploading, setIsUploading] = useState(false);
 
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(initialSelectedInvoice?.id || null);
+  
+  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+
+  const [selectedFields, setSelectedFields] = useState<string[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    // When invoiceDetails changes, update the list of selected fields
+    if (invoiceDetails) {
+      setSelectedFields(Object.keys(invoiceDetails));
+    }
+  }, [invoiceDetails]);
+  
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
     [attachments, selectedAttachmentId]
   );
   
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
-  const [selectedFields, setSelectedFields] = useState<string[]>(() =>
-    initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
-  );
-  const [isEditing, setIsEditing] = useState(false);
-  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
-
   useEffect(() => {
-    return () => {
-      if (uploadedPdfUrl) {
-        URL.revokeObjectURL(uploadedPdfUrl);
-      }
-    };
-  }, [uploadedPdfUrl]);
-
+    setIsClient(true);
+  }, []);
+  
   const handleSelectAttachment = (attachment: Attachment) => {
     setSelectedAttachmentId(attachment.id);
-    setUploadedPdfUrl(null); 
   };
   
-  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    if (!invoiceDetails) return;
-    const { name, value } = e.target;
-    setInvoiceDetails((prevDetails) =>
-      prevDetails ? { ...prevDetails, [name]: value } : null
-    );
+  const handleSelectInvoice = async (invoice: InvoiceListItem) => {
+    if (invoice.id === selectedInvoiceId) return;
+
+    setSelectedInvoiceId(invoice.id);
+    setInvoiceDetails(null);
+    setIsDetailsLoading(true);
+
+    try {
+      const response = await client.get<InvoiceApiResponse>(
+        `/api/v1/invoice/invoices/${invoice.id}`
+      );
+      //@ts-ignore
+      setInvoiceDetails(response.data);
+    } catch (error: any) {
+      let errorMessage = "Could not load invoice details.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      toast.error(errorMessage);
+      setInvoiceDetails(null);
+    } finally {
+      setIsDetailsLoading(false);
+    }
+  };
+  
+  const handleInvoicePageChange = (page: number) => {
+    router.push(`/invoice-review?page=${page}`);
   };
 
-  const handleFileUpload = (file: File) => {
-    if (uploadedPdfUrl) {
-      URL.revokeObjectURL(uploadedPdfUrl);
+  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!invoiceDetails) return;
+    const { name, value } = e.target;
+    setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+  
+  const handleSaveDetails = async () => {
+    if (!invoiceDetails) return;
+
+    try {
+      const response = await client.patch<InvoiceApiResponse>(
+        `/api/v1/invoice/invoices/${invoiceDetails.id}`,
+        invoiceDetails
+      );
+      //@ts-ignore
+      setInvoiceDetails(response.data);
+      toast.success("Invoice updated successfully");
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to save invoice:", err);
+      toast.error("Failed to save invoice");
+      throw err; // Re-throw to let the child component know the save failed
     }
-    const url = URL.createObjectURL(file);
-    setUploadedPdfUrl(url);
+  };
+
+  const handleFileUpload = async (file: File) => {
+    if (file.type !== "application/pdf") {
+      toast.error("Invalid file type. Only PDF files are accepted.");
+      return;
+    }
+
+    setSelectedAttachmentId(null);
+    setIsUploading(true);
+    const uploadToast = toast.loading("Preparing to upload...");
+
+    try {
+      const response = await client.get<{ 
+        signedUrl: string; 
+        publicUrl: string;
+        key: string;
+      }>(
+        `/api/v1/upload/upload-attachment`,
+        { params: { filename: file.name, mimetype: file.type } }
+      );
+      // @ts-ignore
+      const { signedUrl, publicUrl, key } = response;
+      
+      if (!signedUrl || !publicUrl || !key) {
+        throw new Error("Failed to retrieve valid upload details from the server.");
+      }
+      
+      const uploadResponse = await axios.put(signedUrl, file, {
+        headers: { "Content-Type": file.type },
+        timeout: 60000,
+      });
+
+      if (uploadResponse.status !== 200) {
+        throw new Error("File upload to storage failed.");
+      }
+
+      await client.post("/api/v1/upload/create-record", {
+        filename: file.name,
+        mimetype: file.type,
+        s3Url: publicUrl,
+      });
+
+      toast.success("PDF uploaded and processed successfully!", { id: uploadToast });
+      router.refresh();
+
+    } catch (error: any) {
+      console.error("Upload error:", error);
+      let errorMessage = "An unexpected error occurred during upload.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage, { id: uploadToast });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   if (!isClient) return null;
+  
+  const ModernTabs = () => {
+    const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
+    const sliderRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+        const activeTabIndex = activeTab === 'attachments' ? 0 : 1;
+        const activeTabNode = tabsRef.current[activeTabIndex];
+        const sliderNode = sliderRef.current;
+
+        if (activeTabNode && sliderNode) {
+            sliderNode.style.left = `${activeTabNode.offsetLeft}px`;
+            sliderNode.style.width = `${activeTabNode.offsetWidth}px`;
+        }
+    }, [activeTab]);
+
+    return (
+        <div className="relative flex items-center bg-muted p-1 rounded-lg self-start md:-mt-5">
+            <div 
+                ref={sliderRef}
+                className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
+            />
+            {['attachments', 'invoices'].map((tab, index) => (
+                <button
+                    key={tab}
+                    ref={(el) => { tabsRef.current[index] = el; }}
+                    onClick={() => setActiveTab(tab as "attachments" | "invoices")}
+                    className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${
+                        activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+            ))}
+        </div>
+    );
+  };
 
   return (
-    <div className="grid h-[calc(100vh-10rem)] grid-cols-1 gap-4 md:grid-cols-12">
-      <div className="md:col-span-3">
-        <InvoiceList
-          attachments={attachments}
-          selectedAttachment={selectedAttachment}
-          onSelectAttachment={handleSelectAttachment}
-          onFileUpload={handleFileUpload}
-        />
-      </div>
-      <div className="md:col-span-5">
-        {selectedAttachment ? (
-            <PdfViewer
-              attachment={selectedAttachment}
-              pdfUrl={uploadedPdfUrl || selectedAttachment.s3Url}
-            />
-        ) : (
-          <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-             <p>Select or upload an invoice to begin.</p>
-          </div>
-        )}
-      </div>
-      <div className="md:col-span-4">
-        {invoiceDetails ? (
-           <InvoiceDetailsForm
-              invoiceDetails={invoiceDetails}
-              isEditing={isEditing}
-              setIsEditing={setIsEditing}
-              onDetailsChange={handleDetailsChange}
-              selectedFields={selectedFields}
-              setSelectedFields={setSelectedFields}
-            />
-        ) : (
-           <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-              <p>Could not load invoice details.</p>
+    <div className="flex flex-col h-full w-full bg-background text-foreground">
+        <div className="flex items-center border-b border-border px-4 py-2 md:pb-2">
+            <ModernTabs />
+        </div>
+
+        <div className="flex-grow p-4">
+            <div key={activeTab} className="animate-fade-in h-full">
+                {activeTab === 'attachments' && (
+                    <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
+                        <div className="md:col-span-4">
+                            <AttachmentsList
+                                attachments={attachments}
+                                selectedAttachment={selectedAttachment}
+                                onSelectAttachment={handleSelectAttachment}
+                                onFileUpload={handleFileUpload}
+                                currentPage={currentPage}
+                                totalPages={totalPages}
+                                isUploading={isUploading}
+                            />
+                        </div>
+                        <div className="md:col-span-8">
+                            {selectedAttachment ? (
+                                <AttachmentViewer
+                                    attachment={selectedAttachment}
+                                    pdfUrl={selectedAttachment.s3Url}
+                                />
+                            ) : (
+                                <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
+                                    <p>Select or upload a PDF attachment to begin.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'invoices' && (
+                    <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
+                        <div className="md:col-span-3">
+                           <InvoicesList
+                             invoices={invoices}
+                             selectedInvoiceId={selectedInvoiceId}
+                             onSelectInvoice={handleSelectInvoice}
+                             currentPage={invoiceCurrentPage}
+                             totalPages={invoiceTotalPages}
+                             onPageChange={handleInvoicePageChange}
+                           />
+                        </div>
+                        <div className="md:col-span-5">
+                            {isDetailsLoading ? (
+                                <div className="flex h-full items-center justify-center text-muted-foreground">Loading PDF...</div>
+                            ) : invoiceDetails ? (
+                                <InvoicePdfViewer
+                                    invoicePdfUrl={invoiceDetails.pdfUrl}
+                                    sourcePdfUrl={invoiceDetails.sourcePdfUrl}
+                                />
+                            ) : (
+                                 <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
+                                    <p>Select an invoice to view its PDF.</p>
+                                </div>
+                            )}
+                        </div>
+                        <div className="md:col-span-4">
+                            {isDetailsLoading ? (
+                                <div className="flex h-full items-center justify-center text-muted-foreground">Loading details...</div>
+                            ) : invoiceDetails ? (
+                                <InvoiceDetailsForm
+                                    invoiceDetails={invoiceDetails}
+                                    isEditing={isEditing}
+                                    setIsEditing={setIsEditing}
+                                    onDetailsChange={handleDetailsChange}
+                                    selectedFields={selectedFields}
+                                    setSelectedFields={setSelectedFields}
+                                    onSave={handleSaveDetails}
+                                />
+                            ) : (
+                                <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
+                                    <p>Select an invoice to view its details.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
-        )}
-      </div>
+        </div>
+        <style jsx global>{`
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            .animate-fade-in {
+                animation: fadeIn 0.4s ease-in-out;
+            }
+        `}</style>
     </div>
   );
 }

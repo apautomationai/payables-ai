@@ -1,80 +1,111 @@
-// import React from "react";
+import React from "react";
+import client from "@/lib/fetch-client";
+import InvoiceReviewClient from "@/components/invoice-process/invoice-review-client";
+import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
 
-// import InvoiceReviewClient from "@/components/invoice-process/invoice-review-client";
-// import { mockInvoices, mockInvoiceDetails } from "@/data//invoice-data";
+export const dynamic = "force-dynamic";
 
-// // This is the main server component for the page.
-// // It fetches initial data and passes it to the client component.
-// export default function InvoiceReviewPage() {
+// --- Interfaces for API responses ---
+interface AttachmentsApiResponse {
+  attachments: Attachment[];
+  pagination: { totalPages: number };
+}
 
-//   // In a real app, you would fetch this data from your API
-//   const invoices = mockInvoices;
- 
+interface InvoicesApiResponse {
+  invoices: InvoiceListItem[];
+  pagination: { totalPages: number };
+}
 
-
-//   // Handle the case where there might be no invoices
-//   if (!invoices || invoices.length === 0) {
-//     return (
-//       <div className="flex items-center justify-center h-full">
-//         <p className="text-muted-foreground">No invoices found.</p>
-//       </div>
-//     );
-//   }
-
-//   const initialInvoiceDetails = mockInvoiceDetails[invoices[0]!.id];
-
-//   // Handle the case where the initial invoice details might not exist
-//   if (!initialInvoiceDetails) {
-//     return (
-//       <div className="flex items-center justify-center h-full">
-//         <p className="text-red-500">Error: Initial invoice data is missing.</p>
-//       </div>
-//     );
-//   }
-
-//   return (
-//     <InvoiceReviewClient
-//       invoices={invoices}
-//       initialInvoiceDetails={initialInvoiceDetails}
-//     />
-//   );
-// }
-
-import React from 'react';
-import client from '@/lib/fetch-client';
-import InvoiceReviewClient from '@/components/invoice-process/invoice-review-client';
-import type { Attachment, InvoiceDetails } from '@/lib/types/invoice';
-import { mockInvoiceDetails } from "@/data/invoice-data";
-
-async function getAttachments() {
+// --- Data Fetching Functions ---
+async function getAttachments(page: number) {
   try {
-    const response = await client.get<{ data: Attachment[] }>('api/v1/google/attachments', { cache: 'no-store' });
-    return response.data || [];
+    const response = await client.get<{ data: AttachmentsApiResponse }>(
+      `api/v1/google/attachments?page=${page}&limit=20`,
+      { cache: "no-store" }
+    );
+    return { data: response.data, error: null };
   } catch (error) {
     console.error("Failed to fetch attachments:", error);
-    return [];
+    return { data: null, error: "Could not load attachments." };
   }
 }
 
-export default async function InvoiceReviewPage() {
-  const attachments = await getAttachments();
+async function getInvoices(page: number) {
+  try {
+    const response = await client.get<{ data: InvoicesApiResponse }>(
+      `api/v1/invoice/invoices?page=${page}&limit=20`,
+      { cache: "no-store" }
+    );
+    return { data: response.data, error: null };
+  } catch (error) {
+    console.error("Failed to fetch invoices:", error);
+    return { data: null, error: "Could not load the invoice list." };
+  }
+}
 
-  // Load the first invoice detail from the mock data file
-  const firstMockId = Object.keys(mockInvoiceDetails)[0];
-  const initialInvoiceDetails = firstMockId ? mockInvoiceDetails[firstMockId] : null;
+async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | null> {
+  try {
+    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`, {
+      cache: "no-store",
+    });
+    return response.data;
+  } catch (error) {
+    console.error(`Failed to fetch details for invoice ${invoiceId}:`, error);
+    return null;
+  }
+}
 
-  if (!initialInvoiceDetails) {
-     return (
+// --- Page Component ---
+export default async function InvoiceReviewPage({
+  searchParams,
+}: {
+  // FIX: Using 'any' to bypass the persistent build error.
+  searchParams: any;
+}) {
+  const pageParam = searchParams['page'] ? (Array.isArray(searchParams['page']) ? searchParams['page'][0] : searchParams['page']) : "1";
+  const currentPage = Number(pageParam);
+
+  const attachmentsResult = await getAttachments(currentPage);
+  const invoicesResult = await getInvoices(currentPage);
+
+  if (invoicesResult.error || !invoicesResult.data) {
+    return (
+      <div className="flex h-full items-center justify-center text-center">
+        <div>
+          <h2 className="text-xl font-semibold text-red-600">Failed to Load Data</h2>
+          <p className="text-muted-foreground">{invoicesResult.error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const { invoices, pagination: invoicesPagination } = invoicesResult.data;
+  const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || { attachments: [], pagination: { totalPages: 1 }};
+
+  const initialSelectedInvoice = invoices.length > 0 ? invoices[0] : null;
+  
+  const initialInvoiceDetails = initialSelectedInvoice
+    ? await getInvoiceDetails(initialSelectedInvoice.id)
+    : null;
+
+  if (!initialSelectedInvoice) {
+    return (
       <div className="flex h-full items-center justify-center">
-        <p className="text-red-500">Error: Could not load initial mock invoice data.</p>
+        <p>No invoices found.</p>
       </div>
     );
   }
 
   return (
-    <InvoiceReviewClient 
-      attachments={attachments} 
-      initialInvoiceDetails={initialInvoiceDetails} 
+    <InvoiceReviewClient
+      attachments={attachments}
+      currentPage={currentPage}
+      totalPages={attachmentsPagination.totalPages}
+      invoices={invoices}
+      invoiceCurrentPage={currentPage}
+      invoiceTotalPages={invoicesPagination.totalPages}
+      initialSelectedInvoice={initialSelectedInvoice}
+      initialInvoiceDetails={initialInvoiceDetails}
     />
   );
 }

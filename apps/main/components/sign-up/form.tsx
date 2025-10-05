@@ -261,7 +261,7 @@ export default function SignUpForm() {
 
               <div className="space-y-3">
                 <Label htmlFor="businessName" className="text-gray-300 font-medium text-sm">
-                  Business Name<span className="text-red-400 ml-1">*</span>
+                  Business Name
                 </Label>
                 <div className="relative">
                   <Building2 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
@@ -269,7 +269,6 @@ export default function SignUpForm() {
                     id="businessName"
                     name="businessName"
                     placeholder="Business Name"
-                    required
                     className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
                   />
                   <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>

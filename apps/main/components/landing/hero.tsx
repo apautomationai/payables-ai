@@ -7,16 +7,16 @@ import {
   AnimatedChart,
   PulsingOrb,
   FloatingElements,
-  GeometricPattern,
+  // GeometricPattern,
   ProfessionalIcons,
 } from "./animated-icons";
 import {
   ArrowRight,
   Play,
-  Star,
-  Users,
-  TrendingUp,
-  Shield,
+  // Star,
+  // Users,
+  // TrendingUp,
+  // Shield,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import Image from "next/image";
@@ -100,7 +100,7 @@ export function Hero() {
            Stop wasting time on manual invoice handling. Automatically capture, track, and pay your invoices — all in one streamlined platform.
           </motion.p>
 
-          {/* <motion.div
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
@@ -144,9 +144,9 @@ export function Hero() {
                 </Button>
               </>
             )}
-          </motion.div> */}
+          </motion.div> 
 
-          {/* <motion.div
+           {/* <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}

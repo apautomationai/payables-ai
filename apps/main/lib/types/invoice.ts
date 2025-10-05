@@ -1,3 +1,5 @@
+// @/lib/types/invoice.ts
+
 export type Attachment = {
   id: string;
   userId: number;
@@ -11,33 +13,50 @@ export type Attachment = {
   updated_at: string;
 };
 
-
-
+// UPDATED: This type now matches the fields returned by the GET /api/v1/invoice/invoices endpoint.
 export type InvoiceListItem = {
-  id: string;
-  number: string;
-  status: "Completed" | "Pending" | "Requires Attention";
-  date: string;
+  // FIX: Changed 'id' from string to number to match the backend data
+  id: number; 
+  userId: number;
+  invoiceNumber: string;
+  totalAmount: string; 
+  attachmentId: number;
+  attachmentUrl: string;
+  createdAt: string;
+  vendorName?: string; 
 };
 
-export interface LineItem {
-  id: string;
-  description: string;
-  quantity: number;
-  unitPrice: number;
-  total: number;
+
+// UPDATED: This interface now matches the flat structure of your 'invoiceModel' in the database.
+export interface InvoiceDetails {
+  id: number;
+  userId: number;
+  attachmentId: number;
+  invoiceNumber: string;
+  vendorName: string | null;
+  customerName: string | null;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  totalAmount: string | null; // numeric
+  currency: string | null;
+  // The 'lineItems' array has been replaced with the flat fields from your model
+  lineItems: string | null; // numeric
+  costCode: string | null;
+  quantity: string | null; // numeric
+  rate: string | null; // numeric
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+  // These fields are needed by the viewer component but are not in the current backend model
+  pdfUrl: string;
+  sourcePdfUrl: string;
+  status: "Completed" | "Pending" | "Requires Attention";
 }
 
-export interface InvoiceDetails {
-  id: string;
-  invoiceNumber: string;
-  vendorName: string;
-  customerName: string;
-  invoiceDate: string;
-  dueDate: string;
-  totalAmount: number;
-  currency: string;
-  status: "Completed" | "Pending" | "Requires Attention";
-  lineItems: LineItem[];
-  pdfUrl: string;
+export interface LineItem {
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  // Add other fields as needed
 }

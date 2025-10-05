@@ -185,6 +185,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
+        invoiceUrl,
         costCode,
         quantity,
         rate,
@@ -206,6 +207,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
+        invoiceUrl,
         costCode,
         quantity,
         rate,
@@ -225,6 +227,9 @@ class InvoiceController {
   }
 
   async getAllInvoices(req: Request, res: Response) {
+    //@ts-ignore
+    // const userId = req.user.id;
+    const userId = 33;
     try {
       //@ts-ignore
       const userId = req.user.id;

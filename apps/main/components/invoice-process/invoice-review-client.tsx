@@ -12,39 +12,24 @@ import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
 import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
 
-// Helper function to convert a file to a Base64URL string
-const fileToBase64 = (file: File): Promise<string> =>
-  new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => {
-      const base64String = (reader.result as string).split(",")[1];
-      if (base64String) {
-        const base64Url = base64String.replace(/\+/g, '-').replace(/\//g, '_');
-        resolve(base64Url);
-      } else {
-        reject(new Error("Failed to read file as Base64"));
-      }
-    };
-    reader.onerror = (error) => reject(error);
-  });
-
 export default function InvoiceReviewClient({
   attachments,
   initialInvoiceDetails,
   currentPage,
   totalPages,
   invoices,
-  invoiceDetailsData,
+  invoiceCurrentPage,
+  invoiceTotalPages,
   initialSelectedInvoice,
 }: {
   attachments: Attachment[];
-  initialInvoiceDetails: InvoiceDetails;
+  initialInvoiceDetails: InvoiceDetails | null;
   currentPage: number;
   totalPages: number;
   invoices: InvoiceListItem[];
-  invoiceDetailsData: Record<string, InvoiceDetails>;
-  initialSelectedInvoice: InvoiceListItem;
+  invoiceCurrentPage: number;
+  invoiceTotalPages: number;
+  initialSelectedInvoice: InvoiceListItem | null | undefined;
 }) {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
@@ -54,14 +39,13 @@ export default function InvoiceReviewClient({
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments.length > 0 ? attachments[0]!.id : null
   );
-  const [uploadedPdfUrl, setUploadedPdfUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const [selectedInvoiceId, setSelectedInvoiceId] = useState<string>(initialSelectedInvoice.id);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(initialSelectedInvoice?.id || null);
+  
+  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
+  const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(
-    invoiceDetailsData[initialSelectedInvoice.id] ?? null
-  );
   const [selectedFields, setSelectedFields] = useState<string[]>(() =>
     initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
   );
@@ -75,23 +59,42 @@ export default function InvoiceReviewClient({
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  useEffect(() => {
-    return () => {
-      if (uploadedPdfUrl) {
-        URL.revokeObjectURL(uploadedPdfUrl);
-      }
-    };
-  }, [uploadedPdfUrl]);
   
   const handleSelectAttachment = (attachment: Attachment) => {
     setSelectedAttachmentId(attachment.id);
-    setUploadedPdfUrl(null);
   };
   
-  const handleSelectInvoice = (invoice: InvoiceListItem) => {
+  const handleSelectInvoice = async (invoice: InvoiceListItem) => {
+    if (invoice.id === selectedInvoiceId) return;
+
     setSelectedInvoiceId(invoice.id);
-    setInvoiceDetails(invoiceDetailsData[invoice.id] ?? null);
+    setInvoiceDetails(null);
+    setIsDetailsLoading(true);
+
+    try {
+      const response = await client.get<{ data: InvoiceDetails }>(
+        `/api/v1/invoice/invoices/${invoice.id}`
+      );
+      setInvoiceDetails(response.data.data);
+    } catch (error: any) {
+      // console.error("Failed to fetch invoice details:", error);
+      
+      let errorMessage = "Could not load invoice details.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage);
+
+      setInvoiceDetails(null);
+    } finally {
+      setIsDetailsLoading(false);
+    }
+  };
+  
+  const handleInvoicePageChange = (page: number) => {
+    router.push(`/invoice-review?page=${page}`);
   };
 
   const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -101,55 +104,65 @@ export default function InvoiceReviewClient({
   };
 
   const handleFileUpload = async (file: File) => {
-    if (uploadedPdfUrl) URL.revokeObjectURL(uploadedPdfUrl);
-    const url = URL.createObjectURL(file);
-    setUploadedPdfUrl(url);
+    if (file.type !== "application/pdf") {
+      toast.error("Invalid file type. Only PDF files are accepted.");
+      return;
+    }
+
     setSelectedAttachmentId(null);
     setIsUploading(true);
-    const uploadToast = toast.loading("Processing and uploading file...");
+    const uploadToast = toast.loading("Preparing to upload...");
 
     try {
-      const base64File = await fileToBase64(file);
-      const uploadResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/v1/upload/upload-attachment`,
-        base64File,
-        {
-          headers: {
-            "Content-Type": "application/pdf",
-            "X-Filename": file.name,
-            "X-Mimetype": file.type,
-          },
-        }
+      const response = await client.get<{ 
+        signedUrl: string; 
+        publicUrl: string;
+        key: string;
+      }>(
+        `/api/v1/upload/upload-attachment`,
+        { params: { filename: file.name, mimetype: file.type } }
       );
-
-      const uploadResult = uploadResponse.data;
-      if (uploadResponse.status !== 200) {
-        throw new Error(uploadResult.message || "File upload failed");
+      //@ts-ignore
+      const { signedUrl, publicUrl, key } = response;
+      
+      if (!signedUrl || !publicUrl || !key) {
+        throw new Error("Failed to retrieve valid upload details from the server.");
       }
-
-      toast.loading("Creating database record...", { id: uploadToast });
-
-      await client.post("/api/v1/upload/create-record", {
-        hash: uploadResult.data.hash,
-        filename: uploadResult.data.filename,
-        mimetype: uploadResult.data.mimetype,
-        s3Url: uploadResult.data.s3Url,
+      
+      const uploadResponse = await axios.put(signedUrl, file, {
+        headers: { "Content-Type": file.type },
+        timeout: 60000,
       });
 
-      toast.success("Attachment processed successfully!", { id: uploadToast });
+      if (uploadResponse.status !== 200) {
+        throw new Error("File upload to storage failed.");
+      }
+
+      await client.post("/api/v1/upload/create-record", {
+        filename: file.name,
+        mimetype: file.type,
+        s3Url: publicUrl,
+      });
+
+      toast.success("PDF uploaded and processed successfully!", { id: uploadToast });
       router.refresh();
 
     } catch (error: any) {
-      const message = error.response?.data?.message || "An unexpected error occurred.";
-      toast.error(message, { id: uploadToast });
+      console.error("Upload error:", error);
+      let errorMessage = "An unexpected error occurred during upload.";
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      toast.error(errorMessage, { id: uploadToast });
     } finally {
       setIsUploading(false);
     }
   };
 
   if (!isClient) return null;
-
-  // Modern Tab Component with Sliding Animation
+  
   const ModernTabs = () => {
     const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
     const sliderRef = useRef<HTMLDivElement | null>(null);
@@ -187,7 +200,6 @@ export default function InvoiceReviewClient({
     );
   };
 
-
   return (
     <div className="flex flex-col h-full w-full bg-background text-foreground">
         <div className="flex items-center border-b border-border px-4 py-2 md:pb-2">
@@ -210,14 +222,14 @@ export default function InvoiceReviewClient({
                             />
                         </div>
                         <div className="md:col-span-8">
-                            {uploadedPdfUrl || selectedAttachment ? (
+                            {selectedAttachment ? (
                                 <AttachmentViewer
                                     attachment={selectedAttachment}
-                                    pdfUrl={uploadedPdfUrl || selectedAttachment!.s3Url}
+                                    pdfUrl={selectedAttachment.s3Url}
                                 />
                             ) : (
                                 <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-                                    <p>Select or upload an attachment to begin.</p>
+                                    <p>Select or upload a PDF attachment to begin.</p>
                                 </div>
                             )}
                         </div>
@@ -231,10 +243,15 @@ export default function InvoiceReviewClient({
                              invoices={invoices}
                              selectedInvoiceId={selectedInvoiceId}
                              onSelectInvoice={handleSelectInvoice}
+                             currentPage={invoiceCurrentPage}
+                             totalPages={invoiceTotalPages}
+                             onPageChange={handleInvoicePageChange}
                            />
                         </div>
                         <div className="md:col-span-5">
-                            {invoiceDetails ? (
+                            {isDetailsLoading ? (
+                                <div className="flex h-full items-center justify-center text-muted-foreground">Loading PDF...</div>
+                            ) : invoiceDetails ? (
                                 <InvoicePdfViewer
                                     invoicePdfUrl={invoiceDetails.pdfUrl}
                                     sourcePdfUrl={invoiceDetails.sourcePdfUrl}
@@ -246,8 +263,11 @@ export default function InvoiceReviewClient({
                             )}
                         </div>
                         <div className="md:col-span-4">
-                            {invoiceDetails ? (
+                            {isDetailsLoading ? (
+                                <div className="flex h-full items-center justify-center text-muted-foreground">Loading details...</div>
+                            ) : invoiceDetails ? (
                                 <InvoiceDetailsForm
+                                // @ts-ignore
                                     invoiceDetails={invoiceDetails}
                                     isEditing={isEditing}
                                     setIsEditing={setIsEditing}
@@ -257,7 +277,7 @@ export default function InvoiceReviewClient({
                                 />
                             ) : (
                                 <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-                                    <p>Could not load invoice details.</p>
+                                    <p>Select an invoice to view its details.</p>
                                 </div>
                             )}
                         </div>
@@ -277,4 +297,3 @@ export default function InvoiceReviewClient({
     </div>
   );
 }
-

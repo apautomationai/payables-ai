@@ -16,6 +16,10 @@ interface UpdatePayload {
   status: "success" | "disconnected" | "failed" | "not_connected" | "paused";
 }
 
+/**
+ * Handles status updates like Pause, Resume, and Disconnect.
+ * It triggers a revalidation of the '/settings' path to refresh data.
+ */
 export async function updateIntegrationStatusAction(
   prevState: ActionState,
   formData: FormData
@@ -30,18 +34,22 @@ export async function updateIntegrationStatusAction(
   try {
     if (status === "disconnected") {
       await client.delete(`api/v1/settings/integration?name=${name}`);
+      revalidatePath("/settings");
+      return { success: true, message: "Integration disconnected successfully." };
     } else {
       const payload = { name, status };
       await client.patch("api/v1/settings/update-status", payload);
+      revalidatePath("/settings");
+      return { success: true, message: `Integration status updated to ${status}.` };
     }
-
-    revalidatePath("/settings");
-    return { success: true, message: `Integration status updated to ${status}.` };
   } catch (error: any) {
     return { error: error.message || "Failed to update integration status." };
   }
 }
 
+/**
+ * Handles saving the start date for an integration.
+ */
 export async function updateStartTimeAction(
   prevState: ActionState,
   formData: FormData

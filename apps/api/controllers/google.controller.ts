@@ -102,6 +102,7 @@ export class GoogleController {
     }
   };
 
+  //@ts-ignore
   readEmails = async (req: Request, res: Response) => {
     try {
       const data: any = await integrationsService.getAllIntegration();

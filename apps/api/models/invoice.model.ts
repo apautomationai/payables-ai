@@ -15,7 +15,7 @@ export const invoiceModel = pgTable("invoices", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   attachmentId: integer("attachment_id").notNull(),
-  invoiceNumber: varchar("invoice_number", { length: 50 }).unique(),
+  invoiceNumber: varchar("invoice_number", { length: 50 }),
   vendorName: varchar("vendor_name", { length: 255 }),
   customerName: varchar("customer_name", { length: 255 }),
   invoiceDate: timestamp("invoice_date"),

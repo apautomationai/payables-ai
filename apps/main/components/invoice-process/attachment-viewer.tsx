@@ -34,7 +34,7 @@ export default function AttachmentViewer({
       <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
         <CardTitle className="truncate text-base">
           {/* MODIFIED: Safely access attachment ID or show fallback text */}
-          {attachment ? `Invoice ID: ${attachment.id}` : "New Invoice Preview"}
+          {attachment ? `Attachment ID: ${attachment.id}` : "New Invoice Preview"}
         </CardTitle>
         <div className="flex items-center gap-2">
           {pdfUrl && (

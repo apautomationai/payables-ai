@@ -279,7 +279,7 @@ export default function SideMenuBar({
                   "transition-all duration-300",
                   isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                 )}>
-                  Support
+                  support@payables.dev
                 </span>
               </Link>
             </div>

@@ -57,7 +57,6 @@ export default function SettingsClient({
       <TabsContent value="integrations">
         <IntegrationsTab
           integrations={integrations}
-          //@ts-ignore
           updateAction={formAction}
           updateStartTimeAction={updateStartTimeAction}
         />

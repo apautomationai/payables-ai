@@ -19,7 +19,7 @@ export const statusEnum = pgEnum("status", [
 ]);
 
 export const invoiceModel = pgTable("invoices", {
-  id: serial("id").primaryKey(),
+  id: serial("id").primaryKey().unique(),
   userId: integer("user_id").notNull(),
   attachmentId: integer("attachment_id").notNull(),
   invoiceNumber: varchar("invoice_number", { length: 50 }),

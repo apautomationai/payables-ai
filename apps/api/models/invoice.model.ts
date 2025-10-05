@@ -12,10 +12,10 @@ import { usersModel } from "./users.model";
 import { emailAttachmentsModel } from "./emails.model";
 
 export const invoiceModel = pgTable("invoices", {
-  id: serial("id").primaryKey(),
+  id: serial("id").primaryKey().unique(),
   userId: integer("user_id").notNull(),
   attachmentId: integer("attachment_id").notNull(),
-  invoiceNumber: varchar("invoice_number", { length: 50 }).unique(),
+  invoiceNumber: varchar("invoice_number", { length: 50 }),
   vendorName: varchar("vendor_name", { length: 255 }),
   customerName: varchar("customer_name", { length: 255 }),
   invoiceDate: timestamp("invoice_date"),
@@ -31,9 +31,7 @@ export const invoiceModel = pgTable("invoices", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const invoiceRelations = relations(invoiceModel, 
-  ({ one }) => ({
-
+export const invoiceRelations = relations(invoiceModel, ({ one }) => ({
   user: one(usersModel, {
     fields: [invoiceModel.userId],
     references: [usersModel.id],

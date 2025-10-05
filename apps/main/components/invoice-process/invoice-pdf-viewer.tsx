@@ -36,7 +36,7 @@ export default function InvoicePdfViewer({
   );
 
   return (
-    <div className="flex flex-col h-full w-full rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="flex flex-col h-[750px] w-full rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex items-center border-b px-2">
         <TabButton label="Invoice PDF" tabName="invoice" />
         {sourcePdfUrl && <TabButton label="Source" tabName="source" />}

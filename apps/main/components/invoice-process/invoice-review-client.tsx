@@ -12,6 +12,12 @@ import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
 import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
 
+// Define the shape of the API response for a single invoice
+interface InvoiceApiResponse {
+  success: boolean;
+  data: InvoiceDetails;
+}
+
 export default function InvoiceReviewClient({
   attachments,
   initialInvoiceDetails,
@@ -46,10 +52,15 @@ export default function InvoiceReviewClient({
   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
 
-  const [selectedFields, setSelectedFields] = useState<string[]>(() =>
-    initialInvoiceDetails ? Object.keys(initialInvoiceDetails) : []
-  );
+  const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+
+  useEffect(() => {
+    // When invoiceDetails changes, update the list of selected fields
+    if (invoiceDetails) {
+      setSelectedFields(Object.keys(invoiceDetails));
+    }
+  }, [invoiceDetails]);
   
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
@@ -72,21 +83,17 @@ export default function InvoiceReviewClient({
     setIsDetailsLoading(true);
 
     try {
-      const response = await client.get<{ data: InvoiceDetails }>(
+      const response = await client.get<InvoiceApiResponse>(
         `/api/v1/invoice/invoices/${invoice.id}`
       );
-      setInvoiceDetails(response.data.data);
+      //@ts-ignore
+      setInvoiceDetails(response.data);
     } catch (error: any) {
-      // console.error("Failed to fetch invoice details:", error);
-      
       let errorMessage = "Could not load invoice details.";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
       }
       toast.error(errorMessage);
-
       setInvoiceDetails(null);
     } finally {
       setIsDetailsLoading(false);
@@ -97,10 +104,29 @@ export default function InvoiceReviewClient({
     router.push(`/invoice-review?page=${page}`);
   };
 
-  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!invoiceDetails) return;
     const { name, value } = e.target;
     setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
+  };
+  
+  const handleSaveDetails = async () => {
+    if (!invoiceDetails) return;
+
+    try {
+      const response = await client.patch<InvoiceApiResponse>(
+        `/api/v1/invoice/invoices/${invoiceDetails.id}`,
+        invoiceDetails
+      );
+      //@ts-ignore
+      setInvoiceDetails(response.data);
+      toast.success("Invoice updated successfully");
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Failed to save invoice:", err);
+      toast.error("Failed to save invoice");
+      throw err; // Re-throw to let the child component know the save failed
+    }
   };
 
   const handleFileUpload = async (file: File) => {
@@ -122,7 +148,7 @@ export default function InvoiceReviewClient({
         `/api/v1/upload/upload-attachment`,
         { params: { filename: file.name, mimetype: file.type } }
       );
-      //@ts-ignore
+      // @ts-ignore
       const { signedUrl, publicUrl, key } = response;
       
       if (!signedUrl || !publicUrl || !key) {
@@ -267,13 +293,13 @@ export default function InvoiceReviewClient({
                                 <div className="flex h-full items-center justify-center text-muted-foreground">Loading details...</div>
                             ) : invoiceDetails ? (
                                 <InvoiceDetailsForm
-                                // @ts-ignore
                                     invoiceDetails={invoiceDetails}
                                     isEditing={isEditing}
                                     setIsEditing={setIsEditing}
                                     onDetailsChange={handleDetailsChange}
                                     selectedFields={selectedFields}
                                     setSelectedFields={setSelectedFields}
+                                    onSave={handleSaveDetails}
                                 />
                             ) : (
                                 <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">

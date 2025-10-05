@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
@@ -10,8 +10,6 @@ import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
-import { toast } from "sonner";
-import { client } from "@/lib/axios-client";
 
 const formatLabel = (key: string) => {
   return key
@@ -61,7 +59,7 @@ const FormField = ({
         <Input
           id={fieldKey}
           name={fieldKey}
-          value={displayValue}
+          value={String(displayValue)}
           readOnly={!isEditing || Array.isArray(value)}
           onChange={onChange}
           className={cn(
@@ -77,59 +75,24 @@ const FormField = ({
 };
 
 interface InvoiceDetailsFormProps {
-  invoice: {
-    id: number;
-    [key: string]: any;
-  };
-  initialInvoiceDetails?: InvoiceDetails | null;
+  invoiceDetails: InvoiceDetails;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
-  onDetailsChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSave?: (updatedDetails: InvoiceDetails) => Promise<boolean>;
+  onDetailsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  selectedFields: string[];
+  setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
+  onSave: () => Promise<void>;
 }
 
 export default function InvoiceDetailsForm({
-  invoice,
-  initialInvoiceDetails,
+  invoiceDetails,
   isEditing,
   setIsEditing,
-  onDetailsChange: externalOnDetailsChange,
-  onSave: externalOnSave,
+  onDetailsChange,
+  selectedFields,
+  setSelectedFields,
+  onSave,
 }: InvoiceDetailsFormProps) {
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(
-    initialInvoiceDetails || null
-  );
-  const [selectedFields, setSelectedFields] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(!initialInvoiceDetails);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!initialInvoiceDetails && invoice?.id) {
-      fetchInvoiceDetails();
-    } else if (initialInvoiceDetails) {
-      setSelectedFields(Object.keys(initialInvoiceDetails));
-    }
-  }, [invoice?.id, initialInvoiceDetails]);
-
-  const fetchInvoiceDetails = async () => {
-    if (!invoice?.id) return;
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const response = await client.get<{ data: InvoiceDetails }>(
-        `/api/v1/invoice/invoices/${invoice.id}`
-      );
-      setInvoiceDetails(response.data.data);
-      setSelectedFields(Object.keys(response.data.data));
-    } catch (err) {
-      setError("Failed to load invoice details");
-      toast.error("Failed to load invoice details");
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) =>
@@ -139,43 +102,11 @@ export default function InvoiceDetailsForm({
     );
   };
 
-  const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!invoiceDetails) return;
-    const { name, value } = e.target;
-    setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
-
-    if (externalOnDetailsChange) {
-      externalOnDetailsChange(e);
-    }
-  };
-
-  const handleSave = async () => {
-    if (!invoiceDetails || !invoice?.id) return;
-
-    try {
-      let success = false;
-      if (externalOnSave) {
-        success = await externalOnSave(invoiceDetails);
-      } else {
-        const response = await client.patch<{ data: InvoiceDetails }>(
-          `/api/v1/invoice/update-invoice`,
-          invoiceDetails
-        );
-        setInvoiceDetails(response.data.data);
-        toast.success("Invoice updated successfully");
-        success = true;
-      }
-
-      if (success) {
-        setIsEditing(false);
-      }
-    } catch (err) {
-      console.error("Failed to save invoice:", err);
-      toast.error("Failed to save invoice");
-    }
-  };
-
+  // UPDATED: Filter out the fields that should not be displayed in the form
   const allFields = Object.keys(invoiceDetails || {});
+  const hiddenFields = ["id", "userId", "attachmentId"];
+  const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
+
   const mandatoryFields = [
     "invoiceNumber",
     "vendorName",
@@ -183,46 +114,25 @@ export default function InvoiceDetailsForm({
     "invoiceDate",
     "dueDate",
     "totalAmount",
-    "currency",
-    "lineItems",
-    "costCode",
-    "quantity",
-    "rate",
-    "description",
   ];
 
   const completedMandatoryFields = mandatoryFields.filter((field) =>
-    selectedFields.includes(field)
+    selectedFields.includes(field) && invoiceDetails[field as keyof InvoiceDetails]
   ).length;
 
   const progress =
     (completedMandatoryFields / (mandatoryFields.length || 1)) * 100;
 
-  if (isLoading) {
-    return (
-      <Card className="h-[calc(100vh-10rem)] flex items-center justify-center">
-        <div>Loading invoice details...</div>
-      </Card>
-    );
-  }
-
-  if (error || !invoiceDetails) {
-    return (
-      <Card className="h-[calc(100vh-10rem)] flex items-center justify-center">
-        <div className="text-red-500">{error || "Failed to load invoice details"}</div>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="h-[calc(100vh-10rem)] flex flex-col">
+    <Card className="h-[750px] flex flex-col">
       <CardHeader>
         <CardTitle>Invoice Information</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         <ScrollArea className="flex-grow pr-4 -mr-4">
           <div className="space-y-4">
-            {allFields.map((key) => (
+            {/* UPDATED: Loop over the filtered list of fields */}
+            {fieldsToDisplay.map((key) => (
               <FormField
                 key={key}
                 fieldKey={key}
@@ -231,7 +141,7 @@ export default function InvoiceDetailsForm({
                 isEditing={isEditing}
                 isSelected={selectedFields.includes(key)}
                 onToggle={handleFieldToggle}
-                onChange={handleDetailsChange}
+                onChange={onDetailsChange}
               />
             ))}
           </div>
@@ -242,8 +152,7 @@ export default function InvoiceDetailsForm({
             <div className="flex justify-between text-sm text-muted-foreground">
               <span>Field Completion</span>
               <span>
-                {completedMandatoryFields} of {mandatoryFields.length} mandatory fields
-                completed
+                {completedMandatoryFields} of {mandatoryFields.length}
               </span>
             </div>
             <Progress value={progress} />
@@ -253,7 +162,7 @@ export default function InvoiceDetailsForm({
             setIsEditing={setIsEditing}
             invoiceDetails={invoiceDetails}
             selectedFields={selectedFields}
-            onSave={handleSave}
+            onSave={onSave}
           />
         </div>
       </CardContent>

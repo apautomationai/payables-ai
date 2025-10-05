@@ -67,7 +67,7 @@ export default function ConfirmationModals({
 
   const handleReject = () => {
     // console.log("Invoice rejected.");
-   
+    setIsEditing(false);
     toast.error("Invoice rejected.");
   };
 

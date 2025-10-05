@@ -134,13 +134,9 @@ export class InvoiceServices {
     return response;
   }
 
-  /**
-   * Retrieves a paginated list of all invoices for a specific user.
-   */
   async getAllInvoices(userId: number, page: number, limit: number) {
     const offset = (page - 1) * limit;
 
-    // Query for the paginated list of invoices
     const allInvoices = await db
       .select({
         id: invoiceModel.id,
@@ -152,8 +148,6 @@ export class InvoiceServices {
         createdAt: invoiceModel.createdAt,
         vendorName: invoiceModel.vendorName,
         invoiceDate: invoiceModel.invoiceDate,
-
-        // Added vendorName for the list view
       })
       .from(invoiceModel)
       .leftJoin(
@@ -165,20 +159,20 @@ export class InvoiceServices {
       .limit(limit)
       .offset(offset);
 
-    // Query for the total count of invoices for that user
     const [totalResult] = await db
       .select({ count: count() })
       .from(invoiceModel)
       .where(eq(invoiceModel.userId, userId));
 
-    // UPDATED: Return a structured object instead of an array for better clarity
     return {
       invoices: allInvoices,
       totalCount: totalResult.count,
     };
   }
 
-  async getInvoice(invoiceNumber: string) {
+  // UPDATED: Now accepts a numeric 'invoiceId'
+  async getInvoice(invoiceId: number) {
+    // UPDATED: Queries by the 'id' column
     const [response] = await db
       .select({
         ...getTableColumns(invoiceModel),
@@ -189,29 +183,25 @@ export class InvoiceServices {
         emailAttachmentsModel,
         eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
       )
-      .where(eq(invoiceModel.invoiceNumber, invoiceNumber));
+      .where(eq(invoiceModel.id, invoiceId));
 
     if (!response) {
-      throw new NotFoundError("No invoice found with that number.");
+      throw new NotFoundError("No invoice found with that ID.");
     }
 
     return response;
   }
 
-  /**
-   * Updates an existing invoice.
-   */
+  // UPDATED: Now accepts a numeric 'invoiceId'
   async updateInvoice(
-    invoiceNumber: string,
+    invoiceId: number,
     invoiceInfo: Partial<typeof invoiceModel.$inferSelect>
   ) {
-    // First, check if the invoice exists
-    const existingInvoice = await this.getInvoice(invoiceNumber);
+    // UPDATED: Checks for existence using the numeric 'id'
+    const existingInvoice = await this.getInvoice(invoiceId);
     if (!existingInvoice) {
       throw new NotFoundError("No invoice found to update.");
     }
-
-    // UPDATED: Create a secure object with only the fields allowed to be updated.
 
     const updateData = {
       vendorName: invoiceInfo.vendorName,
@@ -230,10 +220,11 @@ export class InvoiceServices {
       updatedAt: new Date(),
     };
 
+    // UPDATED: Updates the record where the 'id' matches
     const [response] = await db
       .update(invoiceModel)
       .set(updateData)
-      .where(eq(invoiceModel.invoiceNumber, invoiceNumber))
+      .where(eq(invoiceModel.id, invoiceId))
       .returning();
 
     return response;

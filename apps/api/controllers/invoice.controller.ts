@@ -175,7 +175,6 @@ class InvoiceController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      // const userId = 33;
       const {
         attachmentId,
         invoiceNumber,
@@ -186,7 +185,6 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        // pdfUrl,
         costCode,
         quantity,
         rate,
@@ -197,21 +195,17 @@ class InvoiceController {
         throw new BadRequestError("Invoice date and due date are required");
       }
 
-      const invoiceDateTimestamp = new Date(invoiceDate);
-      const dueDateTimestamp = new Date(dueDate);
-
       const response = await invoiceServices.insertInvoice({
         userId,
         attachmentId,
         invoiceNumber,
         vendorName,
         customerName,
-        invoiceDate: invoiceDateTimestamp,
-        dueDate: dueDateTimestamp,
+        invoiceDate: new Date(invoiceDate),
+        dueDate: new Date(dueDate),
         totalAmount,
         currency,
         lineItems,
-        // pdfUrl,
         costCode,
         quantity,
         rate,
@@ -223,7 +217,6 @@ class InvoiceController {
         data: response,
       });
     } catch (error: any) {
-      // This will now catch errors thrown from the service and send correct status codes
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,
@@ -238,7 +231,6 @@ class InvoiceController {
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
 
-      // UPDATED: The service now returns a structured object, not an array.
       const { invoices, totalCount } = await invoiceServices.getAllInvoices(
         userId,
         page,
@@ -267,9 +259,13 @@ class InvoiceController {
 
   async getInvoice(req: Request, res: Response) {
     try {
-      // Assuming route is /invoices/:id
-      const invoiceNumber = req.params.id;
-      const response = await invoiceServices.getInvoice(invoiceNumber);
+      // UPDATED: Parse the 'id' from URL parameter into a number
+      const invoiceId = parseInt(req.params.id, 10);
+      if (isNaN(invoiceId)) {
+        throw new BadRequestError("Invoice ID must be a valid number.");
+      }
+
+      const response = await invoiceServices.getInvoice(invoiceId);
 
       return res.json({
         success: true,
@@ -285,11 +281,15 @@ class InvoiceController {
 
   async updateInvoice(req: Request, res: Response) {
     try {
-      // Assuming route is /invoices/:id
-      const invoiceNumber = req.params.id;
+      // UPDATED: Parse the 'id' from URL parameter into a number
+      const invoiceId = parseInt(req.params.id, 10);
+      if (isNaN(invoiceId)) {
+        throw new BadRequestError("Invoice ID must be a valid number.");
+      }
+
       const invoiceInfo = req.body;
       const response = await invoiceServices.updateInvoice(
-        invoiceNumber,
+        invoiceId,
         invoiceInfo
       );
 

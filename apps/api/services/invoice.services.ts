@@ -126,7 +126,7 @@ import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
-import { asc, count, eq, getTableColumns } from "drizzle-orm";
+import { asc, count, desc, eq, getTableColumns } from "drizzle-orm";
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -155,7 +155,7 @@ export class InvoiceServices {
         eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
       )
       .where(eq(invoiceModel.userId, userId))
-      .orderBy(asc(invoiceModel.createdAt))
+      .orderBy(desc(invoiceModel.createdAt))
       .limit(limit)
       .offset(offset);
 

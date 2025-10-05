@@ -228,8 +228,8 @@ class InvoiceController {
 
   async getAllInvoices(req: Request, res: Response) {
     //@ts-ignore
-    // const userId = req.user.id;
-    const userId = 33;
+    const userId = req.user.id;
+    // const userId = 33;
     try {
       //@ts-ignore
       const userId = req.user.id;

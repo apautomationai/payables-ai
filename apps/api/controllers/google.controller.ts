@@ -104,58 +104,51 @@ export class GoogleController {
 
   readEmails = async (req: Request, res: Response) => {
     try {
-      //@ts-ignore
-      const userId = req.user.id;
-      // const userId = 24;
-
-      if (!userId) {
-        throw new BadRequestError("Need a valid userId");
+      const data: any = await integrationsService.getAllIntegration();
+      if (!data.success) {
+        throw new BadRequestError(data.message as string);
       }
+      const integrations = data.data;
 
-      const integration = await integrationsService.getIntegrations(userId);
-
-      if (
-        //@ts-ignore
-        !integration?.data ||
-        //@ts-ignore
-        integration.data.length === 0
-      ) {
-        throw new NotFoundError("No integrations found for this user");
-      }
-      //@ts-ignore
-      const integrationInfo = integration?.data[0];
-      if (
-        integrationInfo.name !== "gmail" ||
-        integrationInfo.status !== "success"
-      ) {
-        throw new NotFoundError("Gmail isn't connected");
-      }
-
-      const timeStampDate = integrationInfo.expiryDate;
-      if (!timeStampDate) {
-        throw new Error("No expiry date found in database");
-      }
-      const date = new Date(timeStampDate);
-      const expiryDate = date.getTime();
-
-      const tokens = {
-        access_token: integrationInfo.accessToken,
-        refresh_token: integrationInfo.refreshToken,
-        token_type: integrationInfo.tokenType,
-        expiry_date: expiryDate,
-      };
-
-      if (!tokens) {
-        throw new BadRequestError("Need valid tokens");
-      }
-      const attachments = await googleServices.getEmailsWithAttachments(
-        tokens,
-        userId
-      );
       const result = {
         status: "success",
-        data: attachments,
+        data: [],
       };
+
+      for (const integration of integrations) {
+        // const integrationInfo = integration?.data[0];
+        if (integration.name !== "gmail" || integration.status !== "success") {
+          throw new NotFoundError("Gmail isn't connected");
+        }
+
+        const timeStampDate = integration.expiryDate;
+        if (!timeStampDate) {
+          throw new Error("No expiry date found in database");
+        }
+        const date = new Date(timeStampDate);
+        const expiryDate = date.getTime();
+
+        const tokens = {
+          access_token: integration.accessToken,
+          refresh_token: integration.refreshToken,
+          token_type: integration.tokenType,
+          expiry_date: expiryDate,
+        };
+
+        if (!tokens) {
+          throw new BadRequestError("Need valid tokens");
+        }
+
+        const attachments = await googleServices.getEmailsWithAttachments(
+          tokens,
+          integration.userId,
+          integration.id,
+          integration.startReading
+        );
+        //@ts-ignore
+        result.data.push(attachments);
+      }
+
       return res.status(200).send(result);
     } catch (error: any) {
       throw new BadRequestError(
@@ -171,6 +164,8 @@ export class GoogleController {
     if (!userId) {
       throw new BadRequestError("Need a valid userId");
     }
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 20;
     try {
       const integration = await integrationsService.getIntegrations(userId);
 
@@ -178,10 +173,25 @@ export class GoogleController {
       if (!integration?.data || integration.data.length === 0) {
         throw new NotFoundError("No integrations found for this user");
       }
-      const attachments = await googleServices.getAttachments(userId);
+      const attachmentsData = await googleServices.getAttachments(
+        userId,
+        page,
+        limit
+      );
       const result = {
         status: "success",
-        data: attachments,
+        data: {
+          //@ts-ignore
+          attachments: attachmentsData[0],
+          pagination: {
+            //@ts-ignore
+            totalAttachments: attachmentsData[1] || 0,
+            page,
+            limit,
+            //@ts-ignore
+            totalPages: Math.ceil((attachmentsData[1] || 0) / limit),
+          },
+        },
       };
       res.status(200).send(result);
     } catch (error: any) {
@@ -192,8 +202,6 @@ export class GoogleController {
   getAttachmentWithId = async (req: Request, res: Response) => {
     try {
       const id = req.params.id;
-      // const id =
-      //   "23e738d3b385ee10adb471e0d030442a1d23678a2252e081f808f9b79b4e13fb";
       if (!id) {
         throw new BadRequestError("No id found");
       }
@@ -222,11 +230,9 @@ export class GoogleController {
         status: false,
         data: error.message,
       };
-      return result;
+      return res.send(result);
     }
   };
-
-
 }
 
 export const googleController = new GoogleController();

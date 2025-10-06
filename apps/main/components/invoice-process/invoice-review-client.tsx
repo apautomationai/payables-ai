@@ -33,6 +33,7 @@ export default function InvoiceReviewClient({
   invoiceCurrentPage,
   invoiceTotalPages,
   initialSelectedInvoice,
+  initialInvoiceCache,
 }: {
   attachments: Attachment[];
   initialInvoiceDetails: InvoiceDetails | null;
@@ -42,6 +43,7 @@ export default function InvoiceReviewClient({
   invoiceCurrentPage: number;
   invoiceTotalPages: number;
   initialSelectedInvoice: InvoiceListItem | null | undefined;
+  initialInvoiceCache: Record<number, InvoiceDetails>;
 }) {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
@@ -58,6 +60,8 @@ export default function InvoiceReviewClient({
   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
   const [originalInvoiceDetails, setOriginalInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
   
+  const [invoiceDetailsCache, setInvoiceDetailsCache] = useState<Record<number, InvoiceDetails>>(initialInvoiceCache);
+
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -86,14 +90,31 @@ export default function InvoiceReviewClient({
     
     setIsEditing(false);
     setSelectedInvoiceId(invoice.id);
-    setIsDetailsLoading(true);
 
+    if (invoiceDetailsCache[invoice.id]) {
+      //@ts-ignore
+      const cachedDetails = invoiceDetailsCache[invoice.id];
+      //@ts-ignore
+      setInvoiceDetails(cachedDetails);
+      //@ts-ignore
+      setOriginalInvoiceDetails(cachedDetails);
+      return;
+    }
+
+    setIsDetailsLoading(true);
     try {
       const response = await client.get<InvoiceApiResponse>(`/api/v1/invoice/invoices/${invoice.id}`);
+      const newDetails = response.data;
       //@ts-ignore
-      setInvoiceDetails(response.data);
+      setInvoiceDetails(newDetails);
       //@ts-ignore
-      setOriginalInvoiceDetails(response.data);
+      setOriginalInvoiceDetails(newDetails);
+//@ts-ignore
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [invoice.id]: newDetails,
+      }));
+
     } catch (error: any) {
       let errorMessage = "Could not load invoice details.";
       if (error.response?.data?.message) {
@@ -132,6 +153,8 @@ export default function InvoiceReviewClient({
       setInvoiceDetails(updatedData);
       //@ts-ignore
       setOriginalInvoiceDetails(updatedData);
+      //@ts-ignore
+      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
       toast.success("Changes saved successfully");
       setIsEditing(false);
       router.refresh();
@@ -148,10 +171,13 @@ export default function InvoiceReviewClient({
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "approved" }
       );
+      const updatedData = response.data;
       //@ts-ignore
-      setInvoiceDetails(response.data);
+      setInvoiceDetails(updatedData);
       //@ts-ignore
-      setOriginalInvoiceDetails(response.data);
+      setOriginalInvoiceDetails(updatedData);
+      //@ts-ignore
+      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
       toast.success("Invoice has been approved");
       router.refresh();
     } catch (err) {
@@ -167,10 +193,13 @@ export default function InvoiceReviewClient({
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "rejected" }
       );
+      const updatedData = response.data;
       //@ts-ignore
-      setInvoiceDetails(response.data);
+      setInvoiceDetails(updatedData);
       //@ts-ignore
-      setOriginalInvoiceDetails(response.data);
+      setOriginalInvoiceDetails(updatedData);
+      //@ts-ignore
+      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
       toast.success("Invoice has been rejected");
       router.refresh();
     } catch (err) {

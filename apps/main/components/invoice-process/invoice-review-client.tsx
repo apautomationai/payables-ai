@@ -10,9 +10,8 @@ import AttachmentViewer from "./attachment-viewer";
 import InvoiceDetailsForm from "./invoice-details-form";
 import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
-import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
+import type { Attachment, InvoiceDetails, InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
 
-// Define the shape of the API response for a single invoice
 interface InvoiceApiResponse {
   success: boolean;
   data: InvoiceDetails;
@@ -40,7 +39,7 @@ export default function InvoiceReviewClient({
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("attachments");
+  const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("invoices");
   
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments.length > 0 ? attachments[0]!.id : null
@@ -56,7 +55,6 @@ export default function InvoiceReviewClient({
   const [isEditing, setIsEditing] = useState(false);
 
   useEffect(() => {
-    // When invoiceDetails changes, update the list of selected fields
     if (invoiceDetails) {
       setSelectedFields(Object.keys(invoiceDetails));
     }
@@ -113,19 +111,45 @@ export default function InvoiceReviewClient({
   const handleSaveDetails = async () => {
     if (!invoiceDetails) return;
 
+    const dataToSave = {
+      ...invoiceDetails,
+      status: "approved" as InvoiceStatus,
+    };
+
     try {
       const response = await client.patch<InvoiceApiResponse>(
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
-        invoiceDetails
+        dataToSave
       );
       //@ts-ignore
       setInvoiceDetails(response.data);
-      toast.success("Invoice updated successfully");
+      toast.success("Invoice approved and saved successfully");
       setIsEditing(false);
+      router.refresh(); // Refresh the page to show updated status
     } catch (err) {
       console.error("Failed to save invoice:", err);
       toast.error("Failed to save invoice");
-      throw err; // Re-throw to let the child component know the save failed
+      throw err;
+    }
+  };
+
+  const handleRejectInvoice = async () => {
+    if (!invoiceDetails) return;
+
+    const originalStatus = invoiceDetails.status;
+    setInvoiceDetails((prev) => prev ? { ...prev, status: 'rejected' } : null);
+
+    try {
+      await client.patch<InvoiceApiResponse>(
+        `/api/v1/invoice/invoices/${invoiceDetails.id}`,
+        { status: "rejected" }
+      );
+      toast.success("Invoice has been rejected");
+      router.refresh(); // Refresh the page to show updated status
+    } catch (err) {
+      console.error("Failed to reject invoice:", err);
+      toast.error("Failed to reject invoice");
+      setInvoiceDetails((prev) => prev ? { ...prev, status: originalStatus } : null);
     }
   };
 
@@ -148,7 +172,7 @@ export default function InvoiceReviewClient({
         `/api/v1/upload/upload-attachment`,
         { params: { filename: file.name, mimetype: file.type } }
       );
-      // @ts-ignore
+      //@ts-ignore
       const { signedUrl, publicUrl, key } = response;
       
       if (!signedUrl || !publicUrl || !key) {
@@ -174,7 +198,6 @@ export default function InvoiceReviewClient({
       router.refresh();
 
     } catch (error: any) {
-      console.error("Upload error:", error);
       let errorMessage = "An unexpected error occurred during upload.";
       if (error.response?.data?.message) {
         errorMessage = error.response.data.message;
@@ -194,7 +217,7 @@ export default function InvoiceReviewClient({
     const sliderRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const activeTabIndex = activeTab === 'attachments' ? 0 : 1;
+        const activeTabIndex = activeTab === 'invoices' ? 0 : 1;
         const activeTabNode = tabsRef.current[activeTabIndex];
         const sliderNode = sliderRef.current;
 
@@ -210,11 +233,11 @@ export default function InvoiceReviewClient({
                 ref={sliderRef}
                 className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
             />
-            {['attachments', 'invoices'].map((tab, index) => (
+            {['invoices', 'attachments'].map((tab, index) => (
                 <button
                     key={tab}
                     ref={(el) => { tabsRef.current[index] = el; }}
-                    onClick={() => setActiveTab(tab as "attachments" | "invoices")}
+                    onClick={() => setActiveTab(tab as "invoices" | "attachments")}
                     className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${
                         activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
                     }`}
@@ -227,7 +250,7 @@ export default function InvoiceReviewClient({
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background text-foreground">
+    <div className="flex flex-col h-[calc(100vh-5rem)] w-full bg-background text-foreground">
         <div className="flex items-center border-b border-border px-4 py-2 md:pb-2">
             <ModernTabs />
         </div>
@@ -236,7 +259,7 @@ export default function InvoiceReviewClient({
             <div key={activeTab} className="animate-fade-in h-full">
                 {activeTab === 'attachments' && (
                     <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-4">
+                        <div className="md-col-span-4">
                             <AttachmentsList
                                 attachments={attachments}
                                 selectedAttachment={selectedAttachment}
@@ -247,7 +270,7 @@ export default function InvoiceReviewClient({
                                 isUploading={isUploading}
                             />
                         </div>
-                        <div className="md:col-span-8">
+                        <div className="md-col-span-8">
                             {selectedAttachment ? (
                                 <AttachmentViewer
                                     attachment={selectedAttachment}
@@ -264,7 +287,7 @@ export default function InvoiceReviewClient({
 
                 {activeTab === 'invoices' && (
                     <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
-                        <div className="md:col-span-3">
+                        <div className="md-col-span-3">
                            <InvoicesList
                              invoices={invoices}
                              selectedInvoiceId={selectedInvoiceId}
@@ -274,7 +297,7 @@ export default function InvoiceReviewClient({
                              onPageChange={handleInvoicePageChange}
                            />
                         </div>
-                        <div className="md:col-span-5">
+                        <div className="md-col-span-5">
                             {isDetailsLoading ? (
                                 <div className="flex h-full items-center justify-center text-muted-foreground">Loading PDF...</div>
                             ) : invoiceDetails ? (
@@ -288,7 +311,7 @@ export default function InvoiceReviewClient({
                                 </div>
                             )}
                         </div>
-                        <div className="md:col-span-4">
+                        <div className="md-col-span-4">
                             {isDetailsLoading ? (
                                 <div className="flex h-full items-center justify-center text-muted-foreground">Loading details...</div>
                             ) : invoiceDetails ? (
@@ -300,6 +323,7 @@ export default function InvoiceReviewClient({
                                     selectedFields={selectedFields}
                                     setSelectedFields={setSelectedFields}
                                     onSave={handleSaveDetails}
+                                    onReject={handleRejectInvoice}
                                 />
                             ) : (
                                 <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">

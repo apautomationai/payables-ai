@@ -1,4 +1,3 @@
-// app/contact/components/ContactForm.tsx
 'use client';
 
 import { useState } from 'react';
@@ -8,6 +7,7 @@ import { Button } from '@workspace/ui/components/button';
 import { Input } from '@workspace/ui/components/input';
 import { Textarea } from '@workspace/ui/components/textarea';
 import { Label } from '@workspace/ui/components/label';
+import { AnimatedBrain, AnimatedIntegration } from './animated-icons';
 
 interface ContactFormProps {
   onSuccess: () => void;
@@ -46,14 +46,31 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-200/60"
+      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-200/60 relative overflow-hidden"
     >
-      <h2 className="text-2xl font-bold text-slate-800 mb-6">Send us a message</h2>
+      {/* Background Icon */}
+      <div className="absolute -right-8 -bottom-8 opacity-5">
+        <AnimatedBrain />
+      </div>
+
+      <div className="flex items-center mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-slate-800">Send us a message</h2>
+          <p className="text-slate-600">We'll get back to you quickly</p>
+        </div>
+      </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-6 relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-slate-700">Full Name</Label>
+          <motion.div 
+            className="space-y-2"
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <Label htmlFor="name" className="text-slate-700 flex items-center">
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+              Full Name
+            </Label>
             <Input
               id="name"
               name="name"
@@ -61,13 +78,20 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
               required
               value={formData.name}
               onChange={handleChange}
-              className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-colors"
+              className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-300"
               placeholder="John Doe"
             />
-          </div>
+          </motion.div>
           
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-slate-700">Email Address</Label>
+          <motion.div 
+            className="space-y-2"
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 400, damping: 10 }}
+          >
+            <Label htmlFor="email" className="text-slate-700 flex items-center">
+              <span className="w-2 h-2 bg-purple-500 rounded-full mr-2"></span>
+              Email Address
+            </Label>
             <Input
               id="email"
               name="email"
@@ -75,14 +99,21 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
               required
               value={formData.email}
               onChange={handleChange}
-              className="border-slate-300 focus:border-purple-500 focus:ring-purple-500 transition-colors"
+              className="border-slate-300 focus:border-purple-500 focus:ring-purple-500 transition-all duration-300"
               placeholder="john@example.com"
             />
-          </div>
+          </motion.div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="subject" className="text-slate-700">Subject</Label>
+        <motion.div 
+          className="space-y-2"
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
+          <Label htmlFor="subject" className="text-slate-700 flex items-center">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+            Subject
+          </Label>
           <Input
             id="subject"
             name="subject"
@@ -90,13 +121,20 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
             required
             value={formData.subject}
             onChange={handleChange}
-            className="border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 transition-colors"
+            className="border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 transition-all duration-300"
             placeholder="How can we help you?"
           />
-        </div>
+        </motion.div>
 
-        <div className="space-y-2">
-          <Label htmlFor="message" className="text-slate-700">Message</Label>
+        <motion.div 
+          className="space-y-2"
+          whileHover={{ scale: 1.02 }}
+          transition={{ type: "spring", stiffness: 400, damping: 10 }}
+        >
+          <Label htmlFor="message" className="text-slate-700 flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+            Message
+          </Label>
           <Textarea
             id="message"
             name="message"
@@ -104,28 +142,40 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
             rows={6}
             value={formData.message}
             onChange={handleChange}
-            className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-colors resize-none"
+            className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-300 resize-none"
             placeholder="Tell us more about your inquiry..."
           />
-        </div>
+        </motion.div>
 
-        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+        <motion.div 
+          whileHover={{ scale: 1.02 }} 
+          whileTap={{ scale: 0.98 }}
+          className="pt-4"
+        >
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl"
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 px-6 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl relative overflow-hidden group"
           >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Sending...
-              </>
-            ) : (
-              <>
-                <Send className="w-4 h-4 mr-2" />
-                Send Message
-              </>
-            )}
+            {/* Animated background effect */}
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-emerald-500 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+              initial={false}
+            />
+            
+            <span className="relative z-10 flex items-center justify-center">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Send Message
+                </>
+              )}
+            </span>
           </Button>
         </motion.div>
       </form>

@@ -82,6 +82,7 @@ interface InvoiceDetailsFormProps {
   selectedFields: string[];
   setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
   onSave: () => Promise<void>;
+  onReject: () => Promise<void>;
 }
 
 export default function InvoiceDetailsForm({
@@ -92,19 +93,28 @@ export default function InvoiceDetailsForm({
   selectedFields,
   setSelectedFields,
   onSave,
+  onReject,
 }: InvoiceDetailsFormProps) {
 
   const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) =>
       prev.includes(fieldKey)
-        ? prev.filter((key) => key !== fieldKey)
+        ? prev.filter((key) => key !== key)
         : [...prev, fieldKey]
     );
   };
 
-  // UPDATED: Filter out the fields that should not be displayed in the form
   const allFields = Object.keys(invoiceDetails || {});
-  const hiddenFields = ["id", "userId", "attachmentId"];
+  const hiddenFields = [
+    "id",
+    "userId",
+    "attachmentId",
+    "createdAt",
+    "updatedAt",
+    "status",
+    "pdfUrl",
+    "sourcePdfUrl",
+  ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 
   const mandatoryFields = [
@@ -131,7 +141,6 @@ export default function InvoiceDetailsForm({
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         <ScrollArea className="flex-grow pr-4 -mr-4">
           <div className="space-y-4">
-            {/* UPDATED: Loop over the filtered list of fields */}
             {fieldsToDisplay.map((key) => (
               <FormField
                 key={key}
@@ -163,6 +172,8 @@ export default function InvoiceDetailsForm({
             invoiceDetails={invoiceDetails}
             selectedFields={selectedFields}
             onSave={onSave}
+            //@ts-ignore
+            onReject={onReject}
           />
         </div>
       </CardContent>

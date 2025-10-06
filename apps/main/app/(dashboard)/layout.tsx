@@ -2,6 +2,7 @@ import React from "react";
 import client from "@/lib/fetch-client";
 import { User, ApiResponse } from "@/lib/types";
 import DashboardClientLayout from "@/components/dashboard/DashboardClientLayout"; // Adjust path if needed
+import { Toaster } from "sonner";
 
 export default async function DashboardLayout({
   children,
@@ -19,7 +20,8 @@ export default async function DashboardLayout({
       userEmail = user.email;
     }
   } catch (error) {
-    console.error("Failed to fetch user data in layout:", error);
+    //@ts-ignore
+    Toaster.error("Failed to fetch user data in layout"), error;
   }
 
   return (

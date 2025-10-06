@@ -88,13 +88,6 @@ export default async function InvoiceReviewPage({
     ? await getInvoiceDetails(initialSelectedInvoice.id)
     : null;
 
-  if (!initialSelectedInvoice) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p>No invoices found.</p>
-      </div>
-    );
-  }
 
   return (
     <InvoiceReviewClient

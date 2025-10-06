@@ -162,7 +162,7 @@ export default function SideMenuBar({
           "border-r border-border/40",
           "transition-all duration-300 ease-in-out",
           "shadow-lg md:shadow-none",
-          isCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-64 translate-x-0"
+          isCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-72 translate-x-0"
         )}
       >
         <div className="flex h-full max-h-screen flex-col">

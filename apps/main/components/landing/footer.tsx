@@ -20,26 +20,20 @@ import Link from "next/link";
 
 const navigation = {
   product: [
-    { name: "Features", href: "#" },
-    { name: "Pricing", href: "#" },
-    { name: "Use Cases", href: "#" },
+    { name: "Features", href: "#features" },
+    { name: "Pricing", href: "#pricing" },
+    { name: "Use Cases", href: "#use-cases" },
     
   ],
-  company: [
-    { name: "About", href: "#" },
-    { name: "Contact", href: "#" },
+  company: [  
+    { name: "About", href: "#about" },
+    { name: "Contact", href: "/contact-us" },
    
   ],
-  support: [
-    { name: "Help Center", href: "#" },
-    { name: "Community", href: "#" },
-    // { name: "Status", href: "#" },
-    // { name: "Security", href: "#" },
-    // { name: "System Status", href: "#" },
-  ],
+
   legal: [
-    { name: "Privacy Policy", href: "#" },
-    { name: "Terms of Service", href: "#" },
+    { name: "Privacy Policy", href: "/privacy-policy" },
+    { name: "Terms of Service", href: "/terms-services" },
   ],
 };
 
@@ -95,9 +89,6 @@ export function Footer() {
               <span className="text-xl font-bold text-white">Payables.ai</span>
             </div>
             <p className="text-gray-400 leading-relaxed mb-6">
-              {/* Transform your accounts payable process with AI-powered
-              automation. Streamline invoice processing, reduce manual work, and
-              improve cash flow management. */}
               Intelligent accounts payable automation for modern businesses.
             </p>
             <div className="flex items-center gap-2 mb-4">
@@ -107,12 +98,6 @@ export function Footer() {
               >
                 AI-Powered
               </Badge>
-              {/* <Badge
-                variant="outline"
-                className="text-xs font-medium border-blue-600 bg-blue-900/20 text-blue-400"
-              >
-                SOC 2 Compliant
-              </Badge> */}
             </div>
             <div className="flex gap-4">
               <Link
@@ -141,12 +126,12 @@ export function Footer() {
             <ul className="space-y-3">
               {navigation.product.map((item) => (
                 <li key={item.name}>
-                  <a
+                  <Link
                     href={item.href}
                     className="text-gray-400 hover:text-white transition-colors duration-300"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -157,18 +142,18 @@ export function Footer() {
             <ul className="space-y-3">
               {navigation.company.map((item) => (
                 <li key={item.name}>
-                  <a
+                  <Link
                     href={item.href}
                     className="text-gray-400 hover:text-white transition-colors duration-300"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
           </div>
 
-          <div>
+          {/* <div>
             <h3 className="text-sm font-semibold text-white mb-4">Support</h3>
             <ul className="space-y-3">
               {navigation.support.map((item) => (
@@ -182,19 +167,19 @@ export function Footer() {
                 </li>
               ))}
             </ul>
-          </div>
+          </div> */}
 
           <div>
             <h3 className="text-sm font-semibold text-white mb-4">Legal</h3>
             <ul className="space-y-3">
               {navigation.legal.map((item) => (
                 <li key={item.name}>
-                  <a
+                  <Link
                     href={item.href}
                     className="text-gray-400 hover:text-white transition-colors duration-300"
                   >
                     {item.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>

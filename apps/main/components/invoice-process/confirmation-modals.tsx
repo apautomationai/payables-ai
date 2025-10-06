@@ -36,7 +36,8 @@ interface ConfirmationModalsProps {
   setIsEditing: (isEditing: boolean) => void;
   invoiceDetails: InvoiceDetails;
   selectedFields: string[];
-  onSave?: () => Promise<boolean | void>;
+  onSave: () => Promise<void>;
+  onReject: () => Promise<void>;
 }
 
 export default function ConfirmationModals({
@@ -45,30 +46,34 @@ export default function ConfirmationModals({
   invoiceDetails,
   selectedFields,
   onSave,
+  onReject,
 }: ConfirmationModalsProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isRejecting, setIsRejecting] = useState(false);
 
-  const handleSave = async () => {
-    if (!onSave) {
-      setIsEditing(false);
-      return;
-    }
-
+  const handleApproveAndSave = async () => {
+    if (!onSave) return;
     try {
       setIsSaving(true);
       await onSave();
       setIsEditing(false);
     } catch (error) {
-      toast.error("Failed to save changes");
+      // Error toast is handled in the parent component
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleReject = () => {
-    // console.log("Invoice rejected.");
-    setIsEditing(false);
-    toast.error("Invoice rejected.");
+  const handleReject = async () => {
+    if (!onReject) return;
+    try {
+      setIsRejecting(true);
+      await onReject();
+    } catch (error) {
+      // Error toast is handled in the parent
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   return (
@@ -82,58 +87,66 @@ export default function ConfirmationModals({
           >
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
+          {/* The "Approve" button is shown when not in edit mode */}
         </>
       ) : (
         <>
-          <Button
-            variant="outline"
-            onClick={() => setIsEditing(true)}
-          >
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
             Edit
           </Button>
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button variant="default">Approve</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Confirm Invoice Approval</DialogTitle>
-                <DialogDescription>
-                  Please review the selected invoice details before confirming.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="max-h-60 overflow-y-auto my-4 pr-2">
-                <div className="grid gap-2 text-sm">
-                  {selectedFields.map((key) => (
-                    <div key={key} className="grid grid-cols-2 gap-4 items-center">
-                      <span className="text-muted-foreground">
-                        {formatLabel(key)}
-                      </span>
-                      <span className="font-semibold text-right truncate">
-                        {renderValue(invoiceDetails[key as keyof InvoiceDetails])}
-                      </span>
-                    </div>
-                  ))}
+          <div className="flex gap-2">
+            <Button
+              variant="destructive"
+              onClick={handleReject}
+              disabled={isRejecting}
+            >
+              {isRejecting ? "Rejecting..." : "Reject"}
+            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="default">Approve</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Confirm Invoice Approval</DialogTitle>
+                  <DialogDescription>
+                    These selected fields will be saved and the invoice will be
+                    marked as 'Approved'.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="max-h-60 overflow-y-auto my-4 pr-2">
+                  <div className="grid gap-2 text-sm">
+                    {selectedFields.map((key) => (
+                      <div
+                        key={key}
+                        className="grid grid-cols-2 gap-4 items-center"
+                      >
+                        <span className="text-muted-foreground">
+                          {formatLabel(key)}
+                        </span>
+                        <span className="font-semibold text-right truncate">
+                          {renderValue(
+                            invoiceDetails[key as keyof InvoiceDetails]
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <DialogClose asChild>
-                  <Button variant="outline">Cancel</Button>
-                </DialogClose>
-                <Button
-                  onClick={() => {
-                    console.log("Invoice approved");
-                    // Add approval logic here
-                  }}
-                >
-                  Confirm Approval
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                <DialogFooter>
+                  <DialogClose asChild>
+                    <Button variant="outline">Cancel</Button>
+                  </DialogClose>
+                  <Button
+                    onClick={handleApproveAndSave}
+                    disabled={isSaving}
+                  >
+                    {isSaving ? "Confirming..." : "Confirm Approval"}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          </div>
         </>
       )}
     </div>

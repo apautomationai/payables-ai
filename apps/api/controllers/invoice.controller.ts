@@ -170,8 +170,6 @@ import { BadRequestError } from "@/helpers/errors";
 import { invoiceServices } from "@/services/invoice.services";
 import { Request, Response } from "express";
 import { UploadedFile } from "express-fileupload";
-import path from "path";
-import fs from "fs";
 
 class InvoiceController {
   async insertInvoice(req: Request, res: Response) {
@@ -354,16 +352,8 @@ class InvoiceController {
       }
 
       const pdfFile = (req.files.pdf || req.files.file) as UploadedFile;
-      const uploadDir = path.join(__dirname, "../../temp_uploads");
-
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
-
-      const tempPath = path.join(uploadDir, pdfFile.name);
-      await pdfFile.mv(tempPath);
-
-      const result = await invoiceServices.extractInvoices(tempPath);
-
-      fs.unlinkSync(tempPath);
+      const pdfBuffer = pdfFile.data;
+      const result = await invoiceServices.splitInvoicesPdf(pdfBuffer);
 
       return res.status(200).json(result);
     } catch (err: any) {

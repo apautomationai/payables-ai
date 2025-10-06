@@ -127,11 +127,12 @@ import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns } from "drizzle-orm";
-import fs from "fs";
-import path from "path";
-import Tesseract from "tesseract.js";
-import { execSync } from "child_process";
+// import path from "path";
+// import Tesseract from "tesseract.js";
+// import { execSync } from "child_process";
 const pdfParse = require("pdf-parse");
+import { PDFDocument } from "pdf-lib";
+import { uploadBufferToS3 } from "@/helpers/s3upload";
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -235,9 +236,7 @@ export class InvoiceServices {
     return response;
   }
 
-  async getAttachmentTexts(pdfPath: string): Promise<string[]> {
-    const pdfBuffer = fs.readFileSync(pdfPath);
-
+  async getAttachmentTexts(pdfBuffer: Buffer): Promise<string[]> {
     // Extract digital text
     const parsed = await pdfParse(pdfBuffer);
 
@@ -285,8 +284,8 @@ export class InvoiceServices {
   }
 
   // --- New method to detect invoices ---
-  async extractInvoices(pdfPath: string) {
-    let pages = await this.getAttachmentTexts(pdfPath);
+  async extractInvoices(pdfBuffer: Buffer) {
+    let pages = await this.getAttachmentTexts(pdfBuffer);
 
     const invoices: any[] = [];
     let currentInvoice: any = null;
@@ -326,7 +325,10 @@ export class InvoiceServices {
 
     // Save last invoice
     if (currentInvoice) {
-      currentInvoice.endPage = Math.min(currentInvoice.endPage, pages.length);
+      currentInvoice.endPage = Math.min(
+        currentInvoice.endPage,
+        pages.length - 1
+      );
       currentInvoice.pageCount =
         currentInvoice.endPage - currentInvoice.startPage + 1;
       invoices.push(currentInvoice);
@@ -337,6 +339,62 @@ export class InvoiceServices {
       totalPages: pages.length,
       totalInvoices: invoices.length,
       invoices,
+    };
+  }
+
+  async splitInvoicesPdf(pdfBuffer: Buffer) {
+    const originalPdf = await PDFDocument.load(pdfBuffer);
+
+    const splitResults: any[] = [];
+    const invoiceData = await this.extractInvoices(pdfBuffer);
+
+    for (const inv of invoiceData.invoices) {
+      const { startPage, endPage, invoiceNumber } = inv;
+
+      try {
+        const newPdf = await PDFDocument.create();
+
+        // Copy pages safely in a separate array
+        for (let i = startPage - 1; i < endPage; i++) {
+          const [copiedPage] = await newPdf.copyPages(originalPdf, [i]);
+          newPdf.addPage(copiedPage);
+        }
+
+        const newPdfBytes = await newPdf.save();
+
+        // Upload directly to S3
+        const s3Key = `invoices/Invoice_${invoiceNumber}.pdf`;
+        const s3Url = await uploadBufferToS3(
+          Buffer.from(newPdfBytes),
+          s3Key,
+          "application/pdf"
+        );
+
+        const inserted = await this.insertInvoice({
+          userId: 33,
+          attachmentId: 164,
+          invoiceNumber: invoiceNumber as string,
+          invoiceUrl: s3Url,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        console.log(inserted);
+        splitResults.push({
+          invoiceNumber,
+          startPage,
+          endPage,
+          pageCount: endPage - startPage + 1,
+          s3Url,
+        });
+      } catch (err) {
+        console.error(`Error splitting invoice ${invoiceNumber}:`, err);
+      }
+    }
+
+    return {
+      success: true,
+      totalInvoices: splitResults.length,
+      invoices: splitResults,
     };
   }
 }

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
-import { asc, count, eq } from "drizzle-orm";
+import { asc, count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -54,14 +54,12 @@ export class GoogleServices {
     tokens: any,
     userId: number,
     integrationId: number,
-    startedReadingAt: string 
+    startedReadingAt: string
   ) => {
     try {
       const auth = this.getOAuthClient(tokens);
       const gmail = google.gmail({ version: "v1", auth });
       let query = "has:attachment";
-
- 
 
       if (!startedReadingAt) {
         throw new BadRequestError("Select a starting date");
@@ -166,7 +164,7 @@ export class GoogleServices {
         .select()
         .from(emailAttachmentsModel)
         .where(eq(emailAttachmentsModel.userId, userId))
-        .orderBy(asc(emailAttachmentsModel.created_at))
+        .orderBy(desc(emailAttachmentsModel.created_at))
         .limit(limit)
         .offset(offset);
       const [attachmentCount] = await db

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import fileUpload from "express-fileupload";
 //@ts-ignore
 import cookieParser from "cookie-parser";
 
@@ -29,6 +30,7 @@ app.use(
     credentials: true,
   })
 );
+app.use(fileUpload());
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));

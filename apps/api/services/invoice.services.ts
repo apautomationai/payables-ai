@@ -126,7 +126,12 @@ import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
-import { asc, count, desc, eq, getTableColumns } from "drizzle-orm";
+import { count, desc, eq, getTableColumns } from "drizzle-orm";
+import fs from "fs";
+import path from "path";
+import Tesseract from "tesseract.js";
+import { execSync } from "child_process";
+const pdfParse = require("pdf-parse");
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -229,6 +234,110 @@ export class InvoiceServices {
 
     return response;
   }
-}
 
+  async getAttachmentTexts(pdfPath: string): Promise<string[]> {
+    const pdfBuffer = fs.readFileSync(pdfPath);
+
+    // Extract digital text
+    const parsed = await pdfParse(pdfBuffer);
+
+    // if (parsed.text && parsed.text.trim().length > 20) {
+    // Split by page marker like "Page X of Y"
+    const pages = parsed.text
+      .split(/Page \d+ of \d+/) // split using the page pattern
+      .map((p: any) => p.trim()) // remove extra whitespace
+      .filter((p: any) => p.length > 0); // remove empty pages
+
+    return pages;
+    // }
+
+    // Fallback: scanned PDF → OCR
+    // const tempDir = path.join(__dirname, "../../temp_images");
+    // if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir);
+
+    // const outputBase = path.join(tempDir, "page");
+    // execSync(`pdftoppm -png "${pdfPath}" "${outputBase}"`);
+
+    // const imageFiles = fs
+    //   .readdirSync(tempDir)
+    //   .filter((f) => f.endsWith(".png"))
+    //   .sort(
+    //     (a, b) =>
+    //       parseInt(a.match(/\d+/)?.[0] || "0") -
+    //       parseInt(b.match(/\d+/)?.[0] || "0")
+    //   );
+
+    // const results: string[] = [];
+    // for (const imageFile of imageFiles) {
+    //   const imagePath = path.join(tempDir, imageFile);
+    //   const { data } = await Tesseract.recognize(imagePath, "eng");
+
+    //   const text = data.text.trim();
+    //   if (text.length > 0) {
+    //     results.push(text);
+    //   }
+    // }
+
+    // imageFiles.forEach((f) => fs.unlinkSync(path.join(tempDir, f)));
+    // console.log("result ", results);
+
+    // return results;
+  }
+
+  // --- New method to detect invoices ---
+  async extractInvoices(pdfPath: string) {
+    let pages = await this.getAttachmentTexts(pdfPath);
+
+    const invoices: any[] = [];
+    let currentInvoice: any = null;
+
+    for (let i = 0; i < pages.length; i++) {
+      const text = pages[i].trim();
+      if (!text) continue; // skip empty pages
+
+      // Match invoice number (adjust regex if needed)
+
+      const invoiceMatch = text.match(
+        /INVOICE\s*(NUMBER|No\.?)?\s*[:#]?\s*(\d+)/i
+      );
+      if (invoiceMatch) {
+        // Save previous invoice
+        if (currentInvoice) {
+          currentInvoice.endPage = i;
+          currentInvoice.pageCount =
+            currentInvoice.endPage - currentInvoice.startPage + 1;
+          invoices.push(currentInvoice);
+        }
+
+        // Start new invoice
+        currentInvoice = {
+          invoiceNumber: invoiceMatch[2],
+          startPage: i + 1,
+          endPage: i + 1,
+          pageCount: 1,
+        };
+      } else if (currentInvoice) {
+        // Extend current invoice
+        currentInvoice.endPage = i + 1;
+        currentInvoice.pageCount =
+          currentInvoice.endPage - currentInvoice.startPage + 1;
+      }
+    }
+
+    // Save last invoice
+    if (currentInvoice) {
+      currentInvoice.endPage = Math.min(currentInvoice.endPage, pages.length);
+      currentInvoice.pageCount =
+        currentInvoice.endPage - currentInvoice.startPage + 1;
+      invoices.push(currentInvoice);
+    }
+
+    return {
+      success: true,
+      totalPages: pages.length,
+      totalInvoices: invoices.length,
+      invoices,
+    };
+  }
+}
 export const invoiceServices = new InvoiceServices();

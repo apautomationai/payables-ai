@@ -886,3 +886,272 @@ export function AnimatedNotification() {
     </motion.div>
   )
 }
+
+// Add these new icons to your animated-icons.tsx
+export function AnimatedContactMail() {
+  return (
+    <motion.svg
+      width="80"
+      height="80"
+      viewBox="0 0 80 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      animate={{
+        y: [0, -5, 0],
+        scale: [1, 1.05, 1]
+      }}
+      transition={{
+        duration: 3,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      <motion.rect
+        x="15"
+        y="20"
+        width="50"
+        height="40"
+        rx="4"
+        fill="url(#contactMailGradient)"
+        stroke="#3B82F6"
+        strokeWidth="2"
+        animate={{ strokeDasharray: ["8 4", "4 8", "8 4"] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
+      <motion.path
+        d="M15 25L40 45L65 25"
+        stroke="#ffffff"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        animate={{ pathLength: [0, 1, 1] }}
+        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+      />
+      <motion.circle
+        cx="40"
+        cy="40"
+        r="3"
+        fill="#ffffff"
+        animate={{ scale: [1, 1.5, 1] }}
+        transition={{ duration: 2, repeat: Infinity, delay: 1 }}
+      />
+      <defs>
+        <linearGradient id="contactMailGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#3B82F6" />
+          <stop offset="100%" stopColor="#1D4ED8" />
+        </linearGradient>
+      </defs>
+    </motion.svg>
+  )
+}
+
+export function AnimatedContactPhone() {
+  return (
+    <motion.svg
+      width="80"
+      height="80"
+      viewBox="0 0 80 80"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      animate={{
+        rotate: [0, 5, -5, 0],
+        scale: [1, 1.02, 1]
+      }}
+      transition={{
+        duration: 4,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      <motion.rect
+        x="20"
+        y="15"
+        width="40"
+        height="50"
+        rx="8"
+        fill="url(#contactPhoneGradient)"
+        stroke="#8B5CF6"
+        strokeWidth="2"
+      />
+      <motion.rect
+        x="30"
+        y="20"
+        width="20"
+        height="2"
+        rx="1"
+        fill="#ffffff"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 2, repeat: Infinity }}
+      />
+      <motion.circle
+        cx="40"
+        cy="55"
+        r="6"
+        fill="#10B981"
+        stroke="#ffffff"
+        strokeWidth="2"
+        animate={{ scale: [1, 1.1, 1] }}
+        transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
+      />
+      <motion.path
+        d="M36 53L40 57L44 53"
+        stroke="#ffffff"
+        strokeWidth="2"
+        fill="none"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        animate={{ y: [0, -2, 0] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      />
+      <defs>
+        <linearGradient id="contactPhoneGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#8B5CF6" />
+          <stop offset="100%" stopColor="#7C3AED" />
+        </linearGradient>
+      </defs>
+    </motion.svg>
+  )
+}
+
+
+export function AnimatedShieldLock() {
+  return (
+    <motion.svg
+      width="100"
+      height="100"
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      animate={{
+        scale: [1, 1.05, 1],
+        y: [0, -5, 0]
+      }}
+      transition={{
+        duration: 4,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      <motion.path
+        d="M50 15L75 30V55C75 70 62.5 85 50 95C37.5 85 25 70 25 55V30L50 15Z"
+        fill="url(#shieldLockGradient)"
+        stroke="#3B82F6"
+        strokeWidth="2"
+      />
+      <motion.rect
+        x="40"
+        y="45"
+        width="20"
+        height="25"
+        rx="3"
+        fill="#ffffff"
+        stroke="#1D4ED8"
+        strokeWidth="2"
+        animate={{
+          fill: ["#ffffff", "#f8fafc", "#ffffff"]
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity
+        }}
+      />
+      <motion.circle
+        cx="50"
+        cy="55"
+        r="2"
+        fill="#1D4ED8"
+        animate={{
+          scale: [1, 1.5, 1],
+          opacity: [1, 0.7, 1]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity
+        }}
+      />
+      <defs>
+        <linearGradient id="shieldLockGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#3B82F6" />
+          <stop offset="100%" stopColor="#1D4ED8" />
+        </linearGradient>
+      </defs>
+    </motion.svg>
+  )
+}
+
+export function AnimatedDataFlow() {
+  return (
+    <motion.svg
+      width="100"
+      height="100"
+      viewBox="0 0 100 100"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      animate={{
+        rotate: [0, 5, -5, 0]
+      }}
+      transition={{
+        duration: 6,
+        repeat: Infinity,
+        ease: "easeInOut"
+      }}
+    >
+      <motion.circle
+        cx="30"
+        cy="30"
+        r="8"
+        fill="#10B981"
+        animate={{
+          scale: [1, 1.2, 1]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          delay: 0
+        }}
+      />
+      <motion.circle
+        cx="70"
+        cy="30"
+        r="8"
+        fill="#8B5CF6"
+        animate={{
+          scale: [1, 1.2, 1]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          delay: 0.5
+        }}
+      />
+      <motion.circle
+        cx="50"
+        cy="70"
+        r="8"
+        fill="#3B82F6"
+        animate={{
+          scale: [1, 1.2, 1]
+        }}
+        transition={{
+          duration: 2,
+          repeat: Infinity,
+          delay: 1
+        }}
+      />
+      <motion.path
+        d="M30 38L45 48M55 52L70 38M38 52L45 48M45 48L55 52"
+        stroke="#6B7280"
+        strokeWidth="2"
+        strokeLinecap="round"
+        animate={{
+          strokeDasharray: ["5 5", "10 10", "5 5"],
+          strokeDashoffset: [0, 10, 0]
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity
+        }}
+      />
+    </motion.svg>
+  )
+}

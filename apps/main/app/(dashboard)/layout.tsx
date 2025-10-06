@@ -3,6 +3,7 @@ import client from "@/lib/fetch-client";
 import { User, ApiResponse } from "@/lib/types";
 import DashboardClientLayout from "@/components/dashboard/DashboardClientLayout"; // Adjust path if needed
 
+
 export default async function DashboardLayout({
   children,
 }: {
@@ -19,7 +20,8 @@ export default async function DashboardLayout({
       userEmail = user.email;
     }
   } catch (error) {
-    console.error("Failed to fetch user data in layout:", error);
+    //@ts-ignore
+    console.error("Failed to fetch user data in layout"), error;
   }
 
   return (

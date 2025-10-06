@@ -45,9 +45,7 @@ async function getInvoices(page: number) {
 
 async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | null> {
   try {
-    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`, {
-      cache: "no-store",
-    });
+    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`);
     return response.data;
   } catch (error) {
     console.error(`Failed to fetch details for invoice ${invoiceId}:`, error);
@@ -59,7 +57,6 @@ async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | nu
 export default async function InvoiceReviewPage({
   searchParams,
 }: {
-  // FIX: Using 'any' to bypass the persistent build error.
   searchParams: any;
 }) {
   const pageParam = searchParams['page'] ? (Array.isArray(searchParams['page']) ? searchParams['page'][0] : searchParams['page']) : "1";
@@ -82,19 +79,25 @@ export default async function InvoiceReviewPage({
   const { invoices, pagination: invoicesPagination } = invoicesResult.data;
   const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || { attachments: [], pagination: { totalPages: 1 }};
 
+  // Pre-fetch all invoice details in parallel
+  const invoiceDetailPromises = invoices.map(invoice => getInvoiceDetails(invoice.id));
+  const invoiceDetailsResults = await Promise.all(invoiceDetailPromises);
+
+  // Create a cache map (id -> details) from the results
+  const initialInvoiceCache: Record<number, InvoiceDetails> = {};
+  invoiceDetailsResults.forEach((details) => {
+    if (details) {
+      initialInvoiceCache[details.id] = details;
+    }
+  });
+  
   const initialSelectedInvoice = invoices.length > 0 ? invoices[0] : null;
   
+  // Get the initial details from the newly created cache
   const initialInvoiceDetails = initialSelectedInvoice
-    ? await getInvoiceDetails(initialSelectedInvoice.id)
+    ? initialInvoiceCache[initialSelectedInvoice.id] || null
     : null;
 
-  if (!initialSelectedInvoice) {
-    return (
-      <div className="flex h-full items-center justify-center">
-        <p>No invoices found.</p>
-      </div>
-    );
-  }
 
   return (
     <InvoiceReviewClient
@@ -106,6 +109,7 @@ export default async function InvoiceReviewPage({
       invoiceTotalPages={invoicesPagination.totalPages}
       initialSelectedInvoice={initialSelectedInvoice}
       initialInvoiceDetails={initialInvoiceDetails}
+      initialInvoiceCache={initialInvoiceCache}
     />
   );
 }

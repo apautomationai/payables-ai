@@ -50,7 +50,7 @@ export interface InvoiceDetails {
   createdAt: string;
   updatedAt: string;
   // These fields are needed by the viewer component but are not in the current backend model
-  pdfUrl: string;
+  invoiceUrl: string;
   sourcePdfUrl: string;
   status: InvoiceStatus | null
 }

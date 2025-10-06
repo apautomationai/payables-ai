@@ -30,7 +30,7 @@ export default function AttachmentViewer({
   pdfUrl: string | null;       // MODIFIED: Allow pdfUrl to be null
 }) {
   return (
-    <Card className="h-[calc(100vh-10rem)] flex flex-col overflow-hidden">
+    <Card className="h-[calc(100vh-10rem)] w-full flex flex-col overflow-hidden">
       <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
         <CardTitle className="truncate text-base">
           {/* MODIFIED: Safely access attachment ID or show fallback text */}

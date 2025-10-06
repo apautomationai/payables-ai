@@ -10,12 +10,7 @@ import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
-
-const formatLabel = (key: string) => {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
-};
+import { formatLabel } from "@/lib/utility/formatters";
 
 const FormField = ({
   fieldKey,
@@ -83,6 +78,8 @@ interface InvoiceDetailsFormProps {
   setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
   onSave: () => Promise<void>;
   onReject: () => Promise<void>;
+  onApprove: () => Promise<void>;
+  onCancel: () => void;
 }
 
 export default function InvoiceDetailsForm({
@@ -94,12 +91,14 @@ export default function InvoiceDetailsForm({
   setSelectedFields,
   onSave,
   onReject,
+  onApprove,
+  onCancel,
 }: InvoiceDetailsFormProps) {
 
   const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) =>
       prev.includes(fieldKey)
-        ? prev.filter((key) => key !== key)
+        ? prev.filter((key) => key !== fieldKey)
         : [...prev, fieldKey]
     );
   };
@@ -112,7 +111,7 @@ export default function InvoiceDetailsForm({
     "createdAt",
     "updatedAt",
     "status",
-    "pdfUrl",
+    "invoiceUrl",
     "sourcePdfUrl",
   ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
@@ -134,7 +133,7 @@ export default function InvoiceDetailsForm({
     (completedMandatoryFields / (mandatoryFields.length || 1)) * 100;
 
   return (
-    <Card className="h-[750px] flex flex-col">
+    <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Invoice Information</CardTitle>
       </CardHeader>
@@ -172,8 +171,9 @@ export default function InvoiceDetailsForm({
             invoiceDetails={invoiceDetails}
             selectedFields={selectedFields}
             onSave={onSave}
-            //@ts-ignore
             onReject={onReject}
+            onApprove={onApprove}
+            onCancel={onCancel}
           />
         </div>
       </CardContent>

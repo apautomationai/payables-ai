@@ -23,12 +23,7 @@ const app = express();
 
 // Apply middleware
 app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:3001",
-    credentials: true,
-  })
-);
+app.use(cors());
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));

@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   integer,
   numeric,
+  pgEnum,
   pgTable,
   serial,
   text,
@@ -10,6 +11,12 @@ import {
 } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 import { emailAttachmentsModel } from "./emails.model";
+export const statusEnum = pgEnum("status", [
+  "pending",
+  "approved",
+  "rejected",
+  "failed",
+]);
 
 export const invoiceModel = pgTable("invoices", {
   id: serial("id").primaryKey().unique(),
@@ -27,6 +34,8 @@ export const invoiceModel = pgTable("invoices", {
   quantity: numeric("quantity"),
   rate: numeric("rate"),
   description: text("description"),
+  invoiceUrl: text("invoice_url"),
+  status: statusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
-import type { InvoiceListItem } from "@/lib/types/invoice";
+import type { InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
+import { Badge } from "@workspace/ui/components/badge";
 import {
   Pagination,
   PaginationContent,
@@ -8,6 +9,27 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@workspace/ui/components/pagination";
+import { cn } from "@workspace/ui/lib/utils";
+
+const StatusBadge = ({ status }: { status: InvoiceStatus | null }) => {
+  if (!status) return null;
+
+  const statusStyles = {
+    pending: "bg-yellow-100 text-yellow-800 border-yellow-200",
+    approved: "bg-green-100 text-green-800 border-green-200",
+    rejected: "bg-red-100 text-red-800 border-red-200",
+    failed: "bg-gray-100 text-gray-800 border-gray-200",
+  };
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn("text-xs font-medium", statusStyles[status])}
+    >
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </Badge>
+  );
+};
 
 interface InvoicesListProps {
   invoices: InvoiceListItem[];
@@ -47,11 +69,9 @@ export default function InvoicesList({
     return invoices.filter(
       (invoice) =>
         String(invoice.id).includes(lowercasedQuery) ||
-       
         invoice.invoiceNumber.toLowerCase().includes(lowercasedQuery)
     );
   }, [invoices, searchQuery]);
-
 
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] rounded-lg border bg-card text-card-foreground shadow-sm">
@@ -91,13 +111,14 @@ export default function InvoicesList({
                   key={invoice.id}
                   onClick={() => onSelectInvoice(invoice)}
                   className={`p-3 rounded-md cursor-pointer transition-all duration-150 border-l-4 ${
-                    selectedInvoiceId === Number(invoice.id) // Ensure comparison works with numbers
+                    selectedInvoiceId === invoice.id
                       ? "bg-primary/10 border-primary"
                       : "border-transparent hover:bg-muted/50"
                   }`}
                 >
-                  <div className="flex justify-between items-center mb-1">
-                    <p className="font-semibold text-sm truncate">{invoice.invoiceNumber}</p>
+                  <div className="flex justify-between items-start mb-1">
+                    <p className="font-semibold text-sm truncate pr-2">{invoice.invoiceNumber}</p>
+                    <StatusBadge status={invoice.status} />
                   </div>
                   <p className="text-sm text-muted-foreground truncate mb-2">{invoice.vendorName || 'N/A'}</p>
                   <div className="flex justify-between items-center text-xs text-muted-foreground">

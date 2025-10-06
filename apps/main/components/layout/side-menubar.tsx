@@ -162,7 +162,7 @@ export default function SideMenuBar({
           "border-r border-border/40",
           "transition-all duration-300 ease-in-out",
           "shadow-lg md:shadow-none",
-          isCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-64 translate-x-0"
+          isCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-72 translate-x-0"
         )}
       >
         <div className="flex h-full max-h-screen flex-col">
@@ -299,7 +299,7 @@ export default function SideMenuBar({
                   >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8 ring-2 ring-border/50 transition-all duration-200 group-hover:ring-primary/50">
-                        <AvatarImage src="/avatars/user.jpg" alt={userName} />
+                        <AvatarImage src="/images/avatar.png" alt={userName} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
                           <span suppressHydrationWarning>
                             {userName.charAt(0).toUpperCase()}

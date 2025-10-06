@@ -13,6 +13,7 @@ export type Attachment = {
   updated_at: string;
 };
 
+export type InvoiceStatus = "pending" | "approved" | "rejected" | "failed";
 // UPDATED: This type now matches the fields returned by the GET /api/v1/invoice/invoices endpoint.
 export type InvoiceListItem = {
   // FIX: Changed 'id' from string to number to match the backend data
@@ -24,6 +25,7 @@ export type InvoiceListItem = {
   attachmentUrl: string;
   createdAt: string;
   vendorName?: string; 
+  status: InvoiceStatus | null;
 };
 
 
@@ -48,9 +50,9 @@ export interface InvoiceDetails {
   createdAt: string;
   updatedAt: string;
   // These fields are needed by the viewer component but are not in the current backend model
-  pdfUrl: string;
+  invoiceUrl: string;
   sourcePdfUrl: string;
-  status: "Completed" | "Pending" | "Requires Attention";
+  status: InvoiceStatus | null
 }
 
 export interface LineItem {

@@ -10,12 +10,7 @@ import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
-
-const formatLabel = (key: string) => {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (str) => str.toUpperCase());
-};
+import { formatLabel } from "@/lib/utility/formatters";
 
 const FormField = ({
   fieldKey,
@@ -82,6 +77,9 @@ interface InvoiceDetailsFormProps {
   selectedFields: string[];
   setSelectedFields: React.Dispatch<React.SetStateAction<string[]>>;
   onSave: () => Promise<void>;
+  onReject: () => Promise<void>;
+  onApprove: () => Promise<void>;
+  onCancel: () => void;
 }
 
 export default function InvoiceDetailsForm({
@@ -92,6 +90,9 @@ export default function InvoiceDetailsForm({
   selectedFields,
   setSelectedFields,
   onSave,
+  onReject,
+  onApprove,
+  onCancel,
 }: InvoiceDetailsFormProps) {
 
   const handleFieldToggle = (fieldKey: string) => {
@@ -102,9 +103,17 @@ export default function InvoiceDetailsForm({
     );
   };
 
-  // UPDATED: Filter out the fields that should not be displayed in the form
   const allFields = Object.keys(invoiceDetails || {});
-  const hiddenFields = ["id", "userId", "attachmentId"];
+  const hiddenFields = [
+    "id",
+    "userId",
+    "attachmentId",
+    "createdAt",
+    "updatedAt",
+    "status",
+    "invoiceUrl",
+    "sourcePdfUrl",
+  ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 
   const mandatoryFields = [
@@ -124,14 +133,13 @@ export default function InvoiceDetailsForm({
     (completedMandatoryFields / (mandatoryFields.length || 1)) * 100;
 
   return (
-    <Card className="h-[750px] flex flex-col">
+    <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Invoice Information</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
         <ScrollArea className="flex-grow pr-4 -mr-4">
           <div className="space-y-4">
-            {/* UPDATED: Loop over the filtered list of fields */}
             {fieldsToDisplay.map((key) => (
               <FormField
                 key={key}
@@ -163,6 +171,9 @@ export default function InvoiceDetailsForm({
             invoiceDetails={invoiceDetails}
             selectedFields={selectedFields}
             onSave={onSave}
+            onReject={onReject}
+            onApprove={onApprove}
+            onCancel={onCancel}
           />
         </div>
       </CardContent>

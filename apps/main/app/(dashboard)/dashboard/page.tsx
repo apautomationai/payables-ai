@@ -40,7 +40,7 @@ export default async function DashboardPage() {
       if (errorMessage.includes("No integrations found for this user")) {
         integrationError = "Connect Email in Settings";
       } else {
-        // console.error("Failed to fetch user data:", userResult.reason);
+        console.error("Failed to fetch user data:", userResult.reason);
       }
     }
 

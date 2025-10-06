@@ -2,7 +2,7 @@ import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
-import { asc, count, eq, getTableColumns } from "drizzle-orm";
+import { count, desc, eq, getTableColumns } from "drizzle-orm";
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -32,7 +32,7 @@ export class InvoiceServices {
         eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
       )
       .where(eq(invoiceModel.userId, userId))
-      .orderBy(asc(invoiceModel.createdAt))
+      .orderBy(desc(invoiceModel.createdAt))
       .limit(limit)
       .offset(offset);
 
@@ -47,9 +47,7 @@ export class InvoiceServices {
     };
   }
 
-  // UPDATED: Now accepts a numeric 'invoiceId'
   async getInvoice(invoiceId: number) {
-    // UPDATED: Queries by the 'id' column
     const [response] = await db
       .select({
         ...getTableColumns(invoiceModel),
@@ -69,12 +67,10 @@ export class InvoiceServices {
     return response;
   }
 
-  // UPDATED: Now accepts a numeric 'invoiceId'
   async updateInvoice(
     invoiceId: number,
     invoiceInfo: Partial<typeof invoiceModel.$inferSelect>
   ) {
-    // UPDATED: Checks for existence using the numeric 'id'
     const existingInvoice = await this.getInvoice(invoiceId);
     if (!existingInvoice) {
       throw new NotFoundError("No invoice found to update.");
@@ -94,10 +90,10 @@ export class InvoiceServices {
       quantity: invoiceInfo.quantity,
       rate: invoiceInfo.rate,
       description: invoiceInfo.description,
+      status: invoiceInfo.status, // THIS IS THE FIX
       updatedAt: new Date(),
     };
 
-    // UPDATED: Updates the record where the 'id' matches
     const [response] = await db
       .update(invoiceModel)
       .set(updateData)

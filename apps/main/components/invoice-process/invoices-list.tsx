@@ -74,7 +74,7 @@ export default function InvoicesList({
   }, [invoices, searchQuery]);
 
   return (
-    <div className="flex flex-col h-full rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-10rem)] rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="p-4 border-b">
         <h2 className="text-lg font-semibold">Invoices</h2>
         <div className="relative mt-2">

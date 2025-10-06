@@ -1,17 +1,17 @@
 import React, { useState } from "react";
 
 interface InvoicePdfViewerProps {
-  invoicePdfUrl: string;
+  invoiceUrl: string;
   sourcePdfUrl?: string | null;
 }
 
 export default function InvoicePdfViewer({ 
-  invoicePdfUrl, 
+  invoiceUrl, 
   sourcePdfUrl 
 }: InvoicePdfViewerProps) {
   const [activeTab, setActiveTab] = useState<'invoice' | 'source'>('invoice');
 
-  const currentUrl = activeTab === 'invoice' ? invoicePdfUrl : sourcePdfUrl;
+  const currentUrl = activeTab === 'invoice' ? invoiceUrl : sourcePdfUrl;
 
   const TabButton = ({
     label,
@@ -36,7 +36,7 @@ export default function InvoicePdfViewer({
   );
 
   return (
-    <div className="flex flex-col h-[750px] w-full rounded-lg border bg-card text-card-foreground shadow-sm">
+    <div className="flex flex-col h-[calc(100vh-10rem)] w-full rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="flex items-center border-b px-2">
         <TabButton label="Invoice PDF" tabName="invoice" />
         {sourcePdfUrl && <TabButton label="Source" tabName="source" />}

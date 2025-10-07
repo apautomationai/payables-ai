@@ -60,7 +60,8 @@ export class UploadController {
         userId: userId,
         filename: bodyData.filename,
         mimeType: bodyData.mimetype,
-        s3Url: bodyData.s3Url,
+        fileUrl: bodyData.fileUrl,
+        fileKey: bodyData.fileKey,
       };
 
       const [response] = await uploadServices.createDbRecord(attInfo);

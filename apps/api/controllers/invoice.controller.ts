@@ -1,7 +1,6 @@
 import { BadRequestError } from "@/helpers/errors";
 import { invoiceServices } from "@/services/invoice.services";
 import { Request, Response } from "express";
-import { UploadedFile } from "express-fileupload";
 
 class InvoiceController {
   async insertInvoice(req: Request, res: Response) {
@@ -18,7 +17,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        invoiceUrl,
+        fileUrl,
         costCode,
         quantity,
         rate,
@@ -40,7 +39,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        invoiceUrl,
+        fileUrl,
         costCode,
         quantity,
         rate,
@@ -173,19 +172,20 @@ class InvoiceController {
   //     return res.status(500).json({ success: false, error: err.message });
   //   }
   // }
-  async extractInvoiceText(req: Request, res: Response) {
+  async splitInvoices(req: Request, res: Response) {
     try {
-      if (!req.files || (!req.files.pdf && !req.files.file)) {
-        return res.json({
-          success: false,
-          error:
-            "PDF file is required. Use 'file' or 'pdf' as the form-data key.",
-        });
+      //@ts-ignore
+      const userId = req.user.id;
+
+      const { attachmentId } = req.body;
+      if (!attachmentId) {
+        throw new BadRequestError("Need an attachment id");
       }
 
-      const pdfFile = (req.files.pdf || req.files.file) as UploadedFile;
-      const pdfBuffer = pdfFile.data;
-      const result = await invoiceServices.splitInvoicesPdf(pdfBuffer);
+      const result = await invoiceServices.splitInvoicesPdf(
+        attachmentId,
+        userId
+      );
 
       return res.status(200).json(result);
     } catch (err: any) {

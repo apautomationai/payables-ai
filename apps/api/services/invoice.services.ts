@@ -3,12 +3,13 @@ import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
 import { invoiceModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns } from "drizzle-orm";
-// import path from "path";
-// import Tesseract from "tesseract.js";
-// import { execSync } from "child_process";
 const pdfParse = require("pdf-parse");
 import { PDFDocument } from "pdf-lib";
-import { uploadBufferToS3 } from "@/helpers/s3upload";
+import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { streamToBuffer } from "@/lib/utils/steamToBuffer";
+import { Readable } from "stream";
+const { v4: uuidv4 } = require("uuid");
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -20,18 +21,7 @@ export class InvoiceServices {
     const offset = (page - 1) * limit;
 
     const allInvoices = await db
-      .select({
-        id: invoiceModel.id,
-        userId: invoiceModel.userId,
-        invoiceNumber: invoiceModel.invoiceNumber,
-        totalAmount: invoiceModel.totalAmount,
-        attachmentId: invoiceModel.attachmentId,
-        attachmentUrl: emailAttachmentsModel.s3Url,
-        createdAt: invoiceModel.createdAt,
-        vendorName: invoiceModel.vendorName,
-        invoiceDate: invoiceModel.invoiceDate,
-        status: invoiceModel.status,
-      })
+      .select()
       .from(invoiceModel)
       .leftJoin(
         emailAttachmentsModel,
@@ -57,7 +47,7 @@ export class InvoiceServices {
     const [response] = await db
       .select({
         ...getTableColumns(invoiceModel),
-        sourcePdfUrl: emailAttachmentsModel.s3Url,
+        sourcePdfUrl: emailAttachmentsModel.fileUrl,
       })
       .from(invoiceModel)
       .leftJoin(
@@ -157,55 +147,114 @@ export class InvoiceServices {
   }
 
   // --- New method to detect invoices ---
+  // async extractInvoices(pdfBuffer: Buffer) {
+  //   let pages = await this.getAttachmentTexts(pdfBuffer);
+
+  //   const invoices: any[] = [];
+  //   let currentInvoice: any = null;
+
+  //   for (let i = 0; i < pages.length; i++) {
+  //     const text = pages[i].trim();
+  //     if (!text) continue; // skip empty pages
+
+  //     // Match invoice number (adjust regex if needed)
+
+  //     const invoiceMatch = text.match(
+  //       /INVOICE\s*(NUMBER|No\.?)?\s*[:#]?\s*(\d+)/i
+  //     );
+  //     if (invoiceMatch) {
+  //       // Save previous invoice
+  //       if (currentInvoice) {
+  //         currentInvoice.endPage = i;
+  //         currentInvoice.pageCount =
+  //           currentInvoice.endPage - currentInvoice.startPage + 1;
+  //         invoices.push(currentInvoice);
+  //       }
+
+  //       // Start new invoice
+  //       currentInvoice = {
+  //         invoiceNumber: invoiceMatch[2],
+  //         startPage: i + 1,
+  //         endPage: i + 1,
+  //         pageCount: 1,
+  //       };
+  //     } else if (currentInvoice) {
+  //       // Extend current invoice
+  //       currentInvoice.endPage = i + 1;
+  //       currentInvoice.pageCount =
+  //         currentInvoice.endPage - currentInvoice.startPage + 1;
+  //     }
+  //   }
+
+  //   // Save last invoice
+  //   if (currentInvoice) {
+  //     currentInvoice.endPage = Math.min(
+  //       currentInvoice.endPage,
+  //       pages.length - 1
+  //     );
+  //     currentInvoice.pageCount =
+  //       currentInvoice.endPage - currentInvoice.startPage + 1;
+  //     invoices.push(currentInvoice);
+  //   }
+
+  //   return {
+  //     success: true,
+  //     totalPages: pages.length,
+  //     totalInvoices: invoices.length,
+  //     invoices,
+  //   };
+  // }
   async extractInvoices(pdfBuffer: Buffer) {
     let pages = await this.getAttachmentTexts(pdfBuffer);
 
-    const invoices: any[] = [];
-    let currentInvoice: any = null;
+    // Use a Map to track invoices by invoice number
+    const invoiceMap = new Map<
+      string,
+      {
+        invoiceNumber: string;
+        pages: number[];
+      }
+    >();
 
-    for (let i = 0; i < pages.length; i++) {
+    let lastInvoiceNumber: string | null = null;
+
+    for (let i = 0; i < pages.length - 1; i++) {
       const text = pages[i].trim();
       if (!text) continue; // skip empty pages
 
       // Match invoice number (adjust regex if needed)
-
       const invoiceMatch = text.match(
         /INVOICE\s*(NUMBER|No\.?)?\s*[:#]?\s*(\d+)/i
+        // /\bINVOICE\s*(NUMBER|No\.?|#)\s*[:]?\s*([\w-]+)(?!\s*customer)/i
       );
-      if (invoiceMatch) {
-        // Save previous invoice
-        if (currentInvoice) {
-          currentInvoice.endPage = i;
-          currentInvoice.pageCount =
-            currentInvoice.endPage - currentInvoice.startPage + 1;
-          invoices.push(currentInvoice);
-        }
 
-        // Start new invoice
-        currentInvoice = {
-          invoiceNumber: invoiceMatch[2],
-          startPage: i + 1,
-          endPage: i + 1,
-          pageCount: 1,
-        };
-      } else if (currentInvoice) {
-        // Extend current invoice
-        currentInvoice.endPage = i + 1;
-        currentInvoice.pageCount =
-          currentInvoice.endPage - currentInvoice.startPage + 1;
+      if (invoiceMatch) {
+        lastInvoiceNumber = invoiceMatch[2];
+      }
+
+      // If we have an invoice number (either from this page or previous)
+      if (lastInvoiceNumber) {
+        if (!invoiceMap.has(lastInvoiceNumber)) {
+          invoiceMap.set(lastInvoiceNumber, {
+            invoiceNumber: lastInvoiceNumber,
+            pages: [],
+          });
+        }
+        invoiceMap.get(lastInvoiceNumber)!.pages.push(i + 1);
       }
     }
 
-    // Save last invoice
-    if (currentInvoice) {
-      currentInvoice.endPage = Math.min(
-        currentInvoice.endPage,
-        pages.length - 1
-      );
-      currentInvoice.pageCount =
-        currentInvoice.endPage - currentInvoice.startPage + 1;
-      invoices.push(currentInvoice);
-    }
+    // Convert map to array and calculate page ranges
+    const invoices = Array.from(invoiceMap.values()).map((invoice) => {
+      const sortedPages = invoice.pages.sort((a, b) => a - b);
+      return {
+        invoiceNumber: invoice.invoiceNumber,
+        startPage: sortedPages[0],
+        endPage: sortedPages[sortedPages.length - 1],
+        pageCount: sortedPages.length,
+        pages: sortedPages, // Optional: include all page numbers
+      };
+    });
 
     return {
       success: true,
@@ -215,10 +264,30 @@ export class InvoiceServices {
     };
   }
 
-  async splitInvoicesPdf(pdfBuffer: Buffer) {
+  async splitInvoicesPdf(attachmentId: number, userId: number) {
+    const [attachment] = await db
+      .select()
+      .from(emailAttachmentsModel)
+      .where(eq(emailAttachmentsModel.id, attachmentId));
+      
+    const s3Url = attachment.fileUrl;
+    //convert s3Url to attachment
+    const s3Key = s3Url!.split(".amazonaws.com/")[1];
+    const command = new GetObjectCommand({
+      Bucket: process.env.S3_BUCKET_NAME!,
+      Key: s3Key,
+    });
+    const s3Object = await s3Client.send(command);
+    //@ts-ignore
+    const pdfBuffer = s3Object.Body
+      ? await streamToBuffer(s3Object.Body as Readable)
+      : null;
+
+    //@ts-ignore
     const originalPdf = await PDFDocument.load(pdfBuffer);
 
     const splitResults: any[] = [];
+    //@ts-ignore
     const invoiceData = await this.extractInvoices(pdfBuffer);
 
     for (const inv of invoiceData.invoices) {
@@ -236,22 +305,23 @@ export class InvoiceServices {
         const newPdfBytes = await newPdf.save();
 
         // Upload directly to S3
-        const s3Key = `invoices/Invoice_${invoiceNumber}.pdf`;
+        const s3Key = `invoices/Invoice_${uuidv4()}.pdf`;
         const s3Url = await uploadBufferToS3(
           Buffer.from(newPdfBytes),
           s3Key,
           "application/pdf"
         );
 
+        //@ts-ignore
         const inserted = await this.insertInvoice({
-          userId: 33,
-          attachmentId: 164,
+          userId,
+          attachmentId,
           invoiceNumber: invoiceNumber as string,
-          invoiceUrl: s3Url,
+          fileUrl: s3Url,
+          fileKey: s3Key,
           createdAt: new Date(),
           updatedAt: new Date(),
         });
-        console.log(inserted);
         splitResults.push({
           invoiceNumber,
           startPage,

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { emailAttachmentsModel } from "@/models/emails.model";
-import { asc, count, desc, eq } from "drizzle-orm";
+import { count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -114,11 +114,13 @@ export class GoogleServices {
 
             // upload to S3
             const buffer = Buffer.from(data!, "base64url");
+            const key = `attachments/${hashId}-${part.filename}`;
             const s3Url = await uploadBufferToS3(
               buffer,
-              `attachments/${hashId}-${part.filename}`,
+              key,
               part.mimeType || "application/pdf"
             );
+            const s3Key = s3Url!.split(".amazonaws.com/")[1];
 
             // insert meta data to database
             //@ts-ignore
@@ -131,7 +133,8 @@ export class GoogleServices {
               sender,
               receiver,
               provider: "gmail",
-              s3Url,
+              fileUrl: s3Url,
+              fileKey: s3Key,
             });
             await integrationsService.updateIntegration(integrationId, {
               lastRead: new Date(),

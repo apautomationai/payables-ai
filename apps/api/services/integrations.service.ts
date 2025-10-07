@@ -14,7 +14,6 @@ class IntegrationsService {
         .insert(integrationsModel)
         .values(data)
         .returning();
-
       const result = {
         success: true,
         data: response,

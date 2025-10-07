@@ -148,7 +148,8 @@ export class GoogleServices {
               mimeType: part.mimeType,
               sender: sender,
               receiver: receiver,
-              s3Url: s3Url,
+              fileUrl: s3Url,
+              fileKey: s3Key,
               provider: "gmail",
             });
           }

@@ -16,10 +16,11 @@ export const statusEnum = pgEnum("status", [
   "approved",
   "rejected",
   "failed",
+  "not_connected"
 ]);
 
 export const invoiceModel = pgTable("invoices", {
-  id: serial("id").primaryKey().unique(),
+  id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   attachmentId: integer("attachment_id").notNull(),
   invoiceNumber: varchar("invoice_number", { length: 50 }),
@@ -34,7 +35,8 @@ export const invoiceModel = pgTable("invoices", {
   quantity: numeric("quantity"),
   rate: numeric("rate"),
   description: text("description"),
-  invoiceUrl: text("invoice_url"),
+  fileUrl: text("file_url"),
+  fileKey: text("file_key"),
   status: statusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

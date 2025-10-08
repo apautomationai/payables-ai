@@ -24,10 +24,10 @@ const PdfPlaceholder = () => (
 
 export default function AttachmentViewer({
   attachment,
-  pdfUrl,
+  fileUrl,
 }: {
-  attachment: Attachment | null; // MODIFIED: Allow attachment to be null
-  pdfUrl: string | null;       // MODIFIED: Allow pdfUrl to be null
+  attachment: Attachment | null; 
+  fileUrl: string | null;       
 }) {
   return (
     <Card className="h-[calc(100vh-10rem)] w-full flex flex-col overflow-hidden">
@@ -37,9 +37,9 @@ export default function AttachmentViewer({
           {attachment ? `Attachment ID: ${attachment.id}` : "New Invoice Preview"}
         </CardTitle>
         <div className="flex items-center gap-2">
-          {pdfUrl && (
+          {fileUrl && (
             <Button variant="ghost" size="icon" asChild>
-              <Link href={pdfUrl} target="_blank" rel="noopener noreferrer">
+              <Link href={fileUrl} target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="h-4 w-4" />
               </Link>
             </Button>
@@ -47,10 +47,10 @@ export default function AttachmentViewer({
         </div>
       </CardHeader>
       <CardContent className="flex-grow p-0 flex flex-col min-h-0">
-        {pdfUrl ? (
+        {fileUrl ? (
           <div className="relative h-full w-full">
             <iframe
-              src={pdfUrl}
+              src={fileUrl}
               // MODIFIED: Safely access filename for the title
               title={attachment ? `PDF Preview for ${attachment.filename}` : "PDF Preview"}
               className="w-full h-full border-none"

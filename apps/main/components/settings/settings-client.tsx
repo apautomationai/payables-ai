@@ -2,13 +2,8 @@
 
 import React, { useEffect, useActionState } from "react";
 import { toast } from "sonner";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@workspace/ui/components/tabs";
-import IntegrationsTab from "./integrations-settings";
+
+import Integrations from "./integrations-settings";
 
 type ActionState = {
   success?: boolean;
@@ -50,17 +45,10 @@ export default function SettingsClient({
   }, [state]);
 
   return (
-    <Tabs defaultValue="integrations">
-      <TabsList>
-        <TabsTrigger value="integrations">Integrations</TabsTrigger>
-      </TabsList>
-      <TabsContent value="integrations">
-        <IntegrationsTab
-          integrations={integrations}
-          updateAction={formAction}
-          updateStartTimeAction={updateStartTimeAction}
-        />
-      </TabsContent>
-    </Tabs>
+    <Integrations
+    integrations={integrations}
+    updateAction={formAction}
+    updateStartTimeAction={updateStartTimeAction}
+  />
   );
 }

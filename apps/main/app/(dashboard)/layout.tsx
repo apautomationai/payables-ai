@@ -20,8 +20,7 @@ export default async function DashboardLayout({
       userEmail = user.email;
     }
   } catch (error) {
-    //@ts-ignore
-    console.error("Failed to fetch user data in layout"), error;
+    console.error("Failed to fetch user data in layout", error);
   }
 
   return (

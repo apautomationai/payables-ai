@@ -17,7 +17,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        invoiceUrl,
+        fileUrl,
         costCode,
         quantity,
         rate,
@@ -39,7 +39,7 @@ class InvoiceController {
         totalAmount,
         currency,
         lineItems,
-        invoiceUrl,
+        fileUrl,
         costCode,
         quantity,
         rate,
@@ -59,6 +59,9 @@ class InvoiceController {
   }
 
   async getAllInvoices(req: Request, res: Response) {
+    //@ts-ignore
+    const userId = req.user.id;
+    // const userId = 33;
     try {
       //@ts-ignore
       const userId = req.user.id;
@@ -136,6 +139,58 @@ class InvoiceController {
         success: false,
         error: error.message,
       });
+    }
+  }
+
+  // async extractInvoiceText(req: Request, res: Response) {
+  //   try {
+  //     if (!req.files || (!req.files.pdf && !req.files.file)) {
+  //       return res.json({
+  //         success: false,
+  //         error:
+  //           "PDF file is required. Use 'file' or 'pdf' as the form-data key.",
+  //       });
+  //     }
+
+  //     const pdfFile = (req.files.pdf || req.files.file) as UploadedFile;
+  //     const uploadDir = path.join(__dirname, "../../temp_uploads");
+
+  //     if (!fs.existsSync(uploadDir)) {
+  //       fs.mkdirSync(uploadDir);
+  //     }
+
+  //     const tempPath = path.join(uploadDir, pdfFile.name);
+  //     await pdfFile.mv(tempPath);
+
+  //     const pages = await invoiceServices.getAttachmentTexts(tempPath);
+
+  //     fs.unlinkSync(tempPath);
+
+  //     return res.status(200).json({ success: true, pages });
+  //   } catch (err: any) {
+  //     console.error("Error extracting invoice text:", err);
+  //     return res.status(500).json({ success: false, error: err.message });
+  //   }
+  // }
+  async splitInvoices(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      const { attachmentId } = req.body;
+      if (!attachmentId) {
+        throw new BadRequestError("Need an attachment id");
+      }
+
+      const result = await invoiceServices.splitInvoicesPdf(
+        attachmentId,
+        userId
+      );
+
+      return res.status(200).json(result);
+    } catch (err: any) {
+      console.error("Error extracting invoice text:", err);
+      return res.status(500).json({ success: false, error: err.message });
     }
   }
 }

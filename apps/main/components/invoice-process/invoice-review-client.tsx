@@ -90,31 +90,28 @@ export default function InvoiceReviewClient({
     
     setIsEditing(false);
     setSelectedInvoiceId(invoice.id);
-
-    if (invoiceDetailsCache[invoice.id]) {
-      //@ts-ignore
-      const cachedDetails = invoiceDetailsCache[invoice.id];
-      //@ts-ignore
+  
+    // Check if we have the details in cache
+    const cachedDetails = invoiceDetailsCache[invoice.id];
+    if (cachedDetails) {
       setInvoiceDetails(cachedDetails);
-      //@ts-ignore
       setOriginalInvoiceDetails(cachedDetails);
       return;
     }
-
+  
     setIsDetailsLoading(true);
     try {
-      const response = await client.get<InvoiceApiResponse>(`/api/v1/invoice/invoices/${invoice.id}`);
+      const response = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${invoice.id}`);
       const newDetails = response.data;
-      //@ts-ignore
-      setInvoiceDetails(newDetails);
-      //@ts-ignore
-      setOriginalInvoiceDetails(newDetails);
-//@ts-ignore
-      setInvoiceDetailsCache(prevCache => ({
-        ...prevCache,
-        [invoice.id]: newDetails,
-      }));
-
+      
+      if (newDetails) {
+        setInvoiceDetails(newDetails);
+        setOriginalInvoiceDetails(newDetails);
+        setInvoiceDetailsCache(prevCache => ({
+          ...prevCache,
+          [invoice.id]: newDetails
+        }));
+      }
     } catch (error: any) {
       let errorMessage = "Could not load invoice details.";
       if (error.response?.data?.message) {
@@ -144,68 +141,80 @@ export default function InvoiceReviewClient({
   const handleSaveChanges = async () => {
     if (!invoiceDetails) return;
     try {
-      const response = await client.patch<InvoiceApiResponse>(
+      const response = await client.patch<{ data: InvoiceDetails }>(
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         invoiceDetails
       );
-      const updatedData = response.data;
-      //@ts-ignore
+      
+      // Access the data property from the response
+      const updatedData = response.data.data;
+      
       setInvoiceDetails(updatedData);
-      //@ts-ignore
       setOriginalInvoiceDetails(updatedData);
-      //@ts-ignore
-      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [updatedData.id]: updatedData
+      }));
+      
       toast.success("Changes saved successfully");
       setIsEditing(false);
       router.refresh();
     } catch (err) {
       toast.error("Failed to save changes");
-      throw err;
     }
   };
 
   const handleApproveInvoice = async () => {
     if (!invoiceDetails) return;
     try {
-      const response = await client.patch<InvoiceApiResponse>(
+      const response = await client.patch<{ data: InvoiceDetails }>(
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "approved" }
       );
-      const updatedData = response.data;
-      //@ts-ignore
+      
+      // Access the data property from the response
+      const updatedData = response.data.data;
+      
       setInvoiceDetails(updatedData);
-      //@ts-ignore
       setOriginalInvoiceDetails(updatedData);
-      //@ts-ignore
-      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [updatedData.id]: updatedData
+      }));
+      
       toast.success("Invoice has been approved");
       router.refresh();
     } catch (err) {
+     
       toast.error("Failed to approve invoice");
-      throw err;
     }
   };
 
   const handleRejectInvoice = async () => {
     if (!invoiceDetails) return;
     try {
-      const response = await client.patch<InvoiceApiResponse>(
+      const response = await client.patch<{ data: InvoiceDetails }>(
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "rejected" }
       );
-      const updatedData = response.data;
-      //@ts-ignore
+      
+      // Access the data property from the response
+      const updatedData = response.data.data;
+      
       setInvoiceDetails(updatedData);
-      //@ts-ignore
       setOriginalInvoiceDetails(updatedData);
-      //@ts-ignore
-      setInvoiceDetailsCache(prevCache => ({ ...prevCache, [updatedData.id]: updatedData }));
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [updatedData.id]: updatedData
+      }));
+      
       toast.success("Invoice has been rejected");
       router.refresh();
     } catch (err) {
       toast.error("Failed to reject invoice");
     }
   };
+
 
   const handleFileUpload = async (file: File) => {
     if (file.type !== "application/pdf") {
@@ -245,7 +254,8 @@ export default function InvoiceReviewClient({
       const createRecordResponse = await client.post<AttachmentApiResponse>("/api/v1/upload/create-record", {
         filename: file.name,
         mimetype: file.type,
-        s3Url: publicUrl,
+        fileUrl: publicUrl,
+        fileKey: key,
       });
 
       const newAttachment = createRecordResponse.data;
@@ -333,7 +343,7 @@ export default function InvoiceReviewClient({
                   {selectedAttachment ? (
                       <AttachmentViewer
                           attachment={selectedAttachment}
-                          pdfUrl={selectedAttachment.s3Url}
+                          fileUrl={selectedAttachment.fileUrl}
                       />
                   ) : (
                       <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
@@ -361,7 +371,7 @@ export default function InvoiceReviewClient({
                 <>
                   <div className={`md:col-span-5 transition-opacity duration-300 ${isDetailsLoading ? 'opacity-50' : 'opacity-100'}`}>
                     <InvoicePdfViewer
-                      invoiceUrl={invoiceDetails.invoiceUrl}
+                      fileUrl={invoiceDetails.fileUrl}
                       sourcePdfUrl={invoiceDetails.sourcePdfUrl}
                     />
                   </div>
@@ -407,3 +417,4 @@ export default function InvoiceReviewClient({
     </div>
   );
 }
+

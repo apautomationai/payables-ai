@@ -9,7 +9,6 @@ import {
   CardTitle,
   CardFooter,
 } from "@workspace/ui/components/card";
-import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Search, FileText } from "lucide-react";
 import type { Attachment } from "@/lib/types/invoice";

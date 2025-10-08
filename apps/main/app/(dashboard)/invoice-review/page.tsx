@@ -25,7 +25,7 @@ async function getAttachments(page: number) {
     );
     return { data: response.data, error: null };
   } catch (error) {
-    console.error("Failed to fetch attachments:", error);
+    // console.error("Failed to fetch attachments:", error);
     return { data: null, error: "Could not load attachments." };
   }
 }
@@ -38,17 +38,19 @@ async function getInvoices(page: number) {
     );
     return { data: response.data, error: null };
   } catch (error) {
-    console.error("Failed to fetch invoices:", error);
+    // console.error("Failed to fetch invoices:", error);
     return { data: null, error: "Could not load the invoice list." };
   }
 }
 
 async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | null> {
   try {
-    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`);
+    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`, {
+      cache: "no-store",
+    });
     return response.data;
   } catch (error) {
-    console.error(`Failed to fetch details for invoice ${invoiceId}:`, error);
+    // console.error(`Failed to fetch details for invoice ${invoiceId}:`, error);
     return null;
   }
 }
@@ -65,25 +67,21 @@ export default async function InvoiceReviewPage({
   const attachmentsResult = await getAttachments(currentPage);
   const invoicesResult = await getInvoices(currentPage);
 
-  if (invoicesResult.error || !invoicesResult.data) {
-    return (
-      <div className="flex h-full items-center justify-center text-center">
-        <div>
-          <h2 className="text-xl font-semibold text-red-600">Failed to Load Data</h2>
-          <p className="text-muted-foreground">{invoicesResult.error}</p>
-        </div>
-      </div>
-    );
-  }
+  // UPDATED: Provide default empty values if the API call fails, instead of showing an error.
+  const { invoices, pagination: invoicesPagination } = invoicesResult.data || { 
+    invoices: [], 
+    pagination: { totalPages: 1 } 
+  };
+  
+  const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || { 
+    attachments: [], 
+    pagination: { totalPages: 1 }
+  };
 
-  const { invoices, pagination: invoicesPagination } = invoicesResult.data;
-  const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || { attachments: [], pagination: { totalPages: 1 }};
-
-  // Pre-fetch all invoice details in parallel
+  // The rest of the logic will now gracefully handle the empty 'invoices' array.
   const invoiceDetailPromises = invoices.map(invoice => getInvoiceDetails(invoice.id));
   const invoiceDetailsResults = await Promise.all(invoiceDetailPromises);
 
-  // Create a cache map (id -> details) from the results
   const initialInvoiceCache: Record<number, InvoiceDetails> = {};
   invoiceDetailsResults.forEach((details) => {
     if (details) {
@@ -93,12 +91,11 @@ export default async function InvoiceReviewPage({
   
   const initialSelectedInvoice = invoices.length > 0 ? invoices[0] : null;
   
-  // Get the initial details from the newly created cache
   const initialInvoiceDetails = initialSelectedInvoice
     ? initialInvoiceCache[initialSelectedInvoice.id] || null
     : null;
 
-
+  // The component will now always be rendered, even with empty/null data.
   return (
     <InvoiceReviewClient
       attachments={attachments}
@@ -113,3 +110,4 @@ export default async function InvoiceReviewPage({
     />
   );
 }
+

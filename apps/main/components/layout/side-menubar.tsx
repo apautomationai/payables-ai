@@ -253,7 +253,7 @@ export default function SideMenuBar({
                 isActive={pathname.startsWith("/settings")} 
                 isCollapsed={isCollapsed}
               >
-                Settings
+                Integrations
               </NavLink>
             </nav>
           </div>

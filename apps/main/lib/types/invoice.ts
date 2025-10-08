@@ -8,28 +8,23 @@ export type Attachment = {
   mimeType: string;
   sender: string;
   receiver: string;
-  s3Url: string;
+  fileUrl: string;
+  fileKey: string;
   created_at: string;
   updated_at: string;
 };
 
-export type InvoiceStatus = "pending" | "approved" | "rejected" | "failed";
-// UPDATED: This type now matches the fields returned by the GET /api/v1/invoice/invoices endpoint.
+export type InvoiceStatus = "pending" | "approved" | "rejected" | "failed" | "not_connected";
+
 export type InvoiceListItem = {
-  // FIX: Changed 'id' from string to number to match the backend data
-  id: number; 
-  userId: number;
+  id: number;
   invoiceNumber: string;
-  totalAmount: string; 
-  attachmentId: number;
-  attachmentUrl: string;
-  createdAt: string;
-  vendorName?: string; 
+  vendorName: string | null;
+  totalAmount: string | null;
   status: InvoiceStatus | null;
+  createdAt: string;
 };
 
-
-// UPDATED: This interface now matches the flat structure of your 'invoiceModel' in the database.
 export interface InvoiceDetails {
   id: number;
   userId: number;
@@ -39,21 +34,20 @@ export interface InvoiceDetails {
   customerName: string | null;
   invoiceDate: string | null;
   dueDate: string | null;
-  totalAmount: string | null; // numeric
+  totalAmount: string | null;
   currency: string | null;
-  // The 'lineItems' array has been replaced with the flat fields from your model
-  lineItems: string | null; // numeric
+  lineItems: string | null;
   costCode: string | null;
-  quantity: string | null; // numeric
-  rate: string | null; // numeric
+  quantity: string | null;
+  rate: string | null;
   description: string | null;
+  status: InvoiceStatus | null;
   createdAt: string;
   updatedAt: string;
-  // These fields are needed by the viewer component but are not in the current backend model
-  invoiceUrl: string;
-  sourcePdfUrl: string;
-  status: InvoiceStatus | null
+  fileUrl: string;
+  sourcePdfUrl: string | null;
 }
+
 
 export interface LineItem {
   description: string;

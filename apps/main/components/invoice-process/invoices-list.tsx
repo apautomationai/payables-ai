@@ -19,6 +19,7 @@ const StatusBadge = ({ status }: { status: InvoiceStatus | null }) => {
     approved: "bg-green-100 text-green-800 border-green-200",
     rejected: "bg-red-100 text-red-800 border-red-200",
     failed: "bg-gray-100 text-gray-800 border-gray-200",
+    not_connected: "bg-red-100 text-red-800 border-red-200"
   };
 
   return (
@@ -41,7 +42,10 @@ interface InvoicesListProps {
 }
 
 const formatDateTime = (dateString: string) => {
+  if (!dateString) return "Invalid Date";
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return "Invalid Date";
+  
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -122,6 +126,7 @@ export default function InvoicesList({
                   </div>
                   <p className="text-sm text-muted-foreground truncate mb-2">{invoice.vendorName || 'N/A'}</p>
                   <div className="flex justify-between items-center text-xs text-muted-foreground">
+                    {/* THIS IS THE FIX: Use 'createdAt' which is available in the list data */}
                     <span>{formatDateTime(invoice.createdAt)}</span>
                     <span>ID: {invoice.id}</span>
                   </div>
@@ -164,3 +169,4 @@ export default function InvoicesList({
     </div>
   );
 }
+

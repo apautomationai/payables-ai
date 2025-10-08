@@ -16,4 +16,6 @@ router.get("/invoices/:id", authenticate, invoiceController.getInvoice);
 // Update a single invoice by its ID
 router.patch("/invoices/:id", authenticate, invoiceController.updateInvoice);
 
+router.post("/split", authenticate, invoiceController.splitInvoices);
+
 export default router;

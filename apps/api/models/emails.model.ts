@@ -1,5 +1,11 @@
-
-import { integer, pgEnum, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
+import {
+  integer,
+  pgEnum,
+  pgTable,
+  serial,
+  text,
+  timestamp,
+} from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 import { invoiceModel } from "./invoice.model";
 import { relations } from "drizzle-orm";
@@ -15,18 +21,19 @@ export const emailAttachmentsModel = pgTable("email_attachments", {
   sender: text("sender"),
   receiver: text("receiver"),
   provider: providerEnum("provider").notNull().default("local"),
-  s3Url: text("key"),
+  fileUrl: text("file_url"),
+  fileKey: text("file_key"),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
 export const emailAttachmentsRelations = relations(
   emailAttachmentsModel,
-  ({ one , many}) => ({
+  ({ one, many }) => ({
     user: one(usersModel, {
       fields: [emailAttachmentsModel.userId],
       references: [usersModel.id],
     }),
-    invoice : many(invoiceModel)
+    invoice: many(invoiceModel),
   })
 );

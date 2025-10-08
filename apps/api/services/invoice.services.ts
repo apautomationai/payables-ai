@@ -21,7 +21,19 @@ export class InvoiceServices {
     const offset = (page - 1) * limit;
 
     const allInvoices = await db
-      .select()
+      .select({
+         id: invoiceModel.id,
+        userId: invoiceModel.userId,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        totalAmount: invoiceModel.totalAmount,
+        attachmentId: invoiceModel.attachmentId,
+        attachmentUrl: emailAttachmentsModel.fileUrl,
+        fileUrl: invoiceModel.fileUrl,
+        createdAt: invoiceModel.createdAt,
+        vendorName: invoiceModel.vendorName,
+        invoiceDate: invoiceModel.invoiceDate,
+        status: invoiceModel.status,
+      })
       .from(invoiceModel)
       .leftJoin(
         emailAttachmentsModel,

@@ -76,7 +76,7 @@ const contactItems = [
     icon: AnimatedMail,
     title: 'Email Us',
     description: 'Our friendly team is here to help.',
-    details: 'hello@company.com',
+    details: 'apautomationai@gmail.com',
     color: 'from-blue-500 to-blue-600',
     bgColor: 'bg-blue-50',
     delay: 0.1
@@ -85,7 +85,7 @@ const contactItems = [
     icon: AnimatedPhone,
     title: 'Call Us',
     description: 'Mon-Fri from 8am to 5pm.',
-    details: '+1 (555) 123-4567',
+    details: '',
     color: 'from-purple-500 to-purple-600',
     bgColor: 'bg-purple-50',
     delay: 0.2
@@ -94,7 +94,7 @@ const contactItems = [
     icon: AnimatedMapPin,
     title: 'Visit Us',
     description: 'Come say hello at our office.',
-    details: '123 Business Ave, Suite 100\nNew York, NY 10001',
+    details: 'Las Vegas, Nevada',
     color: 'from-emerald-500 to-emerald-600',
     bgColor: 'bg-emerald-50',
     delay: 0.3

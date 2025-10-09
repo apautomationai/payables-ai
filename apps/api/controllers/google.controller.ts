@@ -29,6 +29,7 @@ export class GoogleController {
     res.redirect(url);
   };
 
+  //@ts-ignore
   oauthCallback = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const code = req.query.code as string;
@@ -52,8 +53,10 @@ export class GoogleController {
           userId,
           "gmail"
         );
-
         if (!existingIntegration) {
+          const expiryDateValue = tokens.expiry_date
+            ? new Date(Number(tokens.expiry_date))
+            : null;
           integration = await integrationsService.insertIntegration({
             userId: userId,
             name: "gmail",
@@ -61,9 +64,7 @@ export class GoogleController {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token,
             tokenType: tokens.token_type,
-            expiryDate: tokens.expiry_date
-              ? new Date(tokens.expiry_date)
-              : null,
+            expiryDate: expiryDateValue,
           });
 
           if (!integration.success) {
@@ -97,8 +98,13 @@ export class GoogleController {
       //   refresh_token: tokens.refresh_token,
       //   expiry_date: tokens.expiry_date,
       // });
-    } catch (error) {
-      return next(error);
+    } catch (error: any) {
+      console.error("Integration insert error:", error);
+      res.status(500).json({
+        success: false,
+        message: "Integration insert failed",
+        error: error.message,
+      });
     }
   };
 
@@ -209,7 +215,7 @@ export class GoogleController {
       const response = await googleServices.getAttachmentWithId(id);
       const att = response[0];
       //convert s3Url to attachment
-      const s3Key = att.s3Url!.split(".amazonaws.com/")[1];
+      const s3Key = att.fileUrl!.split(".amazonaws.com/")[1];
       const command = new GetObjectCommand({
         Bucket: process.env.S3_BUCKET_NAME!,
         Key: s3Key,

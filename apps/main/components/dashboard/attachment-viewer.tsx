@@ -1,39 +1,73 @@
-import { Attachment } from "@/lib/types";
-import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
-import { UploadCloud } from "lucide-react";
+"use client";
+
+import React from "react";
+import { InvoiceDetails } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@workspace/ui/components/card";
+import { Button } from "@workspace/ui/components/button";
+import { ExternalLink, FileQuestion, Loader2 } from "lucide-react";
+import Link from "next/link";
+
+// A placeholder to display when no PDF is available
+const PdfPlaceholder = () => (
+  <div className="w-full h-full flex flex-col items-center justify-center bg-muted/20 text-muted-foreground p-4">
+    <FileQuestion className="h-12 w-12 mb-4" />
+    <h3 className="text-lg font-semibold">No Document Selected</h3>
+    <p className="text-sm text-center">
+      Please select an invoice from the list to view its document.
+    </p>
+  </div>
+);
 
 interface AttachmentViewerProps {
-  selectedAttachment: Attachment | null;
+  selectedInvoice: InvoiceDetails | null;
+  isLoading: boolean;
 }
 
-export default function AttachmentViewer({ selectedAttachment }: AttachmentViewerProps) {
+export default function AttachmentViewer({
+  selectedInvoice,
+  isLoading,
+}: AttachmentViewerProps) {
+  const fileUrl = selectedInvoice?.fileUrl;
+
   return (
-    <Card className="flex-1 flex flex-col h-full overflow-hidden">
-      <CardHeader className="flex flex-row items-center justify-between py-3 px-4">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          Invoice Attachment
+    <Card className="h-[calc(100vh-10rem)] w-full flex flex-col overflow-hidden">
+      <CardHeader className="flex flex-row items-center justify-between flex-shrink-0">
+        <CardTitle className="truncate text-base">
+          {selectedInvoice ? `Invoice #${selectedInvoice.invoiceNumber}` : "Invoice Preview"}
         </CardTitle>
-        {selectedAttachment && (
-          <div className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-md font-mono">
-            {/* FIX: Convert the number to a string before calling .substring() */}
-            ID: {String(selectedAttachment.id).substring(0, 12)}...
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {fileUrl && (
+            <Button variant="ghost" size="icon" asChild>
+              <Link href={fileUrl} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" />
+              </Link>
+            </Button>
+          )}
+        </div>
       </CardHeader>
-      <CardContent className="flex-1 flex items-center justify-center p-0">
-        {selectedAttachment ? (
-          <iframe
-            src={selectedAttachment.s3Url}
-            className="w-full min-h-[600px] border-0"
-            title="Invoice Preview"
-          />
-        ) : (
-          <div className="text-center text-muted-foreground p-4">
-            <UploadCloud className="mx-auto h-12 w-12" />
-            <p className="mt-2 text-sm">Select an invoice to preview its attachment.</p>
+      <CardContent className="flex-grow p-0 flex flex-col min-h-0">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <Loader2 className="h-8 w-8 animate-spin" />
           </div>
+        ) : fileUrl ? (
+          <div className="relative h-full w-full">
+            <iframe
+              src={fileUrl}
+              title={selectedInvoice ? `PDF Preview for Invoice #${selectedInvoice.invoiceNumber}` : "PDF Preview"}
+              className="w-full h-full border-none"
+            />
+          </div>
+        ) : (
+          <PdfPlaceholder />
         )}
       </CardContent>
     </Card>
   );
 }
+

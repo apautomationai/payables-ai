@@ -51,7 +51,7 @@ export default function SettingsView({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
         <p className="text-muted-foreground">
           Manage your platform configuration and integrations.
         </p>

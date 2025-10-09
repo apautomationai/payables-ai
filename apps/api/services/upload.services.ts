@@ -28,7 +28,8 @@ export class UploadServices {
           filename: attInfo.filename,
           mimeType: attInfo.mimeType,
           provider: "local",
-          s3Url: attInfo.s3Url,
+          fileUrl: attInfo.s3Url,
+          fileKey:attInfo.fileKey
         })
         .returning();
 

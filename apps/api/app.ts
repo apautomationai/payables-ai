@@ -1,6 +1,7 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import fileUpload from "express-fileupload";
 //@ts-ignore
 import cookieParser from "cookie-parser";
 
@@ -23,6 +24,13 @@ const app = express();
 
 // Apply middleware
 app.use(express.json());
+app.use(
+  cors({
+    origin: "http://localhost:3001",
+    credentials: true,
+  })
+);
+app.use(fileUpload());
 app.use(cors());
 
 app.use(cookieParser());

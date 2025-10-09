@@ -25,15 +25,59 @@ export interface User {
 /**
  * Defines the structure for a single invoice attachment object.
  */
-export interface Attachment {
-  id: string; // This serves as the unique Invoice Number
+export type Attachment = {
+  id: string;
   userId: number;
-  emailId: string;
+  email: string;
   filename: string;
   mimeType: string;
   sender: string;
   receiver: string;
-  s3Url: string;    // The URL to the PDF file for viewing
+  fileUrl: string;
+  fileKey: string;
   created_at: string;
   updated_at: string;
+};
+
+export type InvoiceStatus = "pending" | "approved" | "rejected" | "failed" | "not_connected";
+
+export type InvoiceListItem = {
+  id: number;
+  invoiceNumber: string;
+  vendorName: string | null;
+  totalAmount: string | null;
+  status: InvoiceStatus | null;
+  createdAt: string;
+};
+
+export interface InvoiceDetails {
+  id: number;
+  userId: number;
+  attachmentId: number;
+  invoiceNumber: string;
+  vendorName: string | null;
+  customerName: string | null;
+  invoiceDate: string | null;
+  dueDate: string | null;
+  totalAmount: string | null;
+  currency: string | null;
+  lineItems: string | null;
+  costCode: string | null;
+  quantity: string | null;
+  rate: string | null;
+  description: string | null;
+  status: InvoiceStatus | null;
+  createdAt: string;
+  updatedAt: string;
+  fileUrl: string;
+  sourcePdfUrl: string | null;
+}
+
+
+export interface LineItem {
+  description: string;
+  quantity: number;
+  rate: number;
+  amount: number;
+  // Add other fields as needed
 }

@@ -54,14 +54,12 @@ export class GoogleServices {
     tokens: any,
     userId: number,
     integrationId: number,
-    startedReadingAt: string 
+    startedReadingAt: string
   ) => {
     try {
       const auth = this.getOAuthClient(tokens);
       const gmail = google.gmail({ version: "v1", auth });
       let query = "has:attachment";
-
- 
 
       if (!startedReadingAt) {
         throw new BadRequestError("Select a starting date");
@@ -116,11 +114,13 @@ export class GoogleServices {
 
             // upload to S3
             const buffer = Buffer.from(data!, "base64url");
+            const key = `attachments/${hashId}-${part.filename}`;
             const s3Url = await uploadBufferToS3(
               buffer,
-              `attachments/${hashId}-${part.filename}`,
+              key,
               part.mimeType || "application/pdf"
             );
+            const s3Key = s3Url!.split(".amazonaws.com/")[1];
 
             // insert meta data to database
             //@ts-ignore
@@ -133,7 +133,8 @@ export class GoogleServices {
               sender,
               receiver,
               provider: "gmail",
-              s3Url,
+              fileUrl: s3Url,
+              fileKey: s3Key,
             });
             await integrationsService.updateIntegration(integrationId, {
               lastRead: new Date(),
@@ -147,7 +148,8 @@ export class GoogleServices {
               mimeType: part.mimeType,
               sender: sender,
               receiver: receiver,
-              s3Url: s3Url,
+              fileUrl: s3Url,
+              fileKey: s3Key,
               provider: "gmail",
             });
           }

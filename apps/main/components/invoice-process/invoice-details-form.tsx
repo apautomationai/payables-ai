@@ -111,7 +111,8 @@ export default function InvoiceDetailsForm({
     "createdAt",
     "updatedAt",
     "status",
-    "invoiceUrl",
+    "fileUrl",
+    "fileKey",
     "sourcePdfUrl",
   ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
@@ -180,3 +181,4 @@ export default function InvoiceDetailsForm({
     </Card>
   );
 }
+

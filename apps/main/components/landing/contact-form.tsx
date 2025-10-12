@@ -46,7 +46,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="bg-white/80 backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-200/60 relative overflow-hidden"
+      className="bg-white backdrop-blur-sm rounded-2xl shadow-xl p-8 border border-slate-200/60 relative overflow-hidden"
     >
       {/* Background Icon */}
       <div className="absolute -right-8 -bottom-8 opacity-5">
@@ -78,7 +78,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
               required
               value={formData.name}
               onChange={handleChange}
-              className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-300"
+              className="border-slate-200 dark:border-slate-200 bg-slate-50/50 dark:bg-slate-50/50 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-500 focus:bg-white dark:focus:bg-white transition-all duration-300 placeholder:text-slate-400 dark:text-slate-700"
               placeholder="John Doe"
             />
           </motion.div>
@@ -99,7 +99,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
               required
               value={formData.email}
               onChange={handleChange}
-              className="border-slate-300 focus:border-purple-500 focus:ring-purple-500 transition-all duration-300"
+              className="border-slate-200 dark:border-slate-200 bg-slate-50/50 dark:bg-slate-50/50 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-500 focus:bg-white dark:focus:bg-white transition-all duration-300 placeholder:text-slate-400 dark:text-slate-700"
               placeholder="john@example.com"
             />
           </motion.div>
@@ -121,7 +121,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
             required
             value={formData.subject}
             onChange={handleChange}
-            className="border-slate-300 focus:border-emerald-500 focus:ring-emerald-500 transition-all duration-300"
+            className="border-slate-200 dark:border-slate-200 bg-slate-50/50 dark:bg-slate-50/50 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-blue-500 dark:focus:ring-blue-500 focus:bg-white dark:focus:bg-white transition-all duration-300 placeholder:text-slate-400 dark:text-slate-700"
             placeholder="How can we help you?"
           />
         </motion.div>
@@ -142,7 +142,7 @@ export default function ContactForm({ onSuccess }: ContactFormProps) {
             rows={6}
             value={formData.message}
             onChange={handleChange}
-            className="border-slate-300 focus:border-blue-500 focus:ring-blue-500 transition-all duration-300 resize-none"
+            className="border-slate-200 dark:border-slate-200 bg-slate-50/50 dark:bg-slate-50/50 focus:border-blue-500 dark:focus:border-blue-500 focus:ring-slate-500 dark:focus:ring-blue-500 focus:bg-white dark:focus:bg-white transition-all duration-300 placeholder:text-slate-400 dark:text-slate-700"
             placeholder="Tell us more about your inquiry..."
           />
         </motion.div>

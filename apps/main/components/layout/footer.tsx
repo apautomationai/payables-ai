@@ -9,8 +9,8 @@ export default function Footer() {
           &copy; {new Date().getFullYear()} Payable.ai. All rights reserved.
         </p>
         <div className="flex gap-4 mt-2 sm:mt-0">
-          <Link href="/terms-services" target="_blank" className="hover:text-primary transition-colors">
-            Terms of Service
+          <Link href="/terms-conditions" target="_blank" className="hover:text-primary transition-colors">
+            Terms and Conditions
           </Link>
           <Link
             href="/privacy-policy"

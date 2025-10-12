@@ -2,8 +2,8 @@ version: 0.2
 
 environment:
   variables:
-    PNPM_STORE_DIR: "/root/.pnpm-store"
-    TURBO_CACHE_DIR: ".turbo"
+    # PNPM_STORE_DIR: "/root/.pnpm-store"
+    # TURBO_CACHE_DIR: ".turbo"
 
 phases:
   install:
@@ -15,9 +15,9 @@ phases:
       - cd apps/api
       - npm install -g pnpm@10.18.0
       - pnpm -v
-      - mkdir -p $PNPM_STORE_DIR
-      - echo "Ensure .turbo exists"
-      - mkdir -p $TURBO_CACHE_DIR
+      # - mkdir -p $PNPM_STORE_DIR
+      # - echo "Ensure .turbo exists"
+      # - mkdir -p $TURBO_CACHE_DIR
 
   pre_build:
     commands:

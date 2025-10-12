@@ -23,7 +23,7 @@ phases:
     commands:
       - echo "Restore caches (CodeBuild will handle S3 cache automatically for configured paths)"
       - echo "Installing dependencies (frozen lockfile)"
-      - pnpm install --frozen-lockfile --store-dir $PNPM_STORE_DIR
+      - pnpm install --frozen-lockfile
       # - pnpm install
 
 
@@ -41,13 +41,11 @@ phases:
       - ls -la 
       - echo "Listing apps/api"
       - ls -la apps/api
-      - echo "Listing dist"
-      - ls -la dist
 
 artifacts:
-  base-directory: .  # or a specific folder like "build-output"
+  base-directory: ./apps/api/dist  # or a specific folder like "build-output"
   files:
-    - 'apps/api/dist/**/*'
+    - '**/*'
   discard-paths: no   # Keep folder structure intact
 # artifacts:
 #   files:

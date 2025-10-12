@@ -183,7 +183,7 @@ export class GoogleController {
         status: "success",
         data: {
           //@ts-ignore
-          attachments: attachmentsData.attachment,
+          attachments: attachmentsData.attachments,
           pagination: {
             //@ts-ignore
             totalAttachments: attachmentsData.totalAttachments || 0,

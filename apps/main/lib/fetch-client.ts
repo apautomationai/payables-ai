@@ -76,7 +76,6 @@ const request = async <T = unknown>(
 
     // If the response is successful, parse the JSON body and return it.
     const data = (await response.json()) as T;
-    // console.log(data, "API response");
     return data;
 
   } catch (error) {

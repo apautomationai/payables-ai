@@ -42,7 +42,6 @@ client.interceptors.response.use(
   (response) => {
     // Any status code within the range of 2xx will trigger this function.
     // Here, we simply return the response data.
-    // console.log(response.data, "API response");
     return response.data;
   },
   (error) => {
@@ -65,7 +64,6 @@ export default client;
   const fetchUsers = async () => {
     try {
       const users = await client.get('/users'); // route is '/users'
-      console.log(users);
     } catch (error) {
       console.error("Failed to fetch users:", error);
     }
@@ -75,7 +73,6 @@ export default client;
   const createUser = async (userData) => {
     try {
       const newUser = await client.post('/users', userData); // route is '/users', body is userData
-      console.log('User created:', newUser);
     } catch (error) {
       console.error("Failed to create user:", error);
     }

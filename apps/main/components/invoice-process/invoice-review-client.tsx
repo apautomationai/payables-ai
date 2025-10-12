@@ -51,7 +51,7 @@ export default function InvoiceReviewClient({
   const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("invoices");
   
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
-    attachments.length > 0 ? attachments[0]!.id : null
+    attachments?.length > 0 ? attachments[0]!.id : null
   );
   const [isUploading, setIsUploading] = useState(false);
 
@@ -250,9 +250,6 @@ export default function InvoiceReviewClient({
       if (uploadResponse.status !== 200) {
         throw new Error("File upload to storage failed.");
       }
-      
-      console.log('publicUrl', publicUrl);
-      console.log('key', key);
 
       const createRecordResponse = await client.post<AttachmentApiResponse>("/api/v1/upload/create-record", {
         filename: file.name,

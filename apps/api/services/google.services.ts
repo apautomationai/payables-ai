@@ -164,7 +164,7 @@ export class GoogleServices {
   getAttachments = async (userId: number, page: number, limit: number) => {
     const offset = (page - 1) * limit;
     try {
-      const attachment = await db
+      const attachments = await db
         .select()
         .from(attachmentsModel)
         .where(eq(attachmentsModel.userId, userId))
@@ -176,8 +176,7 @@ export class GoogleServices {
         .from(attachmentsModel)
         .where(eq(attachmentsModel.userId, userId));
       const totalAttachments = attachmentCount.count;
-
-      return {attachment, totalAttachments};
+      return {attachments, totalAttachments};
     } catch (error: any) {
       const result = {
         success: false,

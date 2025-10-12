@@ -12,7 +12,7 @@ phases:
     commands:
       - echo Installing dependencies...
       # - npm ci
-      - cd apps/api
+      # - cd apps/api
       - npm install -g pnpm@10.18.0
       - pnpm -v
       # - mkdir -p $PNPM_STORE_DIR
@@ -31,7 +31,7 @@ phases:
     commands:
       - echo Packaging artifacts...
       # - zip -r output.zip .
-      - cd apps/api
+      # - cd apps/api
       - pnpm build
   
   post_build:
@@ -40,7 +40,7 @@ phases:
       - ls -la
 
 artifacts:
-  base-directory: ./apps/api/dist  # or a specific folder like "build-output"
+  base-directory: ./dist  # or a specific folder like "build-output"
   files:
     - '**/*'
   discard-paths: no   # Keep folder structure intact

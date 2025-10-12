@@ -24,7 +24,7 @@ export default function ContactPage() {
   return (
     <>
     <Header />
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/20 to-purple-50/30 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Background Elements */}
       <GeometricPattern />
       <FloatingElements />

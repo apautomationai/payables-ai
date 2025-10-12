@@ -174,12 +174,6 @@ export class GoogleController {
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 20;
     try {
-      const integration = await integrationsService.getIntegrations(userId);
-
-      //@ts-ignore
-      if (!integration?.data || integration.data.length === 0) {
-        throw new NotFoundError("No integrations found for this user");
-      }
       const attachmentsData = await googleServices.getAttachments(
         userId,
         page,
@@ -189,14 +183,14 @@ export class GoogleController {
         status: "success",
         data: {
           //@ts-ignore
-          attachments: attachmentsData[0],
+          attachments: attachmentsData.attachments,
           pagination: {
             //@ts-ignore
-            totalAttachments: attachmentsData[1] || 0,
+            totalAttachments: attachmentsData.totalAttachments || 0,
             page,
             limit,
             //@ts-ignore
-            totalPages: Math.ceil((attachmentsData[1] || 0) / limit),
+            totalPages: Math.ceil((attachmentsData.totalAttachments || 0) / limit),
           },
         },
       };

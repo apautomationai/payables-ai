@@ -112,7 +112,7 @@ export async function signInAction(
 
       // Set the token in an HTTP-only cookie for security
       cookieStore.set("token", data.token, {
-        httpOnly: true,
+        // httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
         path: "/",

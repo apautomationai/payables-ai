@@ -1,5 +1,5 @@
 import db from "@/lib/db";
-import { emailAttachmentsModel } from "@/models/emails.model";
+import { attachmentsModel } from "@/models/attachments.model";
 import { InternalServerError } from "@/helpers/errors";
 import { generateSignUrl } from "@/helpers/s3upload";
 
@@ -22,13 +22,13 @@ export class UploadServices {
   createDbRecord = async (attInfo: any) => {
     try {
       const uploadToDb = await db
-        .insert(emailAttachmentsModel)
+        .insert(attachmentsModel)
         .values({
           userId: attInfo.userId,
           filename: attInfo.filename,
           mimeType: attInfo.mimeType,
           provider: "local",
-          fileUrl: attInfo.s3Url,
+          fileUrl: attInfo.fileUrl,
           fileKey:attInfo.fileKey
         })
         .returning();
@@ -36,7 +36,7 @@ export class UploadServices {
       return uploadToDb;
     } catch (error: any) {
       if (error.isOperational) {
-        return error.message;
+        throw error.message;
       }
       throw new InternalServerError("Internal server error");
     }

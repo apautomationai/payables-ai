@@ -32,7 +32,6 @@ const request = async <T = unknown>(
   // Server-side: read cookies via next/headers
   const cookieStore = await cookies();
   const token = cookieStore.get("token")?.value || null;
-  const userId = cookieStore.get("userId")?.value || null;
 
   // Initialize headers if they don't exist in options
   let headers: Headers;
@@ -47,11 +46,6 @@ const request = async <T = unknown>(
   // If a token exists, add it to the Authorization header.
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
-  }
-
-  // If a userId exists, add it to the custom 'x-user-id' header.
-  if (userId) {
-    headers.set("x-user-id", userId);
   }
 
   // Ensure Content-Type for JSON requests if not already set and body is not FormData
@@ -82,7 +76,6 @@ const request = async <T = unknown>(
 
     // If the response is successful, parse the JSON body and return it.
     const data = (await response.json()) as T;
-    // console.log(data, "API response");
     return data;
 
   } catch (error) {

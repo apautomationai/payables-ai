@@ -28,9 +28,9 @@ export async function forgotPasswordAction(
     };
   }
 
-  const { email } = validatedFields.data;
-
+  
   try {
+    const { email } = validatedFields.data;
     // In a real application, you would call your backend here, e.g.:
     // await fetch("http://localhost:5000/api/auth/forgot-password", ...);
     console.log(`Password reset requested for email: ${email}`);

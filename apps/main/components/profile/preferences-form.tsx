@@ -22,7 +22,6 @@ import {
 export default function PreferencesForm() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Preferences saved.");
     // Add preference saving logic here
   };
 

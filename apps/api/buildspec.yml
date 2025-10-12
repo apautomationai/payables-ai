@@ -1,0 +1,42 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 22
+    commands:
+      - echo Installing dependencies...
+      - npm install -g pnpm@10.18.0
+      - pnpm -v
+
+  pre_build:
+    commands:
+      - echo "Restore caches (CodeBuild will handle S3 cache automatically for configured paths)"
+      - echo "Installing dependencies (frozen lockfile)"
+      - pnpm install --frozen-lockfile
+
+
+  build:
+    commands:
+      - echo Packaging artifacts...
+      - pnpm build -F api
+  
+  post_build:
+    commands:
+      - echo "Build finished"
+      - echo "Listing root"
+      - ls -la 
+      - mv apps/api/node_modules apps/api/dist/node_modules
+      - echo "Listing apps/api"
+      - ls -la apps/api
+
+artifacts:
+  base-directory: ./apps/api/dist  # or a specific folder like "build-output"
+  files:
+    - '**/*'
+  discard-paths: no   # Keep folder structure intact
+# artifacts:
+#   files:
+#     # - output.zip
+#     - ./*
+#   discard-paths: yes

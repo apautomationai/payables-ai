@@ -51,7 +51,7 @@ export default function InvoiceReviewClient({
   const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("invoices");
   
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
-    attachments.length > 0 ? attachments[0]!.id : null
+    attachments?.length > 0 ? attachments[0]!.id : null
   );
   const [isUploading, setIsUploading] = useState(false);
 

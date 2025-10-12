@@ -9,8 +9,6 @@ import { changePasswordSchema, type ChangePasswordFormData } from '@/lib/validat
 async function updateUserProfile(updateData: { [key: string]: any }): Promise<{ data?: any; error?: string }> {
   "use server";
 
-  // console.log("--- Server Action: Updating profile with data:", updateData);
-
   try {
     // The email is no longer in the payload, so no need to delete it.
     
@@ -21,7 +19,6 @@ async function updateUserProfile(updateData: { [key: string]: any }): Promise<{ 
     return { data: response.data };
 
   } catch (error: any) {
-    // console.error('--- PROFILE UPDATE FAILED ---:', error);
     return { error: error.response?.data?.message || 'Failed to update user profile' };
   }
 }
@@ -44,7 +41,6 @@ async function changeUserPassword(
       newPassword,
       confirmPassword,
     });
-    // This path must return a value
     return { success: true, message: "Password updated successfully." };
 
   } catch (error: any) {

@@ -8,7 +8,7 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // This ensures cookies are sent with requests
+  // withCredentials: true, // This ensures cookies are sent with requests
 });
 
 // 2. Use a request interceptor to dynamically add headers to every request.
@@ -18,17 +18,12 @@ client.interceptors.request.use(
     // We can only access cookies on the client-side.
     if (typeof window !== "undefined") {
       const token = getCookie('token');
-      const userId = getCookie('userId');
 
       // If a token exists, add it to the Authorization header.
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
 
-      // If a userId exists, add it to the custom 'x-user-id' header.
-      if (userId) {
-        config.headers["x-user-id"] = userId;
-      }
     }
     
     // Important: return the config object for the request to proceed
@@ -47,7 +42,6 @@ client.interceptors.response.use(
   (response) => {
     // Any status code within the range of 2xx will trigger this function.
     // Here, we simply return the response data.
-    // console.log(response.data, "API response");
     return response.data;
   },
   (error) => {
@@ -70,7 +64,6 @@ export default client;
   const fetchUsers = async () => {
     try {
       const users = await client.get('/users'); // route is '/users'
-      console.log(users);
     } catch (error) {
       console.error("Failed to fetch users:", error);
     }
@@ -80,7 +73,6 @@ export default client;
   const createUser = async (userData) => {
     try {
       const newUser = await client.post('/users', userData); // route is '/users', body is userData
-      console.log('User created:', newUser);
     } catch (error) {
       console.error("Failed to create user:", error);
     }

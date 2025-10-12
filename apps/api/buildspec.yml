@@ -26,7 +26,7 @@ phases:
       - echo "Build finished"
       - echo "Listing root"
       - ls -la 
-      - mv apps/api/node_modules/* apps/api/dist/node_modules
+      - mv apps/api/node_modules apps/api/dist/node_modules
       - echo "Listing apps/api"
       - ls -la apps/api
 

@@ -43,9 +43,10 @@ phases:
       - ls -la apps/api
 
 artifacts:
-  base-directory: ./apps/api/dist  # or a specific folder like "build-output"
+  base-directory: ./apps/api  # or a specific folder like "build-output"
   files:
-    - '**/*'
+    - 'dist/**/*'
+    - 'node_modules'
   discard-paths: no   # Keep folder structure intact
 # artifacts:
 #   files:

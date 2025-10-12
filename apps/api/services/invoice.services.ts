@@ -1,6 +1,6 @@
 import { NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
-import { emailAttachmentsModel } from "@/models/emails.model";
+import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns } from "drizzle-orm";
 const pdfParse = require("pdf-parse");
@@ -27,7 +27,7 @@ export class InvoiceServices {
         invoiceNumber: invoiceModel.invoiceNumber,
         totalAmount: invoiceModel.totalAmount,
         attachmentId: invoiceModel.attachmentId,
-        attachmentUrl: emailAttachmentsModel.fileUrl,
+        attachmentUrl: attachmentsModel.fileUrl,
         fileUrl: invoiceModel.fileUrl,
         createdAt: invoiceModel.createdAt,
         vendorName: invoiceModel.vendorName,
@@ -36,8 +36,8 @@ export class InvoiceServices {
       })
       .from(invoiceModel)
       .leftJoin(
-        emailAttachmentsModel,
-        eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
+        attachmentsModel,
+        eq(invoiceModel.attachmentId, attachmentsModel.id)
       )
       .where(eq(invoiceModel.userId, userId))
       .orderBy(desc(invoiceModel.createdAt))
@@ -59,12 +59,12 @@ export class InvoiceServices {
     const [response] = await db
       .select({
         ...getTableColumns(invoiceModel),
-        sourcePdfUrl: emailAttachmentsModel.fileUrl,
+        sourcePdfUrl: attachmentsModel.fileUrl,
       })
       .from(invoiceModel)
       .leftJoin(
-        emailAttachmentsModel,
-        eq(invoiceModel.attachmentId, emailAttachmentsModel.id)
+        attachmentsModel,
+        eq(invoiceModel.attachmentId, attachmentsModel.id)
       )
       .where(eq(invoiceModel.id, invoiceId));
 
@@ -279,8 +279,8 @@ export class InvoiceServices {
   async splitInvoicesPdf(attachmentId: number, userId: number) {
     const [attachment] = await db
       .select()
-      .from(emailAttachmentsModel)
-      .where(eq(emailAttachmentsModel.id, attachmentId));
+      .from(attachmentsModel)
+      .where(eq(attachmentsModel.id, attachmentId));
       
     const s3Url = attachment.fileUrl;
     //convert s3Url to attachment

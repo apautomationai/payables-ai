@@ -61,8 +61,10 @@ export default async function InvoiceReviewPage({
 }: {
   searchParams: any;
 }) {
-  const pageParam = searchParams['page'] ? (Array.isArray(searchParams['page']) ? searchParams['page'][0] : searchParams['page']) : "1";
-  const currentPage = Number(pageParam);
+
+  const {page} = await searchParams;
+
+  const currentPage = Number(page);
 
   const attachmentsResult = await getAttachments(currentPage);
   const invoicesResult = await getInvoices(currentPage);

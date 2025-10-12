@@ -11,7 +11,7 @@ import { invoiceModel } from "./invoice.model";
 import { relations } from "drizzle-orm";
 export const providerEnum = pgEnum("provider", ["local", "gmail", "outlook"]);
 
-export const emailAttachmentsModel = pgTable("email_attachments", {
+export const attachmentsModel = pgTable("attachments", {
   id: serial("id").primaryKey(),
   hashId: text("hash_id"),
   userId: integer("user_id").notNull(),
@@ -27,11 +27,11 @@ export const emailAttachmentsModel = pgTable("email_attachments", {
   updated_at: timestamp("updated_at").defaultNow(),
 });
 
-export const emailAttachmentsRelations = relations(
-  emailAttachmentsModel,
+export const attachmentsRelations = relations(
+  attachmentsModel,
   ({ one, many }) => ({
     user: one(usersModel, {
-      fields: [emailAttachmentsModel.userId],
+      fields: [attachmentsModel.userId],
       references: [usersModel.id],
     }),
     invoice: many(invoiceModel),

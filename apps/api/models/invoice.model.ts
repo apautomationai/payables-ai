@@ -10,7 +10,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
-import { emailAttachmentsModel } from "./emails.model";
+import { attachmentsModel } from "./attachments.model";
 export const statusEnum = pgEnum("status", [
   "pending",
   "approved",
@@ -48,8 +48,8 @@ export const invoiceRelations = relations(invoiceModel, ({ one }) => ({
     references: [usersModel.id],
   }),
 
-  attachment: one(emailAttachmentsModel, {
+  attachment: one(attachmentsModel, {
     fields: [invoiceModel.attachmentId],
-    references: [emailAttachmentsModel.id],
+    references: [attachmentsModel.id],
   }),
 }));

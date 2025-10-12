@@ -1,8 +1,6 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import fileUpload from "express-fileupload";
-//@ts-ignore
 import cookieParser from "cookie-parser";
 
 // import middlewares
@@ -13,7 +11,7 @@ import { errorHandler } from "@/helpers/error-handler";
 import { notFoundHandler } from "@/helpers/not-found-handler";
 
 // Route import
-import helloRouter from "@/routes/hello.route";
+import healthRouter from "@/routes/health.route";
 import usersRoutes from "@/routes/users.route";
 import googleRoutes from "@/routes/google.routes";
 import settingsRoutes from "@/routes/settings.route";
@@ -23,22 +21,18 @@ import invoiceRoutes from "@/routes/invoice.routes";
 const app = express();
 
 // Apply middleware
-app.use(express.json());
-app.use(
-  cors({
-    origin: "http://localhost:3001",
-    credentials: true,
-  })
-);
-app.use(fileUpload());
 app.use(cors());
+app.use(express.json());
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 // Apply routes
-app.use("/hello", helloRouter);
+app.get("/", (_req, res) => {
+  res.json({ message: "Api is running" });
+});
+app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/google", googleRoutes);
 app.use("/api/v1/settings", settingsRoutes);

@@ -56,6 +56,8 @@ export class UploadController {
         throw new BadRequestError("A valid user ID is required.");
       }
 
+      console.log('bodyData', bodyData);
+
       const attInfo = {
         userId: userId,
         filename: bodyData.filename,

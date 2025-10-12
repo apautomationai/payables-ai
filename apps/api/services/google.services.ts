@@ -4,7 +4,7 @@ import { extractEmail, getHeader } from "@/helpers/email-helpers";
 import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
-import { emailAttachmentsModel } from "@/models/emails.model";
+import { attachmentsModel } from "@/models/attachments.model";
 import { count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
@@ -124,7 +124,7 @@ export class GoogleServices {
 
             // insert meta data to database
             //@ts-ignore
-            await db.insert(emailAttachmentsModel).values({
+            await db.insert(attachmentsModel).values({
               hashId,
               userId,
               emailId: msg.id!,
@@ -166,18 +166,18 @@ export class GoogleServices {
     try {
       const attachment = await db
         .select()
-        .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.userId, userId))
-        .orderBy(desc(emailAttachmentsModel.created_at))
+        .from(attachmentsModel)
+        .where(eq(attachmentsModel.userId, userId))
+        .orderBy(desc(attachmentsModel.created_at))
         .limit(limit)
         .offset(offset);
       const [attachmentCount] = await db
         .select({ count: count() })
-        .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.userId, userId));
+        .from(attachmentsModel)
+        .where(eq(attachmentsModel.userId, userId));
       const totalAttachments = attachmentCount.count;
 
-      return [attachment, totalAttachments];
+      return {attachment, totalAttachments};
     } catch (error: any) {
       const result = {
         success: false,
@@ -190,8 +190,8 @@ export class GoogleServices {
     try {
       const response = await db
         .select()
-        .from(emailAttachmentsModel)
-        .where(eq(emailAttachmentsModel.hashId, hashId));
+        .from(attachmentsModel)
+        .where(eq(attachmentsModel.hashId, hashId));
       return response;
     } catch (error: any) {
       throw new BadRequestError(error.message || "No attachment found");

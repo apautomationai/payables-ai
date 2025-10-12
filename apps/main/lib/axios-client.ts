@@ -8,7 +8,7 @@ const client = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true, // This ensures cookies are sent with requests
+  // withCredentials: true, // This ensures cookies are sent with requests
 });
 
 // 2. Use a request interceptor to dynamically add headers to every request.
@@ -18,17 +18,12 @@ client.interceptors.request.use(
     // We can only access cookies on the client-side.
     if (typeof window !== "undefined") {
       const token = getCookie('token');
-      const userId = getCookie('userId');
 
       // If a token exists, add it to the Authorization header.
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
 
-      // If a userId exists, add it to the custom 'x-user-id' header.
-      if (userId) {
-        config.headers["x-user-id"] = userId;
-      }
     }
     
     // Important: return the config object for the request to proceed

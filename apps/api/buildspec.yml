@@ -1,5 +1,10 @@
 version: 0.2
 
+environment:
+  variables:
+    PNPM_STORE_DIR: "/root/.pnpm-store"
+    TURBO_CACHE_DIR: ".turbo"
+
 phases:
   install:
     runtime-versions:
@@ -8,8 +13,18 @@ phases:
       - echo Installing dependencies...
       # - npm ci
       - cd apps/api
-      - npm install -g pnpm
-      - pnpm install
+      - npm install -g pnpm@10.18.0
+      - pnpm -v
+      - mkdir -p $PNPM_STORE_DIR
+      - echo "Ensure .turbo exists"
+      - mkdir -p $TURBO_CACHE_DIR
+
+  pre_build:
+    commands:
+      - echo "Restore caches (CodeBuild will handle S3 cache automatically for configured paths)"
+      - echo "Installing dependencies (frozen lockfile)"
+      - pnpm install --frozen-lockfile --store-dir $PNPM_STORE_DIR
+      # - pnpm install
 
 
   build:
@@ -18,6 +33,11 @@ phases:
       # - zip -r output.zip .
       - cd apps/api
       - pnpm build
+  
+  post_build:
+    commands:
+      - echo "Build finished"
+      - ls -la
 
 artifacts:
   base-directory: ./apps/api/dist  # or a specific folder like "build-output"

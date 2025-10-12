@@ -31,18 +31,23 @@ phases:
     commands:
       - echo Packaging artifacts...
       # - zip -r output.zip .
-      # - cd apps/api
-      - pnpm build
+      # - cd ./apps/api
+      - pnpm build -F api
   
   post_build:
     commands:
       - echo "Build finished"
-      - ls -la
+      - echo "Listing root"
+      - ls -la 
+      - echo "Listing apps/api"
+      - ls -la apps/api
+      - echo "Listing dist"
+      - ls -la dist
 
 artifacts:
-  base-directory: ./dist  # or a specific folder like "build-output"
+  base-directory: .  # or a specific folder like "build-output"
   files:
-    - '**/*'
+    - 'apps/api/dist/**/*'
   discard-paths: no   # Keep folder structure intact
 # artifacts:
 #   files:

@@ -11,46 +11,46 @@ import { motion } from "framer-motion";
 
 const faqs = [
   {
-    question: "How much does Payables cost?",
+    question: "How much does SLEDGE cost?",
     answer:
       "We offer flexible pricing tiers. Our Free plan gets you started, Pro is $299/month, Teams is $699/month, and Enterprise pricing is custom. You only pay for what your business needs.",
   },
   {
     question:
-      "Does Payables integrate with QuickBooks and other accounting platforms?",
+      "Does SLEDGE integrate with QuickBooks and other accounting platforms?",
     answer:
-      "Yes. Payables integrates seamlessly with QuickBooks, and we’re adding support for more platforms like Xero and Sage soon.",
+      "Yes. SLEDGE integrates seamlessly with QuickBooks, and we’re adding support for more platforms like Xero and Sage soon.",
   },
   {
-    question: "Can I pay vendors directly through Payables?",
+    question: "Can I pay vendors directly through SLEDGE?",
     answer:
       "Yes. Once invoices are logged, you can pay vendors securely from the platform — no extra steps or tools required.",
   },
   {
-    question: "Who should use Payables?",
+    question: "Who should use SLEDGE?",
     answer:
-      "Payables is built for builders, contractors, subcontractors, and small businesses who want to save time and reduce errors in handling invoices.",
+      "SLEDGE is built for builders, contractors, subcontractors, and small businesses who want to save time and reduce errors in handling invoices.",
   },
   {
-    question: "How does Payables capture invoices from email?",
+    question: "How does SLEDGE capture invoices from email?",
     answer:
       "Our AI email scanner connects to Gmail and Outlook to automatically pull invoices from your inbox — no more manual uploads.",
   },
   {
     question:
-      "What makes Payables different from other accounts payable software?",
+      "What makes SLEDGE different from other accounts payable software?",
     answer:
-      "Payables is built specifically for trades and small businesses. We combine AI invoice capture, auto-parsing, and direct payouts in one simple tool.",
+      "SLEDGE is built specifically for trades and small businesses. We combine AI invoice capture, auto-parsing, and direct payouts in one simple tool.",
   },
   {
-    question: "Is Payables secure?",
+    question: "Is SLEDGE secure?",
     answer:
       "Yes. We use enterprise-grade encryption, and your data is never shared with third parties.",
   },
   {
     question: "What if my business grows or I add more team members?",
     answer:
-      "Payables scales with your needs. You can upgrade tiers anytime and invite your team or subcontractors to collaborate with proper permissions.",
+      "SLEDGE scales with your needs. You can upgrade tiers anytime and invite your team or subcontractors to collaborate with proper permissions.",
   },
 ];
 

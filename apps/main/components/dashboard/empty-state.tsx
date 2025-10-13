@@ -17,7 +17,7 @@ interface EmptyStateProps {
  */
 export default function EmptyState({ userName }: EmptyStateProps) {
   return (
-    <div className="flex flex-col flex-1 h-full items-center justify-center">
+    <div className="flex flex-col flex-1 h-full min-h-[800px] items-center justify-center">
       <motion.div
         className="text-center"
         // Animation for a smooth fade-in effect

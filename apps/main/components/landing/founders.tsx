@@ -2,13 +2,13 @@
 
 import { motion } from "framer-motion";
 import { Card } from "@workspace/ui/components/card";
-import { 
-  Users, 
-  Rocket, 
+import {
+  Users,
+  Rocket,
   Handshake,
   ArrowRight,
   Linkedin,
-  Mail
+  Mail,
 } from "lucide-react";
 import { PulsingOrb, AnimatedUsers, AnimatedWorkflow } from "./animated-icons";
 import Image from "next/image";
@@ -18,33 +18,36 @@ export function Founders() {
     {
       name: "Davis Cannon",
       role: "Product Leader",
-      description: "Years of experience building AI platforms and financial software",
+      description:
+        "Years of experience building AI platforms and financial software",
       image: "/images/Davis.jpg", // Replace with actual image path
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       linkedin: "#",
-      email: "davis@payables.ai"
+      email: "davis@payables.ai",
     },
     {
       name: "Matteo Miralaie",
       role: "Engineering Expert",
-      description: "Passionate about creating tech that solves real business problems",
+      description:
+        "Passionate about creating tech that solves real business problems",
       image: "/images/Matteo.jpg", // Replace with actual image path
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       linkedin: "#",
-      email: "matteo@payables.ai"
+      email: "matteo@payables.ai",
     },
     {
       name: "Raz Danoukh",
       role: "Industry Specialist",
-      description: "Deep relationships in construction, contracting, and business operations",
+      description:
+        "Deep relationships in construction, contracting, and business operations",
       image: "/images/Raz.jpg", // Replace with actual image path
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       linkedin: "#",
-      email: "raz@payables.ai"
-    }
+      email: "raz@payables.ai",
+    },
   ];
 
   return (
@@ -59,7 +62,7 @@ export function Founders() {
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-5">
         <AnimatedUsers />
       </div>
-      
+
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
         {/* Header Section */}
         <motion.div
@@ -74,19 +77,20 @@ export function Founders() {
               <Users className="h-8 w-8 text-emerald-600" />
             </div>
           </div>
-          
+
           <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
             Our{" "}
             <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
               Founders
             </span>
           </h2>
-          
+
           <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
-            Payables was founded by a team of passionate experts with decades of combined experience 
-            in AI technology, software engineering, and industry operations.
+            SLEDGE was founded by a team of passionate experts with decades of
+            combined experience in AI technology, software engineering, and
+            industry operations.
           </p>
-          
+
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             whileInView={{ opacity: 1, scale: 1 }}
@@ -111,8 +115,10 @@ export function Founders() {
             >
               <Card className="p-6 h-full dark:bg-white/80 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 group relative overflow-hidden">
                 {/* Background gradient on hover */}
-                <div className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-                
+                <div
+                  className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
+                ></div>
+
                 {/* Founder Image */}
                 <div className="relative mb-6">
                   <div className="w-32 h-32 mx-auto rounded-full bg-gradient-to-r from-blue-100 via-purple-100 to-emerald-100 p-1">
@@ -124,29 +130,34 @@ export function Founders() {
                         </span>
                       </div> */}
                       {/* Uncomment and use when you have actual images */}
-                       <Image
+                      <Image
                         src={founder.image}
                         alt={founder.name}
                         width={128}
                         height={128}
                         className="w-full h-full rounded-full object-cover"
-                      /> 
+                      />
                     </div>
                   </div>
-                  
+
                   {/* Decorative orb */}
                   <div className="absolute -top-2 -right-2">
-                    <PulsingOrb color={founder.color.replace('text-', '')} size={30} />
+                    <PulsingOrb
+                      color={founder.color.replace("text-", "")}
+                      size={30}
+                    />
                   </div>
                 </div>
-                
+
                 <div className="text-center">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{founder.name}</h3>
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                    {founder.name}
+                  </h3>
                   <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent mb-3">
                     {founder.role}
                   </p>
                   <p className="text-gray-600 mb-6">{founder.description}</p>
-                  
+
                   <div className="flex justify-center space-x-3">
                     <motion.a
                       href={founder.linkedin}

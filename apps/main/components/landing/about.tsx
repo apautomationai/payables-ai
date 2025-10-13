@@ -3,15 +3,7 @@
 import { motion } from "framer-motion";
 import { Badge } from "@workspace/ui/components/badge";
 import { Card } from "@workspace/ui/components/card";
-import {
-  FileText,
-  Target,
-  Users,
-
-  ArrowRight,
- 
-  Eye,
-} from "lucide-react";
+import { FileText, Target, Users, ArrowRight, Eye } from "lucide-react";
 import { PulsingOrb } from "./animated-icons";
 import Image from "next/image";
 
@@ -66,18 +58,23 @@ export function About() {
               variant="outline"
               className="mb-6 px-3 py-1 text-sm font-medium border-blue-200 bg-blue-50/50 text-blue-700"
             >
-              About Payables.ai
+              About SLEDGE
             </Badge>
 
             <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
               Why We Built{" "}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                Payables
+                SLEDGE
               </span>
             </h2>
 
             <p className="text-xl text-gray-600 mb-6 leading-8">
-              We've all been there — chasing down invoices, juggling emails, and trying to keep projects moving while paperwork slows everything down. In construction and small business especially, missed invoices or late payments can kill cash flow and damage relationships. We built Payables because we were tired of watching businesses lose time and money on something that should be simple.
+              We've all been there — chasing down invoices, juggling emails, and
+              trying to keep projects moving while paperwork slows everything
+              down. In construction and small business especially, missed
+              invoices or late payments can kill cash flow and damage
+              relationships. We built SLEDGE because we were tired of watching
+              businesses lose time and money on something that should be simple.
             </p>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -97,12 +94,12 @@ export function About() {
             viewport={{ once: true }}
           >
             <Image
-              src={"/images/Payables.png"}
-              alt="Payables.ai"
+              src={"/images/SLEDGE-MEET.png"}
+              alt="SLEDGE Team Meeting"
               height={500}
               width={500}
               className="w-auto h-auto rounded-xl shadow-lg border border-gray-200 dark:border-gray-200"
-            />  
+            />
           </motion.div>
         </div>
 
@@ -126,7 +123,10 @@ export function About() {
                     Our Mission
                   </h3>
                   <p className="text-gray-600 text-sm leading-6">
-                    To take the headache out of accounts payable by giving builders, contractors, and small businesses the tools to manage invoices effortlessly, pay vendors on time, and keep every project moving forward.
+                    To take the headache out of accounts payable by giving
+                    builders, contractors, and small businesses the tools to
+                    manage invoices effortlessly, pay vendors on time, and keep
+                    every project moving forward.
                   </p>
                 </div>
               </div>
@@ -143,7 +143,10 @@ export function About() {
                     Our Vision
                   </h3>
                   <p className="text-gray-600 text-sm leading-6">
-                    A world where no business loses time, money, or opportunities because of messy invoice processes. We're building the future of accounts payable — faster, smarter, and built for the trades.
+                    A world where no business loses time, money, or
+                    opportunities because of messy invoice processes. We're
+                    building the future of accounts payable — faster, smarter,
+                    and built for the trades.
                   </p>
                 </div>
               </div>

@@ -33,7 +33,6 @@ export async function authenticate(
   // NOTE: Add your actual authentication and session logic here.
   // Example placeholder logic:
   if (email === "test@example.com" && password === "password123") {
-    // console.log("Authentication successful.");
     
     return undefined; 
   } else {

@@ -16,10 +16,9 @@ const testimonials = [
     name: "Sarah Chen",
     // role: "CTO at TechFlow",
     company: "Ferrocrete Construction",
-    image:
-      "/images/logos/Builder.jpg",
+    image: "/images/logos/Builder.jpg",
     content:
-      "Before Payables, we were drowning in invoices from subs and suppliers. Now everything flows straight from email into our accounting system — no more lost paperwork, no more late payments.",
+      "Before SLEDGE, we were drowning in invoices from subs and suppliers. Now everything flows straight from email into our accounting system — no more lost paperwork, no more late payments.",
     rating: 5,
     metrics: "20+ hours saved weekly",
   },
@@ -27,10 +26,9 @@ const testimonials = [
     name: "Michael Rodriguez",
     // role: "VP of Operations",
     company: "King Genomics",
-    image:
-      "/images/logos/king.png",
+    image: "/images/logos/king.png",
     content:
-      "We handle dozens of specialized vendor invoices each month. Payables makes it effortless to log, track, and pay — our finance team saves hours every week",
+      "We handle dozens of specialized vendor invoices each month. SLEDGE makes it effortless to log, track, and pay — our finance team saves hours every week",
     rating: 5,
     metrics: "40% better decisions",
   },
@@ -38,10 +36,9 @@ const testimonials = [
     name: "Emily Johnson",
     // role: "Product Manager",
     company: "Emily Delgado’s Nails",
-    image:
-      "/images/logos/Emily.png",
+    image: "/images/logos/Emily.png",
     content:
-      "Running a salon means juggling clients and suppliers. Payables keeps all my product invoices organized, and I can see exactly what’s due without the stress.",
+      "Running a salon means juggling clients and suppliers. SLEDGE keeps all my product invoices organized, and I can see exactly what’s due without the stress.",
     rating: 5,
     metrics: "60% better collaboration",
   },
@@ -160,10 +157,7 @@ export function SocialProof() {
 
                 <div className="flex items-center gap-4 mb-4">
                   <Avatar className="w-12 h-12">
-                    <AvatarImage
-                      src={testimonial.image}
-                      alt={"photo"}
-                    />
+                    <AvatarImage src={testimonial.image} alt={"photo"} />
                     {/* <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
                       {testimonial.name
                         .split(" ")

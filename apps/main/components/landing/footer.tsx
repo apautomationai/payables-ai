@@ -17,18 +17,17 @@ import {
   CreditCard,
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 const navigation = {
   product: [
     { name: "Features", href: "#features" },
     { name: "Pricing", href: "#pricing" },
     { name: "Use Cases", href: "#use-cases" },
-    
   ],
-  company: [  
+  company: [
     { name: "About", href: "#about" },
     { name: "Contact", href: "/contact-us" },
-   
   ],
 
   legal: [
@@ -81,12 +80,17 @@ export function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center gap-2 mb-4">
               <div className="relative">
-                <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-lg flex items-center justify-center shadow-lg">
-                  <CreditCard className="w-5 h-5 text-white" />
+                <div className="w-full h-full rounded-lg flex items-center justify-center shadow-lg">
+                  <Image
+                    src={"/images/logos/sledge.png"}
+                    alt="logo"
+                    width={40}
+                    height={40}
+                  />
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-emerald-400 to-blue-400 rounded-full animate-pulse" />
               </div>
-              <span className="text-xl font-bold text-white">Payables.ai</span>
+              <span className="text-xl font-bold text-white">SLEDGE</span>
             </div>
             <p className="text-gray-400 leading-relaxed mb-6">
               Intelligent accounts payable automation for modern businesses.
@@ -106,7 +110,8 @@ export function Footer() {
               >
                 <Twitter className="w-5 h-5" />
               </Link>
-              <Link                href="#"
+              <Link
+                href="#"
                 className="text-gray-400 hover:text-white transition-colors duration-300"
               >
                 <Linkedin className="w-5 h-5" />
@@ -193,7 +198,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-8 lg:px-8 relative z-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-sm text-gray-400">
-            © 2025 Payables.ai. All rights reserved.
+            © 2025 SLEDGE. All rights reserved.
           </p>
           <div className="flex items-center gap-1 text-sm text-gray-400">
             Made with{" "}

@@ -45,6 +45,7 @@ import {
 } from "@workspace/ui/components/dropdown-menu";
 import { logoutAction } from "@/app/(auth)/logout/acttion";
 import { cn } from "@workspace/ui/lib/utils";
+import Image from "next/image";
 
 const NavLink = ({
   href,
@@ -68,39 +69,43 @@ const NavLink = ({
             "group relative flex items-center gap-3 rounded-xl px-3 py-3 text-muted-foreground transition-all duration-200",
             "hover:bg-accent hover:text-primary hover:shadow-sm",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
-            isActive && 
+            isActive &&
               "bg-gradient-to-r from-primary/10 to-primary/5 text-primary font-semibold shadow-sm border-l-4 border-l-primary",
             isCollapsed ? "justify-center px-2" : "pl-4"
           )}
         >
           <div className="flex items-center gap-3">
-            <Icon className={cn(
-              "h-5 w-5 transition-transform duration-200",
-              isActive && "scale-110",
-              "group-hover:scale-105"
-            )} />
-            <span className={cn(
-              "truncate transition-all duration-200",
-              isCollapsed ? "hidden" : "opacity-100 translate-x-0"
-            )}>
+            <Icon
+              className={cn(
+                "h-5 w-5 transition-transform duration-200",
+                isActive && "scale-110",
+                "group-hover:scale-105"
+              )}
+            />
+            <span
+              className={cn(
+                "truncate transition-all duration-200",
+                isCollapsed ? "hidden" : "opacity-100 translate-x-0"
+              )}
+            >
               {children}
             </span>
           </div>
-          
+
           {!isCollapsed && isActive && (
             <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse" />
             </div>
           )}
-          
+
           {!isCollapsed && !isActive && (
             <ChevronRight className="ml-auto h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity duration-200 transform group-hover:translate-x-0.5" />
           )}
         </Link>
       </TooltipTrigger>
       {isCollapsed && (
-        <TooltipContent 
-          side="right" 
+        <TooltipContent
+          side="right"
           sideOffset={10}
           className="bg-popover text-popover-foreground border shadow-lg"
         >
@@ -147,7 +152,9 @@ export default function SideMenuBar({
         className={cn(
           "fixed top-4 left-4 z-50 h-10 w-10 rounded-lg shadow-lg md:hidden",
           "transition-all duration-300 hover:scale-105 bg-background border",
-          isCollapsed ? "opacity-100 scale-100" : "opacity-0 scale-50 pointer-events-none"
+          isCollapsed
+            ? "opacity-100 scale-100"
+            : "opacity-0 scale-50 pointer-events-none"
         )}
       >
         <Menu className="h-5 w-5" />
@@ -162,7 +169,9 @@ export default function SideMenuBar({
           "border-r border-border/40",
           "transition-all duration-300 ease-in-out",
           "shadow-lg md:shadow-none",
-          isCollapsed ? "w-16 -translate-x-full md:translate-x-0" : "w-72 translate-x-0"
+          isCollapsed
+            ? "w-16 -translate-x-full md:translate-x-0"
+            : "w-72 translate-x-0"
         )}
       >
         <div className="flex h-full max-h-screen flex-col">
@@ -177,14 +186,22 @@ export default function SideMenuBar({
               )}
             >
               <div className="relative transition-all duration-300">
-                <Package2 className="h-7 w-7 text-primary" />
+                <Image
+                  src={"/images/logos/sledge.png"}
+                  alt="logo"
+                  width={50}
+                  height={50}
+                />
+                {/* <Package2 className="h-7 w-7 text-primary" /> */}
               </div>
-              <span className={cn(
-                "bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent",
-                "transition-all duration-300 overflow-hidden",
-                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-              )}>
-                Payable.ai
+              <span
+                className={cn(
+                  "bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent",
+                  "transition-all duration-300 overflow-hidden",
+                  isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                )}
+              >
+                SLEDGE
               </span>
             </Link>
 
@@ -225,18 +242,18 @@ export default function SideMenuBar({
           {/* Navigation */}
           <div className="flex-1 overflow-y-auto py-4">
             <nav className="grid items-start gap-1 px-3 text-sm font-medium">
-              <NavLink 
-                href="/dashboard" 
-                icon={LayoutDashboard} 
-                isActive={pathname === "/dashboard"} 
+              <NavLink
+                href="/dashboard"
+                icon={LayoutDashboard}
+                isActive={pathname === "/dashboard"}
                 isCollapsed={isCollapsed}
               >
                 Dashboard
               </NavLink>
-              <NavLink 
-                href="/invoice-review" 
-                icon={FileText} 
-                isActive={pathname.startsWith("/invoice-review")} 
+              <NavLink
+                href="/invoice-review"
+                icon={FileText}
+                isActive={pathname.startsWith("/invoice-review")}
                 isCollapsed={isCollapsed}
               >
                 Invoice Review
@@ -247,10 +264,10 @@ export default function SideMenuBar({
                   12
                 </span> */}
               </NavLink>
-              <NavLink 
-                href="/settings" 
-                icon={Settings} 
-                isActive={pathname.startsWith("/settings")} 
+              <NavLink
+                href="/settings"
+                icon={Settings}
+                isActive={pathname.startsWith("/settings")}
                 isCollapsed={isCollapsed}
               >
                 Integrations
@@ -263,7 +280,7 @@ export default function SideMenuBar({
             {/* Support Link */}
             <div className={cn("p-3", isCollapsed && "px-2 py-3")}>
               <Link
-                href="mailto:support@payables.dev"
+                href="mailto:support@sledge.dev"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
@@ -275,11 +292,13 @@ export default function SideMenuBar({
                 )}
               >
                 <Mail className="h-4 w-4 transition-transform group-hover:scale-110" />
-                <span className={cn(
-                  "transition-all duration-300",
-                  isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-                )}>
-                  support@payables.dev
+                <span
+                  className={cn(
+                    "transition-all duration-300",
+                    isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                  )}
+                >
+                  support@sledge.dev
                 </span>
               </Link>
             </div>
@@ -306,10 +325,12 @@ export default function SideMenuBar({
                           </span>
                         </AvatarFallback>
                       </Avatar>
-                      <div className={cn(
-                        "flex flex-col items-start truncate transition-all duration-300",
-                        isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
-                      )}>
+                      <div
+                        className={cn(
+                          "flex flex-col items-start truncate transition-all duration-300",
+                          isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+                        )}
+                      >
                         <span className="text-sm font-semibold leading-tight truncate max-w-[120px]">
                           {userName}
                         </span>
@@ -320,14 +341,16 @@ export default function SideMenuBar({
                     </div>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent 
-                  className="w-56 mb-2 ml-2 shadow-xl border-border/50" 
-                  align="end" 
+                <DropdownMenuContent
+                  className="w-56 mb-2 ml-2 shadow-xl border-border/50"
+                  align="end"
                   forceMount
                 >
                   <DropdownMenuLabel className="font-normal p-3">
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium leading-none">{userName}</p>
+                      <p className="text-sm font-medium leading-none">
+                        {userName}
+                      </p>
                       <p className="text-xs leading-none text-muted-foreground truncate">
                         {userEmail}
                       </p>
@@ -354,21 +377,21 @@ export default function SideMenuBar({
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
                       <DropdownMenuSubContent className="shadow-xl border-border/50">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => setTheme("light")}
                           className="p-2 cursor-pointer"
                         >
                           <Sun className="h-4 w-4 mr-2" />
                           <span>Light</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => setTheme("dark")}
                           className="p-2 cursor-pointer"
                         >
                           <Moon className="h-4 w-4 mr-2" />
                           <span>Dark</span>
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => setTheme("system")}
                           className="p-2 cursor-pointer"
                         >
@@ -382,7 +405,11 @@ export default function SideMenuBar({
                   <DropdownMenuItem
                     className="p-2 cursor-pointer text-destructive focus:text-destructive"
                     onSelect={() =>
-                      (document.getElementById('logout-form') as HTMLFormElement)?.requestSubmit()
+                      (
+                        document.getElementById(
+                          "logout-form"
+                        ) as HTMLFormElement
+                      )?.requestSubmit()
                     }
                   >
                     <LogOut className="mr-2 h-4 w-4" />

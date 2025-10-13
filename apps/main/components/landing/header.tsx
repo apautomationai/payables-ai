@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { Menu, X, CreditCard, ArrowRight } from "lucide-react";
@@ -46,30 +47,30 @@ export function Header() {
     if (mobileMenuOpen) {
       // Save the current scroll position
       const scrollY = window.scrollY;
-      
+
       // Add a class to body that prevents scrolling
-      bodyRef.current.classList.add('no-scroll');
-      
+      bodyRef.current.classList.add("no-scroll");
+
       // Set the top position to maintain scroll position visually
       bodyRef.current.style.top = `-${scrollY}px`;
     } else {
       // Get the saved scroll position from the top style
-      const scrollY = Math.abs(parseInt(bodyRef.current.style.top || '0'));
-      
+      const scrollY = Math.abs(parseInt(bodyRef.current.style.top || "0"));
+
       // Remove the no-scroll class
-      bodyRef.current.classList.remove('no-scroll');
-      
+      bodyRef.current.classList.remove("no-scroll");
+
       // Reset the top style
-      bodyRef.current.style.top = '';
-      
+      bodyRef.current.style.top = "";
+
       // Restore the scroll position
       window.scrollTo(0, scrollY);
     }
 
     return () => {
       if (bodyRef.current) {
-        bodyRef.current.classList.remove('no-scroll');
-        bodyRef.current.style.top = '';
+        bodyRef.current.classList.remove("no-scroll");
+        bodyRef.current.style.top = "";
       }
     };
   }, [mobileMenuOpen]);
@@ -114,14 +115,19 @@ export function Header() {
         }`}
       >
         <nav className="mx-auto max-w-7xl px-6 lg:px-8" aria-label="Global">
-          <div className="flex items-center justify-between py-4">
+          <div className="flex items-center justify-between py-2">
             <Link href="/" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
-                <CreditCard className="w-6 h-6 text-white" />
+              <div className="w-full h-full rounded-xl flex items-center justify-center">
+                <Image
+                  src={"/images/logos/sledge.png"}
+                  alt="Logo"
+                  width={70}
+                  height={50}
+                />
               </div>
               <div>
                 <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                  Payables.ai
+                  SLEDGE
                 </span>
               </div>
             </Link>
@@ -170,7 +176,7 @@ export function Header() {
             >
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" />
             </motion.div>
-            
+
             {/* Mobile menu panel */}
             <motion.div
               initial={{ x: "100%" }}
@@ -182,9 +188,9 @@ export function Header() {
               <div className="flex flex-col h-full">
                 {/* Header */}
                 <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
-                  <Link 
-                    href="/" 
-                    className="flex items-center gap-3" 
+                  <Link
+                    href="/"
+                    className="flex items-center gap-3"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     <CreditCard className="h-8 w-8 text-blue-600" />
@@ -217,7 +223,7 @@ export function Header() {
                           setTimeout(() => {
                             const target = document.querySelector(item.href);
                             if (target) {
-                              target.scrollIntoView({ behavior: 'smooth' });
+                              target.scrollIntoView({ behavior: "smooth" });
                             }
                           }, 300);
                         }}

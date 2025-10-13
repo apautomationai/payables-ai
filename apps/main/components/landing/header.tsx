@@ -10,10 +10,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { checkSession } from "./action";
 
 const navigation = [
-  { name: "Features", href: "#features" },
-  { name: "Pricing", href: "#pricing" },
-  { name: "Use Cases", href: "#use-cases" },
-  { name: "About", href: "#about" },
+  { name: "Features", href: "/#features" },
+  { name: "Pricing", href: "/#pricing" },
+  { name: "Use Cases", href: "/#use-cases" },
+  { name: "About", href: "/#about" },
 ];
 
 export function Header() {
@@ -126,9 +126,9 @@ export function Header() {
                 />
               </div>
               <div>
-                <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                {/* <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
                   SLEDGE
-                </span>
+                </span> */}
               </div>
             </Link>
 

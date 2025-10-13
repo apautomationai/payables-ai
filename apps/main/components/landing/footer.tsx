@@ -21,12 +21,12 @@ import Image from "next/image";
 
 const navigation = {
   product: [
-    { name: "Features", href: "#features" },
-    { name: "Pricing", href: "#pricing" },
-    { name: "Use Cases", href: "#use-cases" },
+    { name: "Features", href: "/#features" },
+    { name: "Pricing", href: "/#pricing" },
+    { name: "Use Cases", href: "/#use-cases" },
   ],
   company: [
-    { name: "About", href: "#about" },
+    { name: "About", href: "/#about" },
     { name: "Contact", href: "/contact-us" },
   ],
 
@@ -53,7 +53,7 @@ export function Footer() {
             </h2>
             <p className="text-lg text-gray-400 mb-8">
               Join hundreds of businesses that have already streamlined their
-              accounts payable with Payables.ai
+              accounts payable with Sledge
             </p>
             <div className="flex flex-col items-center sm:flex-row gap-4 max-w-md mx-auto">
               <input
@@ -90,7 +90,7 @@ export function Footer() {
                 </div>
                 <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-br from-emerald-400 to-blue-400 rounded-full animate-pulse" />
               </div>
-              <span className="text-xl font-bold text-white">SLEDGE</span>
+              {/* <span className="text-xl font-bold text-white">SLEDGE</span> */}
             </div>
             <p className="text-gray-400 leading-relaxed mb-6">
               Intelligent accounts payable automation for modern businesses.

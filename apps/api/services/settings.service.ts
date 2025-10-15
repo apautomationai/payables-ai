@@ -1,11 +1,13 @@
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
+import { quickbooksIntegrationsModel } from "@/models/quickbooks.model";
 import { eq } from "drizzle-orm";
 
 class SettingsService {
   async getIntegrations(userId: number) {
     try {
-      const response = await db
+      // Get regular integrations (Gmail, Outlook)
+      const regularIntegrations = await db
         .select({
           name: integrationsModel.name,
           status: integrationsModel.status,
@@ -17,9 +19,48 @@ class SettingsService {
         .from(integrationsModel)
         .where(eq(integrationsModel.userId, userId));
 
+      // Get QuickBooks integration
+      const quickbooksIntegration = await db
+        .select({
+          name: quickbooksIntegrationsModel.companyName,
+          status: quickbooksIntegrationsModel.isActive,
+          updatedAt: quickbooksIntegrationsModel.updatedAt,
+          createdAt: quickbooksIntegrationsModel.createdAt,
+          startReading: quickbooksIntegrationsModel.lastSyncAt,
+          lastRead: quickbooksIntegrationsModel.lastSyncAt,
+        })
+        .from(quickbooksIntegrationsModel)
+        .where(eq(quickbooksIntegrationsModel.userId, userId))
+        .limit(1);
+
+      // Format QuickBooks integration to match the expected structure
+      const formattedIntegrations = [...regularIntegrations];
+
+      if (quickbooksIntegration.length > 0) {
+        const qb = quickbooksIntegration[0];
+        formattedIntegrations.push({
+          name: "quickbooks",
+          status: qb.status ? "success" : "disconnected",
+          updatedAt: qb.updatedAt,
+          createdAt: qb.createdAt,
+          startReading: qb.startReading,
+          lastRead: qb.lastRead,
+        });
+      } else {
+        // Add QuickBooks as not connected if no integration exists
+        formattedIntegrations.push({
+          name: "quickbooks",
+          status: "not_connected",
+          updatedAt: null,
+          createdAt: null,
+          startReading: null,
+          lastRead: null,
+        });
+      }
+
       const result = {
         success: true,
-        data: response,
+        data: formattedIntegrations,
         timestamp: new Date().toISOString(),
         statusCode: 200,
       };

@@ -38,7 +38,7 @@
     "drizzle-orm": "^0.44.5",
     "express": "^5.1.0",
     "google-auth-library": "^10.3.0",
-    "googleapis": "160.0.0",
+    "googleapis": "^163.0.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
     "p-limit": "^7.1.1",

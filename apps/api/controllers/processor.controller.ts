@@ -77,8 +77,8 @@ class ProcessorController {
         throw new BadRequestError("Invoice number, vendor name, and customer name are required");
       }
 
-      if (!invoice_date || !due_date) {
-        throw new BadRequestError("Invoice date and due date are required");
+      if (!invoice_date) {
+        throw new BadRequestError("Invoice date is required");
       }
 
       if (!total_amount) {
@@ -101,14 +101,14 @@ class ProcessorController {
 
       // Parse dates
       const parsedInvoiceDate = new Date(invoice_date);
-      const parsedDueDate = new Date(due_date);
+      const parsedDueDate = due_date ? new Date(due_date) : null;
 
       // Validate dates
       if (isNaN(parsedInvoiceDate.getTime())) {
         throw new BadRequestError("Invalid invoice date format");
       }
 
-      if (isNaN(parsedDueDate.getTime())) {
+      if (due_date && parsedDueDate && isNaN(parsedDueDate.getTime())) {
         throw new BadRequestError("Invalid due date format");
       }
 

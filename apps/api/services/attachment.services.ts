@@ -14,7 +14,6 @@ export class AttachmentServices {
   }
 
   async updateAttachment(attachmentId: number, updatedData: any) {
-    console.log(updatedData);
     try {
       const [response] = await db.update(attachmentsModel).set(updatedData).where(eq(attachmentsModel.id, attachmentId)).returning();
       return response;

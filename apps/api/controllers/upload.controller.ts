@@ -1,5 +1,6 @@
 import { BadRequestError } from "@/helpers/errors";
 import { uploadServices } from "@/services/upload.services";
+import { sendAttachmentMessage } from "@/helpers/sqs";
 import { Request, Response } from "express";
 
 export class UploadController {
@@ -29,7 +30,7 @@ export class UploadController {
           error: response.error,
         });
       }
-
+      
       return res.status(200).json(response.data);
     } catch (error: any) {
       if (error.isOperational) {
@@ -65,6 +66,17 @@ export class UploadController {
       };
 
       const [response] = await uploadServices.createDbRecord(attInfo);
+      
+      // Send SQS message with attachment ID
+      if (response && response.id) {
+        try {
+          await sendAttachmentMessage(response.id);
+        } catch (sqsError) {
+          // Log SQS error but don't fail the upload
+          console.error("Failed to send SQS message for attachment:", response.id, sqsError);
+        }
+      }
+      
       const result = {
         success: true,
         data: response,

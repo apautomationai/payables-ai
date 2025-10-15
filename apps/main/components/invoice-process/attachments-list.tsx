@@ -22,6 +22,7 @@ import {
   PaginationPrevious,
   PaginationNext,
 } from "@workspace/ui/components/pagination"; // MODIFIED: Added Pagination imports
+import { Badge } from "@workspace/ui/components/badge";
 
 const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
   <div className="flex items-center gap-1.5">
@@ -37,12 +38,6 @@ const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
   </div>
 );
 
-const ProcessingStatus = () => (
-  <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#F59E0B]/10 text-[#F59E0B]">
-    Pending
-  </span>
-);
-
 export default function AttachmentsList({
   attachments,
   selectedAttachment,
@@ -52,7 +47,7 @@ export default function AttachmentsList({
   currentPage,
   totalPages,
 }: {
-  attachments: Attachment[] | null;
+  attachments: any[] | null;
   selectedAttachment: Attachment | null;
   onSelectAttachment: (attachment: Attachment) => void;
   onFileUpload: (file: File) => void;
@@ -124,7 +119,14 @@ export default function AttachmentsList({
                         >
                           {displayName}
                         </p>
-                        <ProcessingStatus />
+                        <Badge variant="outline" 
+                        className={cn("capitalize", {
+                          "bg-yellow-100 text-yellow-800 border-yellow-200": attachment.status === "pending",
+                          "bg-red-100 text-red-800 border-red-200": attachment.status === "failed",
+                          "bg-blue-100 text-blue-800 border-blue-200": attachment.status === "processing",
+                          "bg-green-100 text-green-800 border-green-200": attachment.status === "success",
+                        })}
+                        >{attachment.status}</Badge>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
                         <p className="truncate" title={String(attachment.id)}>

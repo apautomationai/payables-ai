@@ -16,11 +16,7 @@ class InvoiceController {
         dueDate,
         totalAmount,
         currency,
-        lineItems,
         fileUrl,
-        costCode,
-        quantity,
-        rate,
         description,
       } = req.body;
 
@@ -38,11 +34,7 @@ class InvoiceController {
         dueDate: new Date(dueDate),
         totalAmount,
         currency,
-        lineItems,
         fileUrl,
-        costCode,
-        quantity,
-        rate,
         description,
       });
 

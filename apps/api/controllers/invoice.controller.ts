@@ -124,7 +124,18 @@ class InvoiceController {
         throw new BadRequestError("Invoice ID must be a valid number.");
       }
 
+      //@ts-ignore
+
       const invoiceInfo = req.body;
+
+
+      // delete
+      delete invoiceInfo.createdAt;
+      delete invoiceInfo.updatedAt;
+
+      invoiceInfo.dueDate = invoiceInfo.dueDate ? new Date(invoiceInfo.dueDate) : null;
+      invoiceInfo.invoiceDate = invoiceInfo.invoiceDate ? new Date(invoiceInfo.invoiceDate) : null;
+
       const response = await invoiceServices.updateInvoice(
         invoiceId,
         invoiceInfo
@@ -135,6 +146,7 @@ class InvoiceController {
         data: response,
       });
     } catch (error: any) {
+      console.log(error);
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,

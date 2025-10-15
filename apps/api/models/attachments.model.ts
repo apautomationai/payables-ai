@@ -18,6 +18,7 @@ export const attachmentsModel = pgTable("attachments", {
   emailId: text("email_id"),
   filename: text("filename").notNull(),
   mimeType: text("mime_type").notNull(),
+  status: text("status").notNull().default("pending"),
   sender: text("sender"),
   receiver: text("receiver"),
   provider: providerEnum("provider").notNull().default("local"),

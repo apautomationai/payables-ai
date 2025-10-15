@@ -18,6 +18,9 @@ interface Config {
     database: {
         url: string;
     };
+    sqs: {
+        queueUrl: string;
+    };
 }
 
 export const config: Config = {
@@ -26,5 +29,8 @@ export const config: Config = {
     logLevel: LogLevels.info,
     database: {
         url: process.env.DATABASE_URL!,
+    },
+    sqs: {
+        queueUrl: process.env.SQS_QUEUE_URL!,
     },
 }

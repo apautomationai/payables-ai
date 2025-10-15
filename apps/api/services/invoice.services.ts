@@ -3,7 +3,6 @@ import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns } from "drizzle-orm";
-const pdfParse = require("pdf-parse");
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -22,7 +21,7 @@ export class InvoiceServices {
 
     const allInvoices = await db
       .select({
-         id: invoiceModel.id,
+        id: invoiceModel.id,
         userId: invoiceModel.userId,
         invoiceNumber: invoiceModel.invoiceNumber,
         totalAmount: invoiceModel.totalAmount,
@@ -37,7 +36,7 @@ export class InvoiceServices {
       .from(invoiceModel)
       .leftJoin(
         attachmentsModel,
-        eq(invoiceModel.attachmentId, attachmentsModel.id)
+        eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
       .where(eq(invoiceModel.userId, userId))
       .orderBy(desc(invoiceModel.createdAt))
@@ -64,7 +63,7 @@ export class InvoiceServices {
       .from(invoiceModel)
       .leftJoin(
         attachmentsModel,
-        eq(invoiceModel.attachmentId, attachmentsModel.id)
+        eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
       .where(eq(invoiceModel.id, invoiceId));
 
@@ -77,7 +76,7 @@ export class InvoiceServices {
 
   async updateInvoice(
     invoiceId: number,
-    invoiceInfo: Partial<typeof invoiceModel.$inferSelect>
+    invoiceInfo: Partial<typeof invoiceModel.$inferSelect>,
   ) {
     const existingInvoice = await this.getInvoice(invoiceId);
     if (!existingInvoice) {
@@ -112,6 +111,31 @@ export class InvoiceServices {
   }
 
   async getAttachmentTexts(pdfBuffer: Buffer): Promise<string[]> {
+    // Ensure DOMMatrix is available for pdf-parse (it expects some DOM APIs).
+    // Load the lightweight `dommatrix` polyfill if DOMMatrix is missing, then
+    // dynamically import `pdf-parse` to avoid loading it at module init time
+    // (which would throw on startup in a Node environment without DOMMatrix).
+    if (typeof (globalThis as any).DOMMatrix === "undefined") {
+      try {
+        // Use dynamic import so this only runs in Node when needed.
+        const dommatrix = await import("dommatrix");
+        // The package exports a DOMMatrix constructor
+        (globalThis as any).DOMMatrix =
+          dommatrix.DOMMatrix || dommatrix.default;
+      } catch (err) {
+        // If polyfill install is missing, rethrow a helpful error.
+        throw new Error(
+          "DOMMatrix is not available and the 'dommatrix' polyfill failed to load. Please install 'dommatrix' as a dependency.",
+        );
+      }
+    }
+
+    // Dynamically import pdf-parse to avoid evaluating it at module load time.
+    const pdfParseModule = await import("pdf-parse");
+    // pdf-parse may export the function as default or module.exports
+    const pdfParse = (pdfParseModule &&
+      (pdfParseModule.default || pdfParseModule)) as any;
+
     // Extract digital text
     const parsed = await pdfParse(pdfBuffer);
 
@@ -236,7 +260,7 @@ export class InvoiceServices {
 
       // Match invoice number (adjust regex if needed)
       const invoiceMatch = text.match(
-        /INVOICE\s*(NUMBER|No\.?)?\s*[:#]?\s*(\d+)/i
+        /INVOICE\s*(NUMBER|No\.?)?\s*[:#]?\s*(\d+)/i,
         // /\bINVOICE\s*(NUMBER|No\.?|#)\s*[:]?\s*([\w-]+)(?!\s*customer)/i
       );
 
@@ -281,7 +305,7 @@ export class InvoiceServices {
       .select()
       .from(attachmentsModel)
       .where(eq(attachmentsModel.id, attachmentId));
-      
+
     const s3Url = attachment.fileUrl;
     //convert s3Url to attachment
     const s3Key = s3Url!.split(".amazonaws.com/")[1];
@@ -321,7 +345,7 @@ export class InvoiceServices {
         const s3Url = await uploadBufferToS3(
           Buffer.from(newPdfBytes),
           s3Key,
-          "application/pdf"
+          "application/pdf",
         );
 
         //@ts-ignore

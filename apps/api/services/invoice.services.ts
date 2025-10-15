@@ -1,4 +1,4 @@
-import { NotFoundError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
@@ -184,33 +184,26 @@ export class InvoiceServices {
 
   async updateInvoice(
     invoiceId: number,
-    invoiceInfo: Partial<typeof invoiceModel.$inferSelect>
+    updatedData: Partial<typeof invoiceModel.$inferSelect>
   ) {
     const existingInvoice = await this.getInvoice(invoiceId);
     if (!existingInvoice) {
       throw new NotFoundError("No invoice found to update.");
     }
 
-    const updateData = {
-      vendorName: invoiceInfo.vendorName,
-      customerName: invoiceInfo.customerName,
-      invoiceDate: invoiceInfo.invoiceDate
-        ? new Date(invoiceInfo.invoiceDate)
-        : undefined,
-      dueDate: invoiceInfo.dueDate ? new Date(invoiceInfo.dueDate) : undefined,
-      totalAmount: invoiceInfo.totalAmount,
-      description: invoiceInfo.description,
-      status: invoiceInfo.status,
-      updatedAt: new Date(),
-    };
 
-    const [response] = await db
-      .update(invoiceModel)
-      .set(updateData)
-      .where(eq(invoiceModel.id, invoiceId))
-      .returning();
-
-    return response;
+    try {
+      const [response] = await db
+        .update(invoiceModel)
+        .set({...updatedData, updatedAt: new Date()})
+        .where(eq(invoiceModel.id, invoiceId))
+        .returning();
+  
+      return response;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestError("Unable to update invoice");
+    }
   }
 
   async getInvoiceLineItems(invoiceId: number) {

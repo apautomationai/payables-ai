@@ -141,19 +141,19 @@ export default function InvoiceReviewClient({
   const handleSaveChanges = async () => {
     if (!invoiceDetails) return;
     try {
-      const response = await client.patch<{ data: InvoiceDetails }>(
-        `/api/v1/invoice/invoices/${invoiceDetails.id}`,
+      const response = await client.patch(
+        `/api/v1/invoice/${invoiceDetails.id}`,
         invoiceDetails
       );
       
       // Access the data property from the response
-      const updatedData = response.data.data;
+      const updatedData = response?.data;
       
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
       setInvoiceDetailsCache(prevCache => ({
         ...prevCache,
-        [updatedData.id]: updatedData
+        [updatedData?.id]: updatedData
       }));
       
       toast.success("Changes saved successfully");

@@ -1,19 +1,126 @@
-import { NotFoundError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
-import { invoiceModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns } from "drizzle-orm";
+import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { streamToBuffer } from "@/lib/utils/steamToBuffer";
 import { Readable } from "stream";
+import { generateS3PublicUrl } from "@/lib/utils/s3";
 const { v4: uuidv4 } = require("uuid");
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
-    const [response] = await db.insert(invoiceModel).values(data).returning();
-    return response;
+    try {
+      const [response] = await db.insert(invoiceModel).values(data).returning();
+      return response;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createInvoiceWithLineItems(
+    invoiceData: Omit<typeof invoiceModel.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>,
+    lineItemsData: Array<{
+      item_name: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+    }>
+  ) {
+    try {
+      return await db.transaction(async (tx) => {
+        // Check if invoice already exists with same invoice_number and attachment_id
+        const [existingInvoice] = await tx
+          .select()
+          .from(invoiceModel)
+          .where(
+            and(
+              eq(invoiceModel.invoiceNumber, invoiceData.invoiceNumber!),
+              eq(invoiceModel.attachmentId, invoiceData.attachmentId)
+            )
+          );
+
+        let invoice: typeof invoiceModel.$inferSelect;
+        let isUpdate = false;
+
+        if (existingInvoice) {
+          // Check if data is different from existing invoice
+          const hasChanges = 
+            existingInvoice.vendorName !== invoiceData.vendorName ||
+            existingInvoice.customerName !== invoiceData.customerName ||
+            existingInvoice.invoiceDate?.getTime() !== invoiceData.invoiceDate?.getTime() ||
+            existingInvoice.dueDate?.getTime() !== invoiceData.dueDate?.getTime() ||
+            existingInvoice.totalAmount !== invoiceData.totalAmount ||
+            existingInvoice.description !== invoiceData.description ||
+            existingInvoice.fileKey !== invoiceData.fileKey ||
+            existingInvoice.fileUrl !== generateS3PublicUrl(invoiceData.fileKey!) ||
+            existingInvoice.s3JsonKey !== invoiceData.s3JsonKey;
+
+          if (hasChanges) {
+            // Update existing invoice with new data
+            const [updatedInvoice] = await tx
+              .update(invoiceModel)
+              .set({
+                vendorName: invoiceData.vendorName,
+                customerName: invoiceData.customerName,
+                invoiceDate: invoiceData.invoiceDate,
+                dueDate: invoiceData.dueDate,
+                totalAmount: invoiceData.totalAmount,
+                description: invoiceData.description,
+                fileKey: invoiceData.fileKey,
+                fileUrl: invoiceData.fileKey ? generateS3PublicUrl(invoiceData.fileKey) : existingInvoice.fileUrl,
+                s3JsonKey: invoiceData.s3JsonKey,
+                updatedAt: new Date(),
+              })
+              .where(eq(invoiceModel.id, existingInvoice.id))
+              .returning();
+
+            invoice = updatedInvoice;
+            isUpdate = true;
+          } else {
+            // No changes needed, use existing invoice
+            invoice = existingInvoice;
+          }
+        } else {
+          // Create new invoice
+          const [newInvoice] = await tx
+            .insert(invoiceModel)
+            .values({
+              ...invoiceData,
+              fileUrl: invoiceData.fileKey && generateS3PublicUrl(invoiceData.fileKey) ,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .returning();
+
+          invoice = newInvoice;
+        }
+
+        // Handle line items - always add new line items to existing invoice
+        if (lineItemsData && lineItemsData.length > 0) {
+          const lineItemsToInsert = lineItemsData.map((item) => ({
+            invoiceId: invoice.id,
+            item_name: item.item_name,
+            quantity: item.quantity.toString(),
+            rate: item.rate.toString(),
+            amount: item.amount.toString(),
+          }));
+
+          await tx.insert(lineItemsModel).values(lineItemsToInsert);
+        }
+
+        // Return the invoice with operation type
+        return {
+          invoice,
+          operation: isUpdate ? 'updated' : existingInvoice ? 'no_changes' : 'created'
+        };
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getAllInvoices(userId: number, page: number, limit: number) {
@@ -76,38 +183,39 @@ export class InvoiceServices {
 
   async updateInvoice(
     invoiceId: number,
-    invoiceInfo: Partial<typeof invoiceModel.$inferSelect>,
+    updatedData: Partial<typeof invoiceModel.$inferSelect>
   ) {
     const existingInvoice = await this.getInvoice(invoiceId);
     if (!existingInvoice) {
       throw new NotFoundError("No invoice found to update.");
     }
 
-    const updateData = {
-      vendorName: invoiceInfo.vendorName,
-      customerName: invoiceInfo.customerName,
-      invoiceDate: invoiceInfo.invoiceDate
-        ? new Date(invoiceInfo.invoiceDate)
-        : undefined,
-      dueDate: invoiceInfo.dueDate ? new Date(invoiceInfo.dueDate) : undefined,
-      totalAmount: invoiceInfo.totalAmount,
-      currency: invoiceInfo.currency,
-      lineItems: invoiceInfo.lineItems,
-      costCode: invoiceInfo.costCode,
-      quantity: invoiceInfo.quantity,
-      rate: invoiceInfo.rate,
-      description: invoiceInfo.description,
-      status: invoiceInfo.status, // THIS IS THE FIX
-      updatedAt: new Date(),
-    };
 
-    const [response] = await db
-      .update(invoiceModel)
-      .set(updateData)
-      .where(eq(invoiceModel.id, invoiceId))
-      .returning();
+    try {
+      const [response] = await db
+        .update(invoiceModel)
+        .set({...updatedData, updatedAt: new Date()})
+        .where(eq(invoiceModel.id, invoiceId))
+        .returning();
+  
+      return response;
+    } catch (error) {
+      console.log(error);
+      throw new BadRequestError("Unable to update invoice");
+    }
+  }
 
-    return response;
+  async getInvoiceLineItems(invoiceId: number) {
+    try {
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(eq(lineItemsModel.invoiceId, invoiceId));
+
+      return lineItems;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getAttachmentTexts(pdfBuffer: Buffer): Promise<string[]> {

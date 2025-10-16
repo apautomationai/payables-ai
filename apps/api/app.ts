@@ -19,6 +19,7 @@ import settingsRoutes from "@/routes/settings.route";
 import uploadRoutes from "@/routes/upload.routes";
 import invoiceRoutes from "@/routes/invoice.routes";
 import quickbooksRoutes from "@/routes/quickbooks.routes";
+import processorRoutes from "@/routes/processor.routes";
 
 const app = express();
 
@@ -41,6 +42,7 @@ app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/invoice", invoiceRoutes);
 app.use("/api/v1/quickbooks", quickbooksRoutes);
+app.use("/api/v1/processor", processorRoutes);
 
 // Apply error handlers
 app.use(notFoundHandler);

@@ -40,7 +40,7 @@ class SettingsService {
         const qb = quickbooksIntegration[0];
         formattedIntegrations.push({
           name: "quickbooks",
-          status: qb.status ? "success" : "disconnected",
+          status: qb.status ? "success" : "not_connected",
           updatedAt: qb.updatedAt,
           createdAt: qb.createdAt,
           startReading: qb.startReading,

@@ -203,24 +203,42 @@ export class QuickBooksService {
     try {
       // Check if token needs refresh
       if (new Date() >= integration.tokenExpiresAt) {
-        const refreshedTokens = await this.refreshAccessToken(
-          integration.refreshToken,
-        );
+        try {
+          const refreshedTokens = await this.refreshAccessToken(
+            integration.refreshToken,
+          );
 
-        // Update integration with new tokens
-        await db
-          .update(quickbooksIntegrationsModel)
-          .set({
-            accessToken: refreshedTokens.accessToken,
-            refreshToken: refreshedTokens.refreshToken,
-            tokenExpiresAt: new Date(
-              Date.now() + refreshedTokens.expiresIn * 1000,
-            ),
-            updatedAt: new Date(),
-          })
-          .where(eq(quickbooksIntegrationsModel.id, integration.id));
+          // Update integration with new tokens
+          await db
+            .update(quickbooksIntegrationsModel)
+            .set({
+              accessToken: refreshedTokens.accessToken,
+              refreshToken: refreshedTokens.refreshToken,
+              tokenExpiresAt: new Date(
+                Date.now() + refreshedTokens.expiresIn * 1000,
+              ),
+              updatedAt: new Date(),
+            })
+            .where(eq(quickbooksIntegrationsModel.id, integration.id));
 
-        integration.accessToken = refreshedTokens.accessToken;
+          integration.accessToken = refreshedTokens.accessToken;
+        } catch (refreshError: any) {
+          // If refresh fails, the refresh token might be expired
+          console.error("Token refresh failed:", refreshError);
+
+          // Mark integration as inactive so user knows to reconnect
+          await db
+            .update(quickbooksIntegrationsModel)
+            .set({
+              isActive: false,
+              updatedAt: new Date(),
+            })
+            .where(eq(quickbooksIntegrationsModel.id, integration.id));
+
+          throw new BadRequestError(
+            "QuickBooks connection expired. Please reconnect your QuickBooks account in Settings.",
+          );
+        }
       }
 
       const response = await axios({
@@ -235,6 +253,11 @@ export class QuickBooksService {
 
       return response.data;
     } catch (error: any) {
+      // If it's already our custom error, re-throw it
+      if (error instanceof BadRequestError) {
+        throw error;
+      }
+
       console.error(
         "QuickBooks API call error:",
         error.response?.data || error.message,
@@ -250,22 +273,22 @@ export class QuickBooksService {
 
   // Get customers
   async getCustomers(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "customers");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Customer");
   }
 
   // Get vendors
   async getVendors(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "vendors");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Vendor");
   }
 
   // Get items
   async getItems(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "items");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Item");
   }
 
   // Get invoices
   async getInvoices(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "invoices");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Invoice");
   }
 
   // Disconnect integration

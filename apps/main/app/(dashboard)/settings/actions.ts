@@ -22,7 +22,7 @@ interface UpdatePayload {
  */
 export async function updateIntegrationStatusAction(
   prevState: ActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionState> {
   const name = formData.get("name") as UpdatePayload["name"];
   const status = formData.get("status") as UpdatePayload["status"];
@@ -33,14 +33,26 @@ export async function updateIntegrationStatusAction(
 
   try {
     if (status === "disconnected") {
-      await client.delete(`api/v1/settings/integration?name=${name}`);
+      // Handle QuickBooks disconnect with specific endpoint
+      if (name === "quickbooks") {
+        await client.delete("api/v1/quickbooks/disconnect");
+      } else {
+        // Handle other integrations with generic endpoint
+        await client.delete(`api/v1/settings/integration?name=${name}`);
+      }
       revalidatePath("/settings");
-      return { success: true, message: "Integration disconnected successfully." };
+      return {
+        success: true,
+        message: "Integration disconnected successfully.",
+      };
     } else {
       const payload = { name, status };
       await client.patch("api/v1/settings/update-status", payload);
       revalidatePath("/settings");
-      return { success: true, message: `Integration status updated to ${status}.` };
+      return {
+        success: true,
+        message: `Integration status updated to ${status}.`,
+      };
     }
   } catch (error: any) {
     return { error: error.message || "Failed to update integration status." };
@@ -52,7 +64,7 @@ export async function updateIntegrationStatusAction(
  */
 export async function updateStartTimeAction(
   prevState: ActionState,
-  formData: FormData
+  formData: FormData,
 ): Promise<ActionState> {
   const name = formData.get("name") as string;
   const startTime = formData.get("startTime") as string;

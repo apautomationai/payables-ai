@@ -3,7 +3,6 @@ import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns, and } from "drizzle-orm";
-const pdfParse = require("pdf-parse");
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -230,6 +229,7 @@ export class InvoiceServices {
         const dommatrix = await import("dommatrix");
         // The package exports a DOMMatrix constructor
         (globalThis as any).DOMMatrix =
+        // @ts-ignore
           dommatrix.DOMMatrix || dommatrix.default;
       } catch (err) {
         // If polyfill install is missing, rethrow a helpful error.

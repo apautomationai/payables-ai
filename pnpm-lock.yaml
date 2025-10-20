@@ -66,6 +66,9 @@ importers:
       express:
         specifier: ^5.1.0
         version: 5.1.0
+      express-validator:
+        specifier: ^7.2.1
+        version: 7.2.1
       google-auth-library:
         specifier: ^10.3.0
         version: 10.3.0
@@ -99,18 +102,24 @@ importers:
       pg:
         specifier: ^8.16.3
         version: 8.16.3
+      pino:
+        specifier: ^9.9.4
+        version: 9.11.0
+      pino-pretty:
+        specifier: ^13.1.1
+        version: 13.1.1
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
-      serverless-http:
-        specifier: ^4.0.0
-        version: 4.0.0
       tesseract.js:
         specifier: ^6.0.1
         version: 6.0.1
       uuid:
         specifier: ^13.0.0
         version: 13.0.0
+      zod:
+        specifier: ^3.25.76
+        version: 3.25.76
     devDependencies:
       '@types/cookie-parser':
         specifier: ^1.4.9
@@ -181,15 +190,6 @@ importers:
       eslint-plugin-import:
         specifier: ^2.29.1
         version: 2.32.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.2))(eslint-import-resolver-typescript@4.4.4)(eslint@8.57.1)
-      express-validator:
-        specifier: ^7.2.1
-        version: 7.2.1
-      pino:
-        specifier: ^9.9.4
-        version: 9.11.0
-      pino-pretty:
-        specifier: ^13.1.1
-        version: 13.1.1
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@20.19.17)(typescript@5.9.2)
@@ -5116,10 +5116,6 @@ packages:
   serve-static@2.2.0:
     resolution: {integrity: sha512-61g9pCh0Vnh7IutZjtLGGpTA355+OPn2TyDv/6ivP2h/AdAVX9azsoxmg2/M6nZeQZNYBEwIcsne1mJd9oQItQ==}
     engines: {node: '>= 18'}
-
-  serverless-http@4.0.0:
-    resolution: {integrity: sha512-KKl9h1+VApX9y2vHsVMogf906UXBwO3FDYiWPzqS0mCjEEx4Sx91JrssbWA7RN43HBuxrtoh8MkocZPvjyGnLg==}
-    engines: {node: '>=12.0'}
 
   set-function-length@1.2.2:
     resolution: {integrity: sha512-pgRc4hJ4/sNjWCSS9AmnS40x3bNMDTknHgL5UaMBTMyJnU90EgWh1Rz+MC9eFu4BuN/UwZjKQuY/1v3rM7HMfg==}
@@ -11372,8 +11368,6 @@ snapshots:
       send: 1.2.0
     transitivePeerDependencies:
       - supports-color
-
-  serverless-http@4.0.0: {}
 
   set-function-length@1.2.2:
     dependencies:

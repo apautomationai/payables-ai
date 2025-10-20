@@ -86,6 +86,7 @@ export class QuickBooksController {
   };
 
   // Get integration status
+  // @ts-ignore
   getStatus = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // @ts-ignore - user is added by auth middleware
@@ -123,6 +124,7 @@ export class QuickBooksController {
   };
 
   // Get company information
+  // @ts-ignore
   getCompanyInfo = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // @ts-ignore - user is added by auth middleware
@@ -150,6 +152,7 @@ export class QuickBooksController {
   };
 
   // Get customers
+  // @ts-ignore
   getCustomers = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // @ts-ignore - user is added by auth middleware
@@ -177,6 +180,7 @@ export class QuickBooksController {
   };
 
   // Get vendors
+  // @ts-ignore
   getVendors = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // @ts-ignore - user is added by auth middleware
@@ -204,6 +208,7 @@ export class QuickBooksController {
   };
 
   // Get invoices
+  // @ts-ignore
   getInvoices = async (req: Request, res: Response, next: NextFunction) => {
     try {
       // @ts-ignore - user is added by auth middleware

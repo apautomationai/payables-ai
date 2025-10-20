@@ -1,8 +1,9 @@
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
-import { count, desc, eq, getTableColumns } from "drizzle-orm";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
+import { count, desc, eq, getTableColumns, and } from "drizzle-orm";
+const pdfParse = require("pdf-parse");
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";

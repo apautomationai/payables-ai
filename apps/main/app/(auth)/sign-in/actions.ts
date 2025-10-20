@@ -22,21 +22,25 @@ export async function authenticate(
   formData: FormData,
 ) {
   // Extract data from form
-  const email = formData.get('email');
-  const password = formData.get('password');
-  
+  const email = formData.get("email");
+  const password = formData.get("password");
+
   // Basic validation (You should use a proper validator like Zod here)
-  if (!email || typeof email !== 'string' || !password || typeof password !== 'string') {
-    return 'Invalid form submission: Email and password are required.';
+  if (
+    !email ||
+    typeof email !== "string" ||
+    !password ||
+    typeof password !== "string"
+  ) {
+    return "Invalid form submission: Email and password are required.";
   }
 
   // NOTE: Add your actual authentication and session logic here.
   // Example placeholder logic:
   if (email === "test@example.com" && password === "password123") {
-    
-    return undefined; 
+    return undefined;
   } else {
-    return 'Invalid Credentials. Please check your email and password.';
+    return "Invalid Credentials. Please check your email and password.";
   }
 }
 
@@ -113,7 +117,7 @@ export async function signInAction(
       cookieStore.set("token", data.token, {
         // httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        sameSite: "lax", // Changed from "strict" to "lax" for better client-side access
         path: "/",
       });
 
@@ -125,7 +129,6 @@ export async function signInAction(
           path: "/",
         });
       }
-      
       // This will throw a special NEXT_REDIRECT error
       redirect("/dashboard");
     }

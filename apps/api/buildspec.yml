@@ -37,7 +37,7 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":"payables-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - printf '[{"name":$ECR_REPOSITORY,"imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
       - cat imagedefinitions.json
       - echo Pushing the Docker images completed on `date`
 
@@ -46,7 +46,7 @@ artifacts:
     - apps/api/imagedefinitions.json
     - apps/api/**/*
   discard-paths: yes
-  name: payables-api-${COMMIT_HASH}
+  name: $ECR_REPOSITORY-${COMMIT_HASH}
 
 cache:
   paths:

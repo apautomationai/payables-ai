@@ -37,7 +37,7 @@ phases:
       - docker push $REPOSITORY_URI:latest
       - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
-      - printf '[{"name":$ECR_REPOSITORY,"imageUri":$REPOSITORY_URI:$IMAGE_TAG}]' > imagedefinitions.json
+      - printf '[{"name":"$ECR_REPOSITORY","imageUri":"$REPOSITORY_URI:$IMAGE_TAG"}]' > imagedefinitions.json
       - cat imagedefinitions.json
       - echo Pushing the Docker images completed on `date`
 

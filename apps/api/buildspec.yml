@@ -8,9 +8,6 @@ phases:
       - echo "AWS_DEFAULT_REGION:$AWS_DEFAULT_REGION"
       - echo "ECR_REPOSITORY:$ECR_REPOSITORY"
       - echo "CODEBUILD_RESOLVED_SOURCE_VERSION:$CODEBUILD_RESOLVED_SOURCE_VERSION"
-      - echo "IMAGE_TAG:$IMAGE_TAG"
-      - echo "REPOSITORY_URI:$REPOSITORY_URI"
-      - echo "COMMIT_HASH:$COMMIT_HASH"
       - echo --------------------------------
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
@@ -20,30 +17,36 @@ phases:
       - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)
       - IMAGE_TAG=${COMMIT_HASH:=latest}
 
+      - echo "REPOSITORY_URI:$REPOSITORY_URI"
+      - echo "COMMIT_HASH:$COMMIT_HASH"
+      - echo "IMAGE_TAG:$IMAGE_TAG"
+
   build:
     commands:
       - echo Build started on `date`
       - echo Building the Docker image...
       - cd apps/api
-      - docker build -t $ECR_REPOSITORY:$IMAGE_TAG .
-      - docker build -t $ECR_REPOSITORY:latest .
+      - docker build -t $REPOSITORY_URI:$IMAGE_TAG .
+      - docker build -t $REPOSITORY_URI:latest .
       - echo Build completed on `date`
 
   post_build:
     commands:
       - echo Build completed on `date`
       - echo Pushing the Docker images...
-      - docker push $ECR_REPOSITORY:$IMAGE_TAG
-      - docker push $ECR_REPOSITORY:latest
+      - docker push $REPOSITORY_URI:latest
+      - docker push $REPOSITORY_URI:$IMAGE_TAG
       - echo Writing image definitions file...
       - printf '[{"name":"payables-api","imageUri":"%s"}]' $REPOSITORY_URI:$IMAGE_TAG > imagedefinitions.json
+      - cat imagedefinitions.json
       - echo Pushing the Docker images completed on `date`
 
 artifacts:
   files:
     - apps/api/imagedefinitions.json
     - apps/api/**/*
-  name: payables-api-$(date +%Y-%m-%d)
+  discard-paths: yes
+  name: payables-api-${COMMIT_HASH}
 
 cache:
   paths:

@@ -3,6 +3,15 @@ version: 0.2
 phases:
   pre_build:
     commands:
+      - echo "Verifying environment variables..."
+      - echo "AWS_ACCOUNT_ID: $AWS_ACCOUNT_ID"
+      - echo "AWS_DEFAULT_REGION: $AWS_DEFAULT_REGION"
+      - echo "ECR_REPOSITORY: $ECR_REPOSITORY"
+      - echo "CODEBUILD_RESOLVED_SOURCE_VERSION: $CODEBUILD_RESOLVED_SOURCE_VERSION"
+      - echo "IMAGE_TAG: $IMAGE_TAG"
+      - echo "REPOSITORY_URI: $REPOSITORY_URI"
+      - echo "COMMIT_HASH: $COMMIT_HASH"
+      - echo "--------------------------------"
       - echo Logging in to Amazon ECR...
       - aws ecr get-login-password --region $AWS_DEFAULT_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com
       - echo Build started on `date`

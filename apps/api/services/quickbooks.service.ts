@@ -241,13 +241,21 @@ export class QuickBooksService {
         }
       }
 
+      const headers: any = {
+        Authorization: `Bearer ${integration.accessToken}`,
+        Accept: "application/json",
+      };
+
+      if (method === "POST") {
+        headers["Content-Type"] = "application/json";
+      }
+
+
+
       const response = await axios({
         method,
         url: `${this.baseUrl}/v3/company/${integration.realmId}/${endpoint}`,
-        headers: {
-          Authorization: `Bearer ${integration.accessToken}`,
-          Accept: "application/json",
-        },
+        headers,
         ...(data && { data }),
       });
 
@@ -258,11 +266,16 @@ export class QuickBooksService {
         throw error;
       }
 
-      console.error(
-        "QuickBooks API call error:",
-        error.response?.data || error.message,
-      );
-      throw new InternalServerError("Failed to make QuickBooks API call");
+      console.error("QuickBooks API call error:", {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        requestData: error.config?.data
+      });
+      throw new InternalServerError(`Failed to make QuickBooks API call: ${error.response?.data?.Fault?.Error?.[0]?.Detail || error.message}`);
     }
   }
 
@@ -289,6 +302,209 @@ export class QuickBooksService {
   // Get invoices
   async getInvoices(integration: QuickBooksIntegration) {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Invoice");
+  }
+
+  // Get line items (Items that can be used in invoices/bills)
+  async getLineItems(integration: QuickBooksIntegration) {
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Item WHERE Active = true");
+  }
+
+  // Get specific invoice line items by invoice ID
+  async getInvoiceLineItems(integration: QuickBooksIntegration, invoiceId: string) {
+    return this.makeApiCall(integration, `invoices/${invoiceId}`);
+  }
+
+  // Get accounts from QuickBooks
+  async getAccounts(integration: QuickBooksIntegration) {
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Income'");
+  }
+
+  // Get expense accounts for bill creation
+  async getExpenseAccounts(integration: QuickBooksIntegration) {
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Expense'");
+  }
+
+  // Create a bill in QuickBooks
+  async createBill(integration: QuickBooksIntegration, billData: {
+    vendorId: string;
+    lineItems: Array<{
+      amount: number;
+      description?: string;
+      itemId?: string;
+    }>;
+    totalAmount: number;
+    dueDate?: string;
+    invoiceDate?: string;
+  }) {
+    try {
+      // Get expense accounts
+      const accountsResponse = await this.getExpenseAccounts(integration);
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      let expenseAccount = accounts.find((acc: any) =>
+        acc.Name?.toLowerCase().includes('expense') ||
+        acc.Name?.toLowerCase().includes('cost')
+      );
+
+      if (!expenseAccount && accounts.length > 0) {
+        expenseAccount = accounts[0];
+      }
+
+      if (!expenseAccount) {
+        throw new Error("No expense account found in QuickBooks");
+      }
+
+      // Create bill payload
+      const payload = {
+        Line: billData.lineItems.map((item, index) => ({
+          DetailType: "AccountBasedExpenseLineDetail",
+          Amount: item.amount,
+          Id: (index + 1).toString(),
+          AccountBasedExpenseLineDetail: {
+            AccountRef: {
+              value: expenseAccount.Id
+            }
+          },
+          ...(item.description && { Description: item.description })
+        })),
+        VendorRef: {
+          value: billData.vendorId
+        },
+        ...(billData.dueDate && { DueDate: billData.dueDate }),
+        ...(billData.invoiceDate && { TxnDate: billData.invoiceDate })
+      };
+
+      return this.makeApiCall(integration, "bill", "POST", payload);
+    } catch (error) {
+      console.error("Error creating QuickBooks bill:", error);
+      throw error;
+    }
+  }
+
+  // Create a new item in QuickBooks
+  async createItem(integration: QuickBooksIntegration, itemData: {
+    name: string;
+    description?: string;
+    unitPrice?: number;
+    type?: string;
+  }, lineItemData?: any) {
+    try {
+      const accountsResponse = await this.getAccounts(integration);
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      let incomeAccount = accounts.find((acc: any) =>
+        acc.Name?.toLowerCase().includes('sales') ||
+        acc.Name?.toLowerCase().includes('income') ||
+        acc.Name?.toLowerCase().includes('service')
+      );
+
+      if (!incomeAccount && accounts.length > 0) {
+        incomeAccount = accounts[0];
+      }
+
+      if (!incomeAccount) {
+        throw new Error("No income account found in QuickBooks");
+      }
+
+      const payload = {
+        Name: itemData.name,
+        Type: "Service",
+        IncomeAccountRef: {
+          name: incomeAccount.Name,
+          value: incomeAccount.Id
+        },
+        ...(itemData.description && { Description: itemData.description }),
+        ...(lineItemData?.rate && { UnitPrice: parseFloat(lineItemData.rate) }),
+      };
+
+      return this.makeApiCall(integration, "item", "POST", payload);
+    } catch (error) {
+      console.error("Error creating QuickBooks item:", error);
+      throw error;
+    }
+  }
+
+  // Vector search function to find similar items
+  vectorSearchItems(searchTerm: string, items: any[]): any[] {
+    if (!items || items.length === 0) return [];
+
+    // Simple similarity scoring based on string matching
+    const scoredItems = items.map(item => {
+      const itemName = item.Name?.toLowerCase() || '';
+      const searchLower = searchTerm.toLowerCase();
+
+      let score = 0;
+
+      // Exact match gets highest score
+      if (itemName === searchLower) {
+        score = 100;
+      }
+      // Contains search term
+      else if (itemName.includes(searchLower)) {
+        score = 80;
+      }
+      // Partial word matches
+      else {
+        const searchWords = searchLower.split(/\s+/);
+        const itemWords = itemName.split(/\s+/);
+
+        let matchedWords = 0;
+        searchWords.forEach((searchWord: string) => {
+          itemWords.forEach((itemWord: string) => {
+            if (itemWord.includes(searchWord) || searchWord.includes(itemWord)) {
+              matchedWords++;
+            }
+          });
+        });
+
+        score = (matchedWords / searchWords.length) * 60;
+      }
+
+      return { ...item, similarityScore: score };
+    });
+
+    // Return items sorted by similarity score (highest first)
+    return scoredItems
+      .filter(item => item.similarityScore > 30) // Only return items with reasonable similarity
+      .sort((a, b) => b.similarityScore - a.similarityScore);
+  }
+
+  // Vector search for vendors
+  vectorSearchVendors(searchTerm: string, vendors: any[]): any[] {
+    if (!vendors || vendors.length === 0) return [];
+
+    const scoredVendors = vendors.map(vendor => {
+      const vendorName = vendor.Name?.toLowerCase() || '';
+      const searchLower = searchTerm.toLowerCase();
+
+      let score = 0;
+
+      if (vendorName === searchLower) {
+        score = 100;
+      } else if (vendorName.includes(searchLower)) {
+        score = 80;
+      } else {
+        const searchWords = searchLower.split(/\s+/);
+        const vendorWords = vendorName.split(/\s+/);
+
+        let matchedWords = 0;
+        searchWords.forEach((searchWord: string) => {
+          vendorWords.forEach((vendorWord: string) => {
+            if (vendorWord.includes(searchWord) || searchWord.includes(vendorWord)) {
+              matchedWords++;
+            }
+          });
+        });
+
+        score = (matchedWords / searchWords.length) * 60;
+      }
+
+      return { ...vendor, similarityScore: score };
+    });
+
+    return scoredVendors
+      .filter(vendor => vendor.similarityScore > 30)
+      .sort((a, b) => b.similarityScore - a.similarityScore);
   }
 
   // Disconnect integration

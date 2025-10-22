@@ -49,17 +49,17 @@ export default function InvoiceReviewClient({
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("invoices");
-  
+
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments?.length > 0 ? attachments[0]!.id : null
   );
   const [isUploading, setIsUploading] = useState(false);
 
   const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(initialSelectedInvoice?.id || null);
-  
+
   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
   const [originalInvoiceDetails, setOriginalInvoiceDetails] = useState<InvoiceDetails | null>(initialInvoiceDetails);
-  
+
   const [invoiceDetailsCache, setInvoiceDetailsCache] = useState<Record<number, InvoiceDetails>>(initialInvoiceCache);
 
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
@@ -71,26 +71,26 @@ export default function InvoiceReviewClient({
       setSelectedFields(Object.keys(invoiceDetails));
     }
   }, [invoiceDetails]);
-  
+
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
     [attachments, selectedAttachmentId]
   );
-  
+
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
+
   const handleSelectAttachment = (attachment: Attachment) => {
     setSelectedAttachmentId(attachment.id);
   };
-  
+
   const handleSelectInvoice = async (invoice: InvoiceListItem) => {
     if (invoice.id === selectedInvoiceId) return;
-    
+
     setIsEditing(false);
     setSelectedInvoiceId(invoice.id);
-  
+
     // Check if we have the details in cache
     const cachedDetails = invoiceDetailsCache[invoice.id];
     if (cachedDetails) {
@@ -98,12 +98,12 @@ export default function InvoiceReviewClient({
       setOriginalInvoiceDetails(cachedDetails);
       return;
     }
-  
+
     setIsDetailsLoading(true);
     try {
       const response = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${invoice.id}`);
       const newDetails = response.data;
-      
+
       if (newDetails) {
         setInvoiceDetails(newDetails);
         setOriginalInvoiceDetails(newDetails);
@@ -122,7 +122,7 @@ export default function InvoiceReviewClient({
       setIsDetailsLoading(false);
     }
   };
-  
+
   const handleInvoicePageChange = (page: number) => {
     router.push(`/invoice-review?page=${page}`);
   };
@@ -132,7 +132,7 @@ export default function InvoiceReviewClient({
     const { name, value } = e.target;
     setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
   };
-  
+
   const handleCancelEdit = () => {
     setInvoiceDetails(originalInvoiceDetails);
     setIsEditing(false);
@@ -145,17 +145,17 @@ export default function InvoiceReviewClient({
         `/api/v1/invoice/${invoiceDetails.id}`,
         invoiceDetails
       );
-      
+
       // Access the data property from the response
       const updatedData = response?.data;
-      
+
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
       setInvoiceDetailsCache(prevCache => ({
         ...prevCache,
         [updatedData?.id]: updatedData
       }));
-      
+
       toast.success("Changes saved successfully");
       setIsEditing(false);
       router.refresh();
@@ -171,21 +171,21 @@ export default function InvoiceReviewClient({
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "approved" }
       );
-      
+
       // Access the data property from the response
       const updatedData = response.data.data;
-      
+
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
       setInvoiceDetailsCache(prevCache => ({
         ...prevCache,
         [updatedData.id]: updatedData
       }));
-      
+
       toast.success("Invoice has been approved");
       router.refresh();
     } catch (err) {
-     
+
       toast.error("Failed to approve invoice");
     }
   };
@@ -197,17 +197,17 @@ export default function InvoiceReviewClient({
         `/api/v1/invoice/invoices/${invoiceDetails.id}`,
         { status: "rejected" }
       );
-      
+
       // Access the data property from the response
       const updatedData = response.data.data;
-      
+
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
       setInvoiceDetailsCache(prevCache => ({
         ...prevCache,
         [updatedData.id]: updatedData
       }));
-      
+
       toast.success("Invoice has been rejected");
       router.refresh();
     } catch (err) {
@@ -227,8 +227,8 @@ export default function InvoiceReviewClient({
     const uploadToast = toast.loading("Preparing to upload...");
 
     try {
-      const response = await client.get<{ 
-        signedUrl: string; 
+      const response = await client.get<{
+        signedUrl: string;
         publicUrl: string;
         key: string;
       }>(
@@ -237,11 +237,11 @@ export default function InvoiceReviewClient({
       );
       //@ts-ignore
       const { signedUrl, publicUrl, key } = response;
-      
+
       if (!signedUrl || !publicUrl || !key) {
         throw new Error("Failed to retrieve valid upload details from the server.");
       }
-      
+
       const uploadResponse = await axios.put(signedUrl, file, {
         headers: { "Content-Type": file.type },
         timeout: 60000,
@@ -263,7 +263,7 @@ export default function InvoiceReviewClient({
       toast.success("PDF uploaded and processed successfully!", { id: uploadToast });
       //@ts-ignore
       setSelectedAttachmentId(newAttachment.id);
-      
+
       router.refresh();
 
     } catch (error: any) {
@@ -280,41 +280,40 @@ export default function InvoiceReviewClient({
   };
 
   if (!isClient) return null;
-  
+
   const ModernTabs = () => {
     const tabsRef = useRef<(HTMLButtonElement | null)[]>([]);
     const sliderRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const activeTabIndex = activeTab === 'invoices' ? 0 : 1;
-        const activeTabNode = tabsRef.current[activeTabIndex];
-        const sliderNode = sliderRef.current;
+      const activeTabIndex = activeTab === 'invoices' ? 0 : 1;
+      const activeTabNode = tabsRef.current[activeTabIndex];
+      const sliderNode = sliderRef.current;
 
-        if (activeTabNode && sliderNode) {
-            sliderNode.style.left = `${activeTabNode.offsetLeft}px`;
-            sliderNode.style.width = `${activeTabNode.offsetWidth}px`;
-        }
+      if (activeTabNode && sliderNode) {
+        sliderNode.style.left = `${activeTabNode.offsetLeft}px`;
+        sliderNode.style.width = `${activeTabNode.offsetWidth}px`;
+      }
     }, [activeTab]);
 
     return (
-        <div className="relative flex items-center bg-muted p-1 rounded-lg self-start md:-mt-5">
-            <div 
-                ref={sliderRef}
-                className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
-            />
-            {['invoices', 'attachments'].map((tab, index) => (
-                <button
-                    key={tab}
-                    ref={(el) => { tabsRef.current[index] = el; }}
-                    onClick={() => setActiveTab(tab as "invoices" | "attachments")}
-                    className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${
-                        activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-            ))}
-        </div>
+      <div className="relative flex items-center bg-muted p-1 rounded-lg self-start md:-mt-5">
+        <div
+          ref={sliderRef}
+          className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
+        />
+        {['invoices', 'attachments'].map((tab, index) => (
+          <button
+            key={tab}
+            ref={(el) => { tabsRef.current[index] = el; }}
+            onClick={() => setActiveTab(tab as "invoices" | "attachments")}
+            className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+          </button>
+        ))}
+      </div>
     );
   };
 
@@ -329,27 +328,27 @@ export default function InvoiceReviewClient({
           {activeTab === 'attachments' && (
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-4">
-                  <AttachmentsList
-                      attachments={attachments}
-                      selectedAttachment={selectedAttachment}
-                      onSelectAttachment={handleSelectAttachment}
-                      onFileUpload={handleFileUpload}
-                      currentPage={currentPage}
-                      totalPages={totalPages}
-                      isUploading={isUploading}
-                  />
+                <AttachmentsList
+                  attachments={attachments}
+                  selectedAttachment={selectedAttachment}
+                  onSelectAttachment={handleSelectAttachment}
+                  onFileUpload={handleFileUpload}
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  isUploading={isUploading}
+                />
               </div>
               <div className="md:col-span-8">
-                  {selectedAttachment ? (
-                      <AttachmentViewer
-                          attachment={selectedAttachment}
-                          fileUrl={selectedAttachment.fileUrl}
-                      />
-                  ) : (
-                      <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-                          <p>Select or upload a PDF attachment to begin.</p>
-                      </div>
-                  )}
+                {selectedAttachment ? (
+                  <AttachmentViewer
+                    attachment={selectedAttachment}
+                    fileUrl={selectedAttachment.fileUrl}
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
+                    <p>Select or upload a PDF attachment to begin.</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -357,16 +356,16 @@ export default function InvoiceReviewClient({
           {activeTab === 'invoices' && (
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-3">
-                 <InvoicesList
-                   invoices={invoices}
-                   selectedInvoiceId={selectedInvoiceId}
-                   onSelectInvoice={handleSelectInvoice}
-                   currentPage={invoiceCurrentPage}
-                   totalPages={invoiceTotalPages}
-                   onPageChange={handleInvoicePageChange}
-                 />
+                <InvoicesList
+                  invoices={invoices}
+                  selectedInvoiceId={selectedInvoiceId}
+                  onSelectInvoice={handleSelectInvoice}
+                  currentPage={invoiceCurrentPage}
+                  totalPages={invoiceTotalPages}
+                  onPageChange={handleInvoicePageChange}
+                />
               </div>
-              
+
               {invoiceDetails ? (
                 <>
                   <div className={`md:col-span-5 transition-opacity duration-300 ${isDetailsLoading ? 'opacity-50' : 'opacity-100'}`}>
@@ -393,6 +392,18 @@ export default function InvoiceReviewClient({
                       onReject={handleRejectInvoice}
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
+                      onApprovalSuccess={() => {
+                        setSelectedInvoiceId(null);
+                        router.refresh();
+                      }}
+                      onInvoiceDetailsUpdate={(updatedDetails) => {
+                        setInvoiceDetails(updatedDetails);
+                        setOriginalInvoiceDetails(updatedDetails);
+                        setInvoiceDetailsCache(prevCache => ({
+                          ...prevCache,
+                          [updatedDetails.id]: updatedDetails
+                        }));
+                      }}
                     />
                   </div>
                 </>

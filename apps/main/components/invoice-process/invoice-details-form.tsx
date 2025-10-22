@@ -80,6 +80,8 @@ interface InvoiceDetailsFormProps {
   onReject: () => Promise<void>;
   onApprove: () => Promise<void>;
   onCancel: () => void;
+  onApprovalSuccess?: () => void;
+  onInvoiceDetailsUpdate?: (updatedDetails: InvoiceDetails) => void;
 }
 
 export default function InvoiceDetailsForm({
@@ -93,6 +95,8 @@ export default function InvoiceDetailsForm({
   onReject,
   onApprove,
   onCancel,
+  onApprovalSuccess,
+  onInvoiceDetailsUpdate,
 }: InvoiceDetailsFormProps) {
 
   const handleFieldToggle = (fieldKey: string) => {
@@ -175,6 +179,8 @@ export default function InvoiceDetailsForm({
             onReject={onReject}
             onApprove={onApprove}
             onCancel={onCancel}
+            onApprovalSuccess={onApprovalSuccess}
+            onInvoiceDetailsUpdate={onInvoiceDetailsUpdate}
           />
         </div>
       </CardContent>

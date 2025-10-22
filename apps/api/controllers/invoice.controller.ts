@@ -16,11 +16,7 @@ class InvoiceController {
         dueDate,
         totalAmount,
         currency,
-        lineItems,
         fileUrl,
-        costCode,
-        quantity,
-        rate,
         description,
       } = req.body;
 
@@ -38,11 +34,7 @@ class InvoiceController {
         dueDate: new Date(dueDate),
         totalAmount,
         currency,
-        lineItems,
         fileUrl,
-        costCode,
-        quantity,
-        rate,
         description,
       });
 
@@ -203,6 +195,107 @@ class InvoiceController {
     } catch (err: any) {
       console.error("Error extracting invoice text:", err);
       return res.status(500).json({ success: false, error: err.message });
+    }
+  }
+
+  async getAllLineItems(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      const lineItems = await invoiceServices.getAllLineItems();
+
+      return res.status(200).json({
+        success: true,
+        data: lineItems,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+
+
+  async getLineItemsByName(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { itemName } = req.query;
+
+      if (!itemName) {
+        throw new BadRequestError("Item name is required");
+      }
+
+      const lineItems = await invoiceServices.getLineItemsByName(itemName as string);
+
+      return res.status(200).json({
+        success: true,
+        data: lineItems,
+      });
+    } catch (error: any) {
+      console.error("Error fetching line items:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async getLineItemsByInvoiceId(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { invoiceId } = req.params;
+
+      if (!invoiceId) {
+        throw new BadRequestError("Invoice ID is required");
+      }
+
+      const lineItems = await invoiceServices.getLineItemsByInvoiceId(parseInt(invoiceId));
+
+      return res.status(200).json({
+        success: true,
+        data: lineItems,
+      });
+    } catch (error: any) {
+      console.error("Error fetching line items by invoice ID:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async updateInvoiceStatus(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!id) {
+        throw new BadRequestError("Invoice ID is required");
+      }
+
+      if (!status) {
+        throw new BadRequestError("Status is required");
+      }
+
+      const updatedInvoice = await invoiceServices.updateInvoiceStatus(parseInt(id), status);
+
+      return res.status(200).json({
+        success: true,
+        data: updatedInvoice,
+      });
+    } catch (error: any) {
+      console.error("Error updating invoice status:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
     }
   }
 }

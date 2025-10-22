@@ -1,16 +1,18 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
 import { Progress } from "@workspace/ui/components/progress";
-import { InvoiceDetails } from "@/lib/types/invoice";
+import { InvoiceDetails, LineItem } from "@/lib/types/invoice";
 import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
 import { formatLabel } from "@/lib/utility/formatters";
+import { client } from "@/lib/axios-client";
+import { Loader2 } from "lucide-react";
 
 const FormField = ({
   fieldKey,
@@ -99,6 +101,31 @@ export default function InvoiceDetailsForm({
   onInvoiceDetailsUpdate,
 }: InvoiceDetailsFormProps) {
 
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
+
+  // Fetch line items when invoice details change
+  useEffect(() => {
+    const fetchLineItems = async () => {
+      if (!invoiceDetails?.id) return;
+
+      setIsLoadingLineItems(true);
+      try {
+        const response = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        if (response.success) {
+          setLineItems(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching line items:", error);
+        setLineItems([]);
+      } finally {
+        setIsLoadingLineItems(false);
+      }
+    };
+
+    fetchLineItems();
+  }, [invoiceDetails?.id]);
+
   const handleFieldToggle = (fieldKey: string) => {
     setSelectedFields((prev) =>
       prev.includes(fieldKey)
@@ -157,6 +184,46 @@ export default function InvoiceDetailsForm({
                 onChange={onDetailsChange}
               />
             ))}
+
+            {/* Line Items Section */}
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-foreground">Line Items</h3>
+                {isLoadingLineItems && (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                )}
+              </div>
+
+              {lineItems.length > 0 ? (
+                <div className="space-y-2">
+                  {lineItems.map((item, index) => (
+                    <div key={index} className="bg-muted/50 rounded-lg p-3 text-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-medium text-foreground">
+                          {item.item_name || `Item ${index + 1}`}
+                        </span>
+                        <span className="text-muted-foreground">
+                          ${parseFloat(item.amount || "0").toFixed(2)}
+                        </span>
+                      </div>
+                      {item.description && (
+                        <p className="text-muted-foreground text-xs mb-1">
+                          {item.description}
+                        </p>
+                      )}
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Qty: {item.quantity || 1}</span>
+                        <span>Rate: ${parseFloat(item.rate || "0").toFixed(2)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                !isLoadingLineItems && (
+                  <p className="text-sm text-muted-foreground">No line items found</p>
+                )
+              )}
+            </div>
           </div>
         </ScrollArea>
 

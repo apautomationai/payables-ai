@@ -104,7 +104,29 @@ export default function ConfirmationModals({
           });
         }
 
-        // Step 3: Search for vendor and create bill
+        // Step 3: Search for customer and create if needed
+        const customerName = invoiceDetails.customerName;
+        let customer = null;
+
+        if (customerName) {
+          const customerSearchResponse = await client.get("/api/v1/quickbooks/search-customers", {
+            params: { searchTerm: customerName }
+          });
+
+          if (customerSearchResponse.success && customerSearchResponse.data.results.length > 0) {
+            // Found customer with 95%+ match
+            customer = customerSearchResponse.data.results[0];
+          } else {
+            // No customer found with 95%+ match, create new customer
+            const createCustomerResponse = await client.post("/api/v1/quickbooks/create-customer", {
+              name: customerName
+            });
+            // Handle create customer response format: data.Customer
+            customer = createCustomerResponse.data?.Customer || createCustomerResponse.data;
+          }
+        }
+
+        // Step 4: Search for vendor and create bill
         const vendorName = invoiceDetails.vendorName;
         if (vendorName) {
           const vendorSearchResponse = await client.get("/api/v1/quickbooks/search-vendors", {
@@ -118,8 +140,7 @@ export default function ConfirmationModals({
           } else {
             // No vendor found with 95%+ match, create new vendor
             const createVendorResponse = await client.post("/api/v1/quickbooks/create-vendor", {
-              name: vendorName,
-              companyName: invoiceDetails.customerName || vendorName
+              name: vendorName
             });
             // Handle create vendor response format: data.Vendor
             vendor = createVendorResponse.data?.Vendor || createVendorResponse.data;

@@ -372,6 +372,81 @@ export class QuickBooksController {
     }
   };
 
+  // Vector search for customers
+  searchCustomers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { searchTerm } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!searchTerm) {
+        throw new BadRequestError("Search term is required");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Get all customers first
+      const allCustomersResponse = await quickbooksService.getCustomers(integration);
+      const customers = allCustomersResponse?.QueryResponse?.Customer || [];
+
+      // Perform vector search
+      const searchResults = quickbooksService.vectorSearchCustomers(searchTerm as string, customers);
+
+      res.json({
+        success: true,
+        data: {
+          searchTerm,
+          totalResults: searchResults.length,
+          results: searchResults,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Create customer in QuickBooks
+  createCustomer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { name } = req.body;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!name) {
+        throw new BadRequestError("Customer name is required");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      const newCustomer = await quickbooksService.createCustomer(integration, {
+        name,
+      });
+
+      res.json({
+        success: true,
+        data: newCustomer,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Create new item in QuickBooks
   createItem = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -414,7 +489,7 @@ export class QuickBooksController {
     try {
       // @ts-ignore - user is added by auth middleware
       const userId = req.user?.id;
-      const { name, companyName } = req.body;
+      const { name } = req.body;
 
       if (!userId) {
         throw new BadRequestError("User not authenticated");
@@ -432,7 +507,6 @@ export class QuickBooksController {
 
       const newVendor = await quickbooksService.createVendor(integration, {
         name,
-        companyName,
       });
 
       res.json({

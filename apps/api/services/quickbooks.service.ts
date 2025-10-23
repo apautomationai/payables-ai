@@ -407,6 +407,7 @@ export class QuickBooksService {
     description?: string;
     unitPrice?: number;
     type?: string;
+    customerId?: string;
   }, lineItemData?: any) {
     try {
       const accountsResponse = await this.getAccounts(integration);
@@ -563,10 +564,76 @@ export class QuickBooksService {
     return matrix[str2.length][str1.length];
   }
 
+  // Vector search for customers (95% match required, same as vendors)
+  vectorSearchCustomers(searchTerm: string, customers: any[]): any[] {
+    if (!customers || customers.length === 0) return [];
+
+    const normalize = (str: string) => {
+      return str.toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    const normalizedSearch = normalize(searchTerm);
+
+    const scoredCustomers = customers.map(customer => {
+      const customerName = customer.DisplayName || customer.Name || '';
+      const normalizedCustomer = normalize(customerName);
+
+      let score = 0;
+
+      if (normalizedCustomer === normalizedSearch) {
+        score = 100;
+      } else {
+        const maxLength = Math.max(normalizedSearch.length, normalizedCustomer.length);
+        const distance = this.levenshteinDistance(normalizedSearch, normalizedCustomer);
+        const similarity = ((maxLength - distance) / maxLength) * 100;
+        score = similarity;
+      }
+
+      return { ...customer, similarityScore: score };
+    });
+
+    return scoredCustomers
+      .filter(customer => customer.similarityScore >= 95)
+      .sort((a, b) => b.similarityScore - a.similarityScore);
+  }
+
+  // Create a new customer in QuickBooks
+  async createCustomer(integration: QuickBooksIntegration, customerData: {
+    name: string;
+  }) {
+    try {
+      const sanitizedName = customerData.name
+        .replace(/[<>&"']/g, '')
+        .replace(/,\s*Inc\./gi, ' Inc')
+        .replace(/,\s*LLC/gi, ' LLC')
+        .replace(/,\s*Corp\./gi, ' Corp')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .substring(0, 100);
+
+      if (!sanitizedName) {
+        throw new Error("Invalid customer name after sanitization");
+      }
+
+      const payload = {
+        DisplayName: sanitizedName
+      };
+
+      console.log("Creating QuickBooks customer with sanitized name:", sanitizedName);
+      console.log("Full payload:", JSON.stringify(payload, null, 2));
+      return this.makeApiCall(integration, "customer", "POST", payload);
+    } catch (error) {
+      console.error("Error creating QuickBooks customer:", error);
+      throw error;
+    }
+  }
+
   // Create a new vendor in QuickBooks
   async createVendor(integration: QuickBooksIntegration, vendorData: {
     name: string;
-    companyName?: string;
   }) {
     try {
       // Sanitize vendor name for QuickBooks (more aggressive sanitization)
@@ -583,12 +650,9 @@ export class QuickBooksService {
         throw new Error("Invalid vendor name after sanitization");
       }
 
-      // QuickBooks Vendor API format - with DisplayName and optional CompanyName
+      // QuickBooks Vendor API format - DisplayName only
       const payload = {
-        DisplayName: sanitizedName,
-        ...(vendorData.companyName && vendorData.companyName !== sanitizedName && {
-          CompanyName: vendorData.companyName
-        })
+        DisplayName: sanitizedName
       };
 
       console.log("Creating QuickBooks vendor with sanitized name:", sanitizedName);

@@ -19,6 +19,7 @@ router.get("/invoice-line-items/:invoiceId", authenticate, quickbooksController.
 router.get("/search-items", authenticate, quickbooksController.searchItems);
 router.get("/search-vendors", authenticate, quickbooksController.searchVendors);
 router.post("/create-item", authenticate, quickbooksController.createItem);
+router.post("/create-vendor", authenticate, quickbooksController.createVendor);
 router.post("/create-bill", authenticate, quickbooksController.createBill);
 router.delete("/disconnect", authenticate, quickbooksController.disconnect);
 

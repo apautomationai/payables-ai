@@ -409,12 +409,47 @@ export class QuickBooksController {
     }
   };
 
+  // Create vendor in QuickBooks
+  createVendor = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { name, companyName } = req.body;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!name) {
+        throw new BadRequestError("Vendor name is required");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      const newVendor = await quickbooksService.createVendor(integration, {
+        name,
+        companyName,
+      });
+
+      res.json({
+        success: true,
+        data: newVendor,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Create bill in QuickBooks
   createBill = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // @ts-ignore - user is added by auth middleware
       const userId = req.user?.id;
-      const { vendorId, lineItems, totalAmount, dueDate, invoiceDate } = req.body;
+      const { vendorId, lineItems, totalAmount, dueDate, invoiceDate, discountAmount, discountDescription } = req.body;
 
       if (!userId) {
         throw new BadRequestError("User not authenticated");
@@ -436,6 +471,8 @@ export class QuickBooksController {
         totalAmount,
         dueDate,
         invoiceDate,
+        discountAmount,
+        discountDescription,
       });
 
       res.json({

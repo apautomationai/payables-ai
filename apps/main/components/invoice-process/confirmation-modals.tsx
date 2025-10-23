@@ -111,8 +111,21 @@ export default function ConfirmationModals({
             params: { searchTerm: vendorName }
           });
 
+          let vendor = null;
           if (vendorSearchResponse.success && vendorSearchResponse.data.results.length > 0) {
-            const vendor = vendorSearchResponse.data.results[0];
+            // Found vendor with 95%+ match
+            vendor = vendorSearchResponse.data.results[0];
+          } else {
+            // No vendor found with 95%+ match, create new vendor
+            const createVendorResponse = await client.post("/api/v1/quickbooks/create-vendor", {
+              name: vendorName,
+              companyName: invoiceDetails.customerName || vendorName
+            });
+            // Handle create vendor response format: data.Vendor
+            vendor = createVendorResponse.data?.Vendor || createVendorResponse.data;
+          }
+
+          if (vendor) {
 
             // Step 4: Create bill in QuickBooks using processed line items
             const billLineItems = processedItems.map((item: any) => ({
@@ -121,15 +134,25 @@ export default function ConfirmationModals({
               itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
             }));
 
-            // Use total amount from popup instead of calculating
-            const totalAmount = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
+            // Calculate discount by comparing popup total with line items sum
+            const totalAmountFromPopup = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
+            const lineItemsSum = billLineItems.reduce((sum, item) => sum + item.amount, 0);
+            const discountAmount = lineItemsSum - totalAmountFromPopup;
+
+            // Extract vendor ID (handle both search and create response formats)
+            const vendorId = vendor.Id || vendor.id;
 
             await client.post("/api/v1/quickbooks/create-bill", {
-              vendorId: vendor.Id,
+              vendorId: vendorId,
               lineItems: billLineItems,
-              totalAmount: totalAmount,
+              totalAmount: totalAmountFromPopup,
               dueDate: invoiceDetails.dueDate,
-              invoiceDate: invoiceDetails.invoiceDate
+              invoiceDate: invoiceDetails.invoiceDate,
+              // Add discount if there's a positive difference (line items > total)
+              ...(discountAmount > 0 && {
+                discountAmount: discountAmount,
+                discountDescription: "Invoice Discount"
+              })
             });
 
             // Step 5: Update invoice status to approved
@@ -153,7 +176,7 @@ export default function ConfirmationModals({
               onApprovalSuccess();
             }
           } else {
-            throw new Error(`Vendor "${vendorName}" not found in QuickBooks`);
+            throw new Error("Failed to find or create vendor in QuickBooks");
           }
         } else {
           throw new Error("Vendor name not found in invoice details");

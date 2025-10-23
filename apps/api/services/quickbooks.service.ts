@@ -335,6 +335,8 @@ export class QuickBooksService {
     totalAmount: number;
     dueDate?: string;
     invoiceDate?: string;
+    discountAmount?: number;
+    discountDescription?: string;
   }) {
     try {
       // Get expense accounts
@@ -354,19 +356,37 @@ export class QuickBooksService {
         throw new Error("No expense account found in QuickBooks");
       }
 
-      // Create bill payload
-      const payload = {
-        Line: billData.lineItems.map((item, index) => ({
+      // Create line items array
+      const lineItems = billData.lineItems.map((item, index) => ({
+        DetailType: "AccountBasedExpenseLineDetail",
+        Amount: item.amount,
+        Id: (index + 1).toString(), // Sequential ID for bill line items
+        AccountBasedExpenseLineDetail: {
+          AccountRef: {
+            value: expenseAccount.Id
+          }
+        },
+        ...(item.description && { Description: item.description })
+      }));
+
+      // Add discount line item if discount is provided
+      if (billData.discountAmount && billData.discountAmount > 0) {
+        lineItems.push({
           DetailType: "AccountBasedExpenseLineDetail",
-          Amount: item.amount,
-          Id: (index + 1).toString(),
+          Amount: -Math.abs(billData.discountAmount), // Negative amount for discount
+          Id: (lineItems.length + 1).toString(),
           AccountBasedExpenseLineDetail: {
             AccountRef: {
               value: expenseAccount.Id
             }
           },
-          ...(item.description && { Description: item.description })
-        })),
+          Description: billData.discountDescription || "Discount"
+        });
+      }
+
+      // Create bill payload
+      const payload = {
+        Line: lineItems,
         VendorRef: {
           value: billData.vendorId
         },
@@ -469,42 +489,115 @@ export class QuickBooksService {
       .sort((a, b) => b.similarityScore - a.similarityScore);
   }
 
-  // Vector search for vendors
+  // Strict vector search for vendors (95% match required)
   vectorSearchVendors(searchTerm: string, vendors: any[]): any[] {
     if (!vendors || vendors.length === 0) return [];
 
+    // Normalize function to remove special characters and extra spaces
+    const normalize = (str: string) => {
+      return str.toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove special characters
+        .replace(/\s+/g, ' ')    // Replace multiple spaces with single space
+        .trim();
+    };
+
+    const normalizedSearch = normalize(searchTerm);
+
     const scoredVendors = vendors.map(vendor => {
-      const vendorName = vendor.Name?.toLowerCase() || '';
-      const searchLower = searchTerm.toLowerCase();
+      const vendorName = vendor.DisplayName || vendor.Name || '';
+      const normalizedVendor = normalize(vendorName);
 
       let score = 0;
 
-      if (vendorName === searchLower) {
+      // Exact match after normalization
+      if (normalizedVendor === normalizedSearch) {
         score = 100;
-      } else if (vendorName.includes(searchLower)) {
-        score = 80;
       } else {
-        const searchWords = searchLower.split(/\s+/);
-        const vendorWords = vendorName.split(/\s+/);
+        // Calculate character-level similarity for strict matching
+        const searchChars = normalizedSearch.split('');
+        const vendorChars = normalizedVendor.split('');
 
-        let matchedWords = 0;
-        searchWords.forEach((searchWord: string) => {
-          vendorWords.forEach((vendorWord: string) => {
-            if (vendorWord.includes(searchWord) || searchWord.includes(vendorWord)) {
-              matchedWords++;
-            }
-          });
-        });
+        // Use Levenshtein distance for similarity
+        const maxLength = Math.max(searchChars.length, vendorChars.length);
+        const distance = this.levenshteinDistance(normalizedSearch, normalizedVendor);
+        const similarity = ((maxLength - distance) / maxLength) * 100;
 
-        score = (matchedWords / searchWords.length) * 60;
+        score = similarity;
       }
 
       return { ...vendor, similarityScore: score };
     });
 
+    // Only return vendors with 95% or higher similarity
     return scoredVendors
-      .filter(vendor => vendor.similarityScore > 30)
+      .filter(vendor => vendor.similarityScore >= 95)
       .sort((a, b) => b.similarityScore - a.similarityScore);
+  }
+
+  // Levenshtein distance algorithm for string similarity
+  private levenshteinDistance(str1: string, str2: string): number {
+    const matrix = [];
+
+    for (let i = 0; i <= str2.length; i++) {
+      matrix[i] = [i];
+    }
+
+    for (let j = 0; j <= str1.length; j++) {
+      matrix[0][j] = j;
+    }
+
+    for (let i = 1; i <= str2.length; i++) {
+      for (let j = 1; j <= str1.length; j++) {
+        if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+          matrix[i][j] = matrix[i - 1][j - 1];
+        } else {
+          matrix[i][j] = Math.min(
+            matrix[i - 1][j - 1] + 1,
+            matrix[i][j - 1] + 1,
+            matrix[i - 1][j] + 1
+          );
+        }
+      }
+    }
+
+    return matrix[str2.length][str1.length];
+  }
+
+  // Create a new vendor in QuickBooks
+  async createVendor(integration: QuickBooksIntegration, vendorData: {
+    name: string;
+    companyName?: string;
+  }) {
+    try {
+      // Sanitize vendor name for QuickBooks (more aggressive sanitization)
+      const sanitizedName = vendorData.name
+        .replace(/[<>&"']/g, '') // Remove problematic characters
+        .replace(/,\s*Inc\./gi, ' Inc') // Simplify Inc. format
+        .replace(/,\s*LLC/gi, ' LLC') // Simplify LLC format
+        .replace(/,\s*Corp\./gi, ' Corp') // Simplify Corp. format
+        .replace(/\s+/g, ' ') // Replace multiple spaces with single space
+        .trim()
+        .substring(0, 100); // Limit to 100 characters
+
+      if (!sanitizedName) {
+        throw new Error("Invalid vendor name after sanitization");
+      }
+
+      // QuickBooks Vendor API format - with DisplayName and optional CompanyName
+      const payload = {
+        DisplayName: sanitizedName,
+        ...(vendorData.companyName && vendorData.companyName !== sanitizedName && {
+          CompanyName: vendorData.companyName
+        })
+      };
+
+      console.log("Creating QuickBooks vendor with sanitized name:", sanitizedName);
+      console.log("Full payload:", JSON.stringify(payload, null, 2));
+      return this.makeApiCall(integration, "vendor", "POST", payload);
+    } catch (error) {
+      console.error("Error creating QuickBooks vendor:", error);
+      throw error;
+    }
   }
 
   // Disconnect integration

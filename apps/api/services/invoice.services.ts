@@ -3,6 +3,7 @@ import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { and, count, desc, eq, getTableColumns } from "drizzle-orm";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
+const pdfParse = require("pdf-parse");
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";

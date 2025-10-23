@@ -444,48 +444,48 @@ export class QuickBooksService {
     }
   }
 
-  // Vector search function to find similar items
+  // Strict vector search for items (95% match required, same as vendors)
   vectorSearchItems(searchTerm: string, items: any[]): any[] {
     if (!items || items.length === 0) return [];
 
-    // Simple similarity scoring based on string matching
+    // Normalize function to remove special characters and extra spaces
+    const normalize = (str: string) => {
+      return str.toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove special characters
+        .replace(/\s+/g, ' ')    // Replace multiple spaces with single space
+        .trim();
+    };
+
+    const normalizedSearch = normalize(searchTerm);
+
     const scoredItems = items.map(item => {
-      const itemName = item.Name?.toLowerCase() || '';
-      const searchLower = searchTerm.toLowerCase();
+      const itemName = item.Name || '';
+      const normalizedItem = normalize(itemName);
 
       let score = 0;
 
-      // Exact match gets highest score
-      if (itemName === searchLower) {
+      // Exact match after normalization
+      if (normalizedItem === normalizedSearch) {
         score = 100;
-      }
-      // Contains search term
-      else if (itemName.includes(searchLower)) {
-        score = 80;
-      }
-      // Partial word matches
-      else {
-        const searchWords = searchLower.split(/\s+/);
-        const itemWords = itemName.split(/\s+/);
+      } else {
+        // Calculate character-level similarity for strict matching
+        const searchChars = normalizedSearch.split('');
+        const itemChars = normalizedItem.split('');
 
-        let matchedWords = 0;
-        searchWords.forEach((searchWord: string) => {
-          itemWords.forEach((itemWord: string) => {
-            if (itemWord.includes(searchWord) || searchWord.includes(itemWord)) {
-              matchedWords++;
-            }
-          });
-        });
+        // Use Levenshtein distance for similarity
+        const maxLength = Math.max(searchChars.length, itemChars.length);
+        const distance = this.levenshteinDistance(normalizedSearch, normalizedItem);
+        const similarity = ((maxLength - distance) / maxLength) * 100;
 
-        score = (matchedWords / searchWords.length) * 60;
+        score = similarity;
       }
 
       return { ...item, similarityScore: score };
     });
 
-    // Return items sorted by similarity score (highest first)
+    // Only return items with 95% or higher similarity
     return scoredItems
-      .filter(item => item.similarityScore > 30) // Only return items with reasonable similarity
+      .filter(item => item.similarityScore >= 95)
       .sort((a, b) => b.similarityScore - a.similarityScore);
   }
 

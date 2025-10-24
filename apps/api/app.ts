@@ -33,7 +33,7 @@ app.use(passport.initialize());
 
 // Apply routes
 app.get("/", (_req, res) => {
-  res.json({ message: "Api is running", version: "0.1" });
+  res.json({ message: "Api is running", version:0.1 });
 });
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/users", usersRoutes);

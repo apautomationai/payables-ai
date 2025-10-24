@@ -10,7 +10,7 @@ import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
-import { formatLabel } from "@/lib/utility/formatters";
+import { formatLabel, renderValue } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 
@@ -31,9 +31,7 @@ const FormField = ({
   onToggle: (fieldKey: string) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) => {
-  const displayValue = Array.isArray(value)
-    ? `${value.length} item(s)`
-    : value ?? "N/A";
+  const displayValue = renderValue(value, fieldKey);
 
   return (
     <div className="flex items-start gap-4">
@@ -112,7 +110,7 @@ export default function InvoiceDetailsForm({
       setIsLoadingLineItems(true);
       try {
         const response = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
-        if (response.success) {
+        if (response.data) {
           setLineItems(response.data);
         }
       } catch (error) {

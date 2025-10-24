@@ -64,12 +64,34 @@ export default function ConfirmationModals({
         throw new Error("Invoice ID not found");
       }
 
+      // Step 2: Search for customer and create if needed (before processing line items)
+      const customerName = invoiceDetails.customerName;
+      let customer = null;
+
+      if (customerName) {
+        const customerSearchResponse = await client.get("/api/v1/quickbooks/search-customers", {
+          params: { searchTerm: customerName }
+        });
+
+        if (customerSearchResponse.data?.results?.length > 0) {
+          // Found customer with 95%+ match
+          customer = customerSearchResponse.data.results[0];
+        } else {
+          // No customer found with 95%+ match, create new customer
+          const createCustomerResponse = await client.post("/api/v1/quickbooks/create-customer", {
+            name: customerName
+          });
+          // Handle create customer response format: data.Customer
+          customer = createCustomerResponse.data?.Customer || createCustomerResponse.data;
+        }
+      }
+
       const dbLineItemsResponse = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
 
-      if (dbLineItemsResponse.success && dbLineItemsResponse.data.length > 0) {
+      if (dbLineItemsResponse.data?.length > 0) {
         const processedItems = [];
 
-        // Step 2: Process each line item individually
+        // Step 3: Process each line item individually (with customer info)
         for (const lineItem of dbLineItemsResponse.data) {
           const itemName = lineItem.item_name;
 
@@ -79,7 +101,7 @@ export default function ConfirmationModals({
           });
 
           let qbItem = null;
-          if (searchResponse.success && searchResponse.data.results.length > 0) {
+          if (searchResponse.data?.results?.length > 0) {
             // Item found in QuickBooks
             qbItem = searchResponse.data.results[0];
           } else {
@@ -88,6 +110,7 @@ export default function ConfirmationModals({
               name: itemName,
               description: lineItem.description || `${itemName} service item`,
               type: "Service",
+              customerId: customer?.Id || customer?.id,
               lineItemData: {
                 quantity: lineItem.quantity,
                 rate: lineItem.rate,
@@ -104,28 +127,6 @@ export default function ConfirmationModals({
           });
         }
 
-        // Step 3: Search for customer and create if needed
-        const customerName = invoiceDetails.customerName;
-        let customer = null;
-
-        if (customerName) {
-          const customerSearchResponse = await client.get("/api/v1/quickbooks/search-customers", {
-            params: { searchTerm: customerName }
-          });
-
-          if (customerSearchResponse.success && customerSearchResponse.data.results.length > 0) {
-            // Found customer with 95%+ match
-            customer = customerSearchResponse.data.results[0];
-          } else {
-            // No customer found with 95%+ match, create new customer
-            const createCustomerResponse = await client.post("/api/v1/quickbooks/create-customer", {
-              name: customerName
-            });
-            // Handle create customer response format: data.Customer
-            customer = createCustomerResponse.data?.Customer || createCustomerResponse.data;
-          }
-        }
-
         // Step 4: Search for vendor and create bill
         const vendorName = invoiceDetails.vendorName;
         if (vendorName) {
@@ -134,7 +135,7 @@ export default function ConfirmationModals({
           });
 
           let vendor = null;
-          if (vendorSearchResponse.success && vendorSearchResponse.data.results.length > 0) {
+          if (vendorSearchResponse.data?.results?.length > 0) {
             // Found vendor with 95%+ match
             vendor = vendorSearchResponse.data.results[0];
           } else {
@@ -148,11 +149,13 @@ export default function ConfirmationModals({
 
           if (vendor) {
 
-            // Step 4: Create bill in QuickBooks using processed line items
+            // Step 5: Create bill in QuickBooks using processed line items
             const billLineItems = processedItems.map((item: any) => ({
               amount: parseFloat(item.dbLineItem.amount) || 0,
               description: item.dbLineItem.description || item.dbLineItem.item_name,
-              itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
+              itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id,
+              customerId: customer?.Id || customer?.id,
+              customerName: customerName
             }));
 
             // Calculate discount by comparing popup total with line items sum
@@ -176,14 +179,14 @@ export default function ConfirmationModals({
               })
             });
 
-            // Step 5: Update invoice status to approved
+            // Step 6: Update invoice status to approved
             const statusUpdateResponse = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
               status: "approved"
             });
 
             // Update local invoice details state
-            if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
-              const updatedDetails = { ...invoiceDetails, status: "approved" };
+            if (onInvoiceDetailsUpdate && statusUpdateResponse.data) {
+              const updatedDetails = { ...invoiceDetails, status: "approved" as const };
               onInvoiceDetailsUpdate(updatedDetails);
             }
 
@@ -230,8 +233,8 @@ export default function ConfirmationModals({
       });
 
       // Update local invoice details state
-      if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
-        const updatedDetails = { ...invoiceDetails, status: "rejected" };
+      if (onInvoiceDetailsUpdate && statusUpdateResponse.data) {
+        const updatedDetails = { ...invoiceDetails, status: "rejected" as const };
         onInvoiceDetailsUpdate(updatedDetails);
       }
 
@@ -332,7 +335,8 @@ export default function ConfirmationModals({
                           </span>
                           <span className="font-semibold text-right truncate">
                             {renderValue(
-                              invoiceDetails[key as keyof InvoiceDetails]
+                              invoiceDetails[key as keyof InvoiceDetails],
+                              key
                             )}
                           </span>
                         </div>

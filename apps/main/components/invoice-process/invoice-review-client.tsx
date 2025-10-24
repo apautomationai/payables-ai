@@ -68,7 +68,24 @@ export default function InvoiceReviewClient({
 
   useEffect(() => {
     if (invoiceDetails) {
-      setSelectedFields(Object.keys(invoiceDetails));
+      // Filter out internal/system fields that shouldn't be shown in UI
+      const fieldsToExclude = [
+        's3JsonKey',
+        'fileUrl',
+        'fileKey',
+        'sourcePdfUrl',
+        'id',
+        'userId',
+        'attachmentId',
+        'createdAt',
+        'updatedAt'
+      ];
+
+      const visibleFields = Object.keys(invoiceDetails).filter(
+        key => !fieldsToExclude.includes(key)
+      );
+
+      setSelectedFields(visibleFields);
     }
   }, [invoiceDetails]);
 

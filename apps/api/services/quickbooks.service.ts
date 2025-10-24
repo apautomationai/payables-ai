@@ -331,6 +331,8 @@ export class QuickBooksService {
       amount: number;
       description?: string;
       itemId?: string;
+      customerId?: string;
+      customerName?: string;
     }>;
     totalAmount: number;
     dueDate?: string;
@@ -357,17 +359,33 @@ export class QuickBooksService {
       }
 
       // Create line items array
-      const lineItems = billData.lineItems.map((item, index) => ({
-        DetailType: "AccountBasedExpenseLineDetail",
-        Amount: item.amount,
-        Id: (index + 1).toString(), // Sequential ID for bill line items
-        AccountBasedExpenseLineDetail: {
-          AccountRef: {
-            value: expenseAccount.Id
-          }
-        },
-        ...(item.description && { Description: item.description })
-      }));
+      const lineItems = billData.lineItems.map((item, index) => {
+        // Build description with customer info if available
+        let description = item.description || '';
+        if (item.customerName) {
+          description = description ? `${description} (Customer: ${item.customerName})` : `Customer: ${item.customerName}`;
+        }
+
+        const lineItem: any = {
+          DetailType: "AccountBasedExpenseLineDetail",
+          Amount: item.amount,
+          Id: (index + 1).toString(), // Sequential ID for bill line items
+          AccountBasedExpenseLineDetail: {
+            AccountRef: {
+              value: expenseAccount.Id
+            },
+            // Add customer reference if available
+            ...(item.customerId && {
+              CustomerRef: {
+                value: item.customerId
+              }
+            })
+          },
+          ...(description && { Description: description })
+        };
+
+        return lineItem;
+      });
 
       // Add discount line item if discount is provided
       if (billData.discountAmount && billData.discountAmount > 0) {
@@ -619,10 +637,11 @@ export class QuickBooksService {
       }
 
       const payload = {
-        DisplayName: sanitizedName
+        DisplayName: sanitizedName,
+        CompanyName: sanitizedName
       };
 
-      console.log("Creating QuickBooks customer with sanitized name:", sanitizedName);
+      console.log("Creating QuickBooks customer with sanitized name (Name & DisplayName):", sanitizedName);
       console.log("Full payload:", JSON.stringify(payload, null, 2));
       return this.makeApiCall(integration, "customer", "POST", payload);
     } catch (error) {
@@ -650,12 +669,13 @@ export class QuickBooksService {
         throw new Error("Invalid vendor name after sanitization");
       }
 
-      // QuickBooks Vendor API format - DisplayName only
+      // QuickBooks Vendor API format - both Name and DisplayName should be the same
       const payload = {
+        CompanyName: sanitizedName,
         DisplayName: sanitizedName
       };
 
-      console.log("Creating QuickBooks vendor with sanitized name:", sanitizedName);
+      console.log("Creating QuickBooks vendor with sanitized name (Name & DisplayName):", sanitizedName);
       console.log("Full payload:", JSON.stringify(payload, null, 2));
       return this.makeApiCall(integration, "vendor", "POST", payload);
     } catch (error) {

@@ -1,6 +1,7 @@
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
+import { and, count, desc, eq, getTableColumns } from "drizzle-orm";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
 import { count, desc, eq, getTableColumns, and } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
@@ -48,7 +49,7 @@ export class InvoiceServices {
 
         if (existingInvoice) {
           // Check if data is different from existing invoice
-          const hasChanges = 
+          const hasChanges =
             existingInvoice.vendorName !== invoiceData.vendorName ||
             existingInvoice.customerName !== invoiceData.customerName ||
             existingInvoice.invoiceDate?.getTime() !== invoiceData.invoiceDate?.getTime() ||
@@ -90,7 +91,7 @@ export class InvoiceServices {
             .insert(invoiceModel)
             .values({
               ...invoiceData,
-              fileUrl: invoiceData.fileKey && generateS3PublicUrl(invoiceData.fileKey) ,
+              fileUrl: invoiceData.fileKey && generateS3PublicUrl(invoiceData.fileKey),
               createdAt: new Date(),
               updatedAt: new Date(),
             })
@@ -194,10 +195,10 @@ export class InvoiceServices {
     try {
       const [response] = await db
         .update(invoiceModel)
-        .set({...updatedData, updatedAt: new Date()})
+        .set({ ...updatedData, updatedAt: new Date() })
         .where(eq(invoiceModel.id, invoiceId))
         .returning();
-  
+
       return response;
     } catch (error) {
       console.log(error);
@@ -484,6 +485,73 @@ export class InvoiceServices {
       totalInvoices: splitResults.length,
       invoices: splitResults,
     };
+  }
+
+  async getLineItemsByName(itemName: string) {
+    try {
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(eq(lineItemsModel.item_name, itemName));
+
+      if (lineItems.length === 0) {
+        const allItems = await db.select().from(lineItemsModel);
+        const caseInsensitiveMatch = allItems.filter(item =>
+          item.item_name?.toLowerCase().trim() === itemName.toLowerCase().trim()
+        );
+        return caseInsensitiveMatch;
+      }
+
+      return lineItems;
+    } catch (error) {
+      console.error("Error fetching line items by name:", error);
+      throw error;
+    }
+  }
+
+  async getAllLineItems() {
+    try {
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel);
+
+      return lineItems;
+    } catch (error) {
+      console.error("Error fetching all line items:", error);
+      throw error;
+    }
+  }
+
+  async getLineItemsByInvoiceId(invoiceId: number) {
+    try {
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(eq(lineItemsModel.invoiceId, invoiceId));
+
+      return lineItems;
+    } catch (error) {
+      console.error("Error fetching line items by invoice ID:", error);
+      throw error;
+    }
+  }
+
+  async updateInvoiceStatus(invoiceId: number, status: string) {
+    try {
+      const [updatedInvoice] = await db
+        .update(invoiceModel)
+        .set({
+          status: status as any,
+          updatedAt: new Date()
+        })
+        .where(eq(invoiceModel.id, invoiceId))
+        .returning();
+
+      return updatedInvoice;
+    } catch (error) {
+      console.error("Error updating invoice status:", error);
+      throw error;
+    }
   }
 }
 export const invoiceServices = new InvoiceServices();

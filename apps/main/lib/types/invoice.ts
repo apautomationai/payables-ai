@@ -50,9 +50,11 @@ export interface InvoiceDetails {
 
 
 export interface LineItem {
-  description: string;
-  quantity: number;
-  rate: number;
-  amount: number;
-  // Add other fields as needed
+  id: number;
+  invoiceId: number;
+  item_name: string | null;
+  description: string | null;
+  quantity: string | null;
+  rate: string | null;
+  amount: string | null;
 }

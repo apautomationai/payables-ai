@@ -64,7 +64,7 @@ export default function ConfirmationModals({
         throw new Error("Invoice ID not found");
       }
 
-      const dbLineItemsResponse = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
+      const dbLineItemsResponse:any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
 
       if (dbLineItemsResponse.success && dbLineItemsResponse.data.length > 0) {
         const processedItems = [];
@@ -74,7 +74,7 @@ export default function ConfirmationModals({
           const itemName = lineItem.item_name;
 
           // Search for this specific item in QuickBooks
-          const searchResponse = await client.get("/api/v1/quickbooks/search-items", {
+          const searchResponse:any = await client.get("/api/v1/quickbooks/search-items", {
             params: { searchTerm: itemName }
           });
 
@@ -84,7 +84,7 @@ export default function ConfirmationModals({
             qbItem = searchResponse.data.results[0];
           } else {
             // Item not found, create new one
-            const createItemResponse = await client.post("/api/v1/quickbooks/create-item", {
+            const createItemResponse:any = await client.post("/api/v1/quickbooks/create-item", {
               name: itemName,
               description: lineItem.description || `${itemName} service item`,
               type: "Service",
@@ -109,7 +109,7 @@ export default function ConfirmationModals({
         let customer = null;
 
         if (customerName) {
-          const customerSearchResponse = await client.get("/api/v1/quickbooks/search-customers", {
+          const customerSearchResponse:any = await client.get("/api/v1/quickbooks/search-customers", {
             params: { searchTerm: customerName }
           });
 
@@ -118,7 +118,7 @@ export default function ConfirmationModals({
             customer = customerSearchResponse.data.results[0];
           } else {
             // No customer found with 95%+ match, create new customer
-            const createCustomerResponse = await client.post("/api/v1/quickbooks/create-customer", {
+            const createCustomerResponse:any = await client.post("/api/v1/quickbooks/create-customer", {
               name: customerName
             });
             // Handle create customer response format: data.Customer
@@ -129,7 +129,7 @@ export default function ConfirmationModals({
         // Step 4: Search for vendor and create bill
         const vendorName = invoiceDetails.vendorName;
         if (vendorName) {
-          const vendorSearchResponse = await client.get("/api/v1/quickbooks/search-vendors", {
+          const vendorSearchResponse:any = await client.get("/api/v1/quickbooks/search-vendors", {
             params: { searchTerm: vendorName }
           });
 
@@ -139,7 +139,7 @@ export default function ConfirmationModals({
             vendor = vendorSearchResponse.data.results[0];
           } else {
             // No vendor found with 95%+ match, create new vendor
-            const createVendorResponse = await client.post("/api/v1/quickbooks/create-vendor", {
+            const createVendorResponse:any = await client.post("/api/v1/quickbooks/create-vendor", {
               name: vendorName
             });
             // Handle create vendor response format: data.Vendor
@@ -177,14 +177,14 @@ export default function ConfirmationModals({
             });
 
             // Step 5: Update invoice status to approved
-            const statusUpdateResponse = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+            const statusUpdateResponse:any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
               status: "approved"
             });
 
             // Update local invoice details state
             if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
               const updatedDetails = { ...invoiceDetails, status: "approved" };
-              onInvoiceDetailsUpdate(updatedDetails);
+              onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
             }
 
             toast.success("Invoice approved and bill created in QuickBooks successfully!");
@@ -225,14 +225,14 @@ export default function ConfirmationModals({
       const invoiceId = invoiceDetails.id;
 
       // Update invoice status to rejected
-      const statusUpdateResponse = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+      const statusUpdateResponse:any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
         status: "rejected"
       });
 
       // Update local invoice details state
       if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
         const updatedDetails = { ...invoiceDetails, status: "rejected" };
-        onInvoiceDetailsUpdate(updatedDetails);
+        onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
       }
 
       toast.success("Invoice has been rejected");

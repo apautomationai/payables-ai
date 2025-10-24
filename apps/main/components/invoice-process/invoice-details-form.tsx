@@ -111,7 +111,7 @@ export default function InvoiceDetailsForm({
 
       setIsLoadingLineItems(true);
       try {
-        const response = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        const response:any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
         if (response.success) {
           setLineItems(response.data);
         }

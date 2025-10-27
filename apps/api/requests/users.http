@@ -1,0 +1,16 @@
+# @baseUrl = http://localhost:5000
+@baseUrl = https://dev-api.payables.dev
+@contentType = application/json
+
+### User Registration
+# @name registerUser
+POST {{baseUrl}}/api/v1/users/register
+Content-Type: {{contentType}}
+
+{
+  "firstName": "Mahim",
+  "lastName": "Safa",
+  "businessName": "Bluubery",
+  "email": "mahim_safa1@hotmail.com",
+  "password": "Testpass@123"
+}

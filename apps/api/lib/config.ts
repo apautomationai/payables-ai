@@ -21,6 +21,11 @@ interface Config {
     sqs: {
         queueUrl: string;
     };
+    s3: {
+        bucketName: string;
+        publicUrl: string;
+        region: string;
+    };
 }
 
 export const config: Config = {
@@ -29,6 +34,11 @@ export const config: Config = {
     logLevel: LogLevels.info,
     database: {
         url: process.env.DATABASE_URL!,
+    },
+    s3: {
+        bucketName: process.env.S3_BUCKET_NAME!,
+        publicUrl: process.env.S3_PUBLIC_URL!,
+        region: process.env.AWS_REGION || "us-west-2",
     },
     sqs: {
         queueUrl: process.env.SQS_QUEUE_URL!,

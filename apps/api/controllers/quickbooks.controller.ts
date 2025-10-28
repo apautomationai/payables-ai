@@ -23,7 +23,8 @@ export class QuickBooksController {
       const authUrl = quickbooksService.generateAuthUrl(state);
 
       // Redirect to QuickBooks authorization page
-      res.redirect(authUrl);
+      res.json({ url: authUrl });
+      // res.redirect(authUrl);
     } catch (error) {
       next(error);
     }

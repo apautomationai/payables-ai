@@ -25,8 +25,8 @@ export class GoogleController {
       res.cookie("token", req.token, { httpOnly: true });
     }
 
-    // res.json({ url });
-    res.redirect(url);
+    res.json({ url });
+    // res.redirect(url);
   };
 
   //@ts-ignore

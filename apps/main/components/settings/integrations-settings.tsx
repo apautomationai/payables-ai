@@ -54,6 +54,7 @@ import {
   PauseCircle,
   PlayCircle,
 } from "lucide-react";
+import client from "@/lib/axios-client";
 
 // Helper for logos - replace with your actual logo components or images
 const IntegrationLogo = ({ name }: { name: string }) => {
@@ -265,6 +266,18 @@ function IntegrationCard({
   const isConnected = status === "success" || status === "paused";
   const formId = `form-${backendName}`; // Unique ID for the form
 
+  const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
+    e.preventDefault();
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`;
+    try {
+      const res:any = await client.get(url);
+      window.location.href = res.url;
+    } catch (error) {
+      console.error((error as any));
+      toast.error((error as any).response?.data.message || "Failed to connect!");
+    }
+  };
+
   return (
     <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
       <CardHeader>
@@ -327,18 +340,14 @@ function IntegrationCard({
           {status === "not_connected" && (
             <>
               {allowCollection ? (
-                <Button size="sm" asChild className="w-full">
-                  <Link
-                    href={`${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`}
-                  >
+                <Button size="sm" className="w-full cursor-pointer" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConnect(e, integration.path)}>
                     Connect Now
-                  </Link>
                 </Button>
               ) : (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" disabled className="w-full">
+                      <Button size="sm" disabled className="w-full cursor-not-allowed">
                         Not Allowed <CircleHelp className="h-4 w-4 ml-2" />
                       </Button>
                     </TooltipTrigger>

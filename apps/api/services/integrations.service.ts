@@ -125,7 +125,8 @@ class IntegrationsService {
       }
       const response = await db
         .update(integrationsModel)
-        .set({ status: updatedData.status, updatedAt: new Date() })
+        //@ts-ignore
+        .set({ status: updatedData.status as any, updatedAt: new Date() })
         .where(
           and(
             eq(integrationsModel.userId, userId),

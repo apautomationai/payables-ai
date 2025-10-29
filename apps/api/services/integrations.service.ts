@@ -53,6 +53,26 @@ class IntegrationsService {
     }
   }
 
+  async getGmailIntegration() {
+    try {
+      const integrations = await db
+        .select()
+        .from(integrationsModel)
+        .where(and(eq(integrationsModel.name, "gmail"), eq(integrationsModel.status, "success")));
+      return {
+        success: true,
+        data: integrations || [],
+      };
+    }
+    catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
+
   async getIntegrations(useId: number) {
     try {
       // @ts-ignore

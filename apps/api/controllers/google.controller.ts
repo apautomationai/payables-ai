@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { BadRequestError, NotFoundError } from "@/helpers/errors";
+import { BadRequestError } from "@/helpers/errors";
 import { google } from "googleapis";
 import { integrationsService } from "@/services/integrations.service";
 import { googleServices } from "@/services/google.services";
@@ -115,61 +115,103 @@ export class GoogleController {
     }
   };
 
-  //@ts-ignore
-  readEmails = async (req: Request, res: Response) => {
+  syncEmails = async (_req: Request, res: Response) => {
+    const data = []
     try {
-      const data: any = await integrationsService.getAllIntegration();
-      if (!data.success) {
-        throw new BadRequestError(data.message as string);
+      const integration: any = await integrationsService.getGmailIntegration();
+      if (!integration.success) {
+        throw new BadRequestError("Unable to get gmail integration");
       }
-      const integrations = data.data;
 
-      const result = {
-        status: "success",
-        data: [],
-      };
-
+      // @ts-ignore
+      const integrations = integration.data || [];
       for (const integration of integrations) {
-        // const integrationInfo = integration?.data[0];
-        if (integration.name !== "gmail" || integration.status !== "success") {
-          throw new NotFoundError("Gmail isn't connected");
-        }
-
-        const timeStampDate = integration.expiryDate;
-        if (!timeStampDate) {
-          throw new Error("No expiry date found in database");
-        }
-        const date = new Date(timeStampDate);
-        const expiryDate = date.getTime();
-
         const tokens = {
           access_token: integration.accessToken,
           refresh_token: integration.refreshToken,
           token_type: integration.tokenType,
-          expiry_date: expiryDate,
+          expiry_date: integration.expiryDate,
         };
-
         if (!tokens) {
           throw new BadRequestError("Need valid tokens");
         }
 
+        let lastRead = integration.lastRead;
+        if (!lastRead) {
+          lastRead = integration.startReading;
+        }
         const attachments = await googleServices.getEmailsWithAttachments(
           tokens,
           integration.userId,
           integration.id,
-          integration.startReading
+          lastRead
         );
-        //@ts-ignore
-        result.data.push(attachments);
+        data.push(attachments);
       }
-
-      return res.status(200).send(result);
+      return res.status(200).json({
+        message: "Emails synced successfully",
+        data,
+      });
     } catch (error: any) {
-      throw new BadRequestError(
-        error.message || "Unable to get the attachments"
-      );
+      throw new BadRequestError(error.message || "Unable to sync emails");
     }
   };
+
+  // //@ts-ignore
+  // readEmails = async (req: Request, res: Response) => {
+  //   try {
+  //     const data: any = await integrationsService.getAllIntegration();
+  //     if (!data.success) {
+  //       throw new BadRequestError(data.message as string);
+  //     }
+  //     const integrations = data.data;
+
+  //     const result = {
+  //       status: "success",
+  //       data: [],
+  //     };
+
+  //     for (const integration of integrations) {
+  //       // const integrationInfo = integration?.data[0];
+  //       if (integration.name !== "gmail" || integration.status !== "success") {
+  //         throw new NotFoundError("Gmail isn't connected");
+  //       }
+
+  //       const timeStampDate = integration.expiryDate;
+  //       if (!timeStampDate) {
+  //         throw new Error("No expiry date found in database");
+  //       }
+  //       const date = new Date(timeStampDate);
+  //       const expiryDate = date.getTime();
+
+  //       const tokens = {
+  //         access_token: integration.accessToken,
+  //         refresh_token: integration.refreshToken,
+  //         token_type: integration.tokenType,
+  //         expiry_date: expiryDate,
+  //       };
+
+  //       if (!tokens) {
+  //         throw new BadRequestError("Need valid tokens");
+  //       }
+
+  //       const attachments = await googleServices.getEmailsWithAttachments(
+  //         tokens,
+  //         integration.userId,
+  //         integration.id,
+  //         integration.startReading
+  //       );
+  //       //@ts-ignore
+  //       result.data.push(attachments);
+  //     }
+
+  //     return res.status(200).send(result);
+  //   } catch (error: any) {
+  //     throw new BadRequestError(
+  //       error.message || "Unable to get the attachments"
+  //     );
+  //   }
+  // };
 
   getAttachments = async (req: Request, res: Response) => {
     //@ts-ignore

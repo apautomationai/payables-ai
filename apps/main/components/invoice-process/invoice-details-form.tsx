@@ -143,6 +143,7 @@ export default function InvoiceDetailsForm({
     "fileUrl",
     "fileKey",
     "sourcePdfUrl",
+    "s3JsonKey"
   ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 

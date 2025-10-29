@@ -88,7 +88,6 @@ export function IntegrationCard({
     }
   };
 
-  console.log("integration", integration);
   return (
     <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
       <CardHeader>

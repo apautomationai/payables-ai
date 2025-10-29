@@ -17,7 +17,7 @@ interface IntegrationData {
 }
 
 interface IntegrationsPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 async function getIntegrations(): Promise<IntegrationData[]> {
@@ -30,8 +30,9 @@ async function getIntegrations(): Promise<IntegrationData[]> {
 }
 
 export default async function IntegrationsPage({
-  searchParams,
+  searchParams: searchParamsPromise,
 }: IntegrationsPageProps) {
+  const searchParams = await searchParamsPromise;
   const integrations = await getIntegrations();
 
   return (

@@ -67,7 +67,7 @@ export function IntegrationCard({
   const { name, status, allowCollection, path, backendName, category, startReading, createdAt, lastRead } =
     integration;
 
-  const { text: statusText, color: statusColor } = STATUS_CONFIG[status] || STATUS_CONFIG.not_connected;
+  const { text: statusText, color: statusColor } = STATUS_CONFIG[status as IntegrationStatus] || STATUS_CONFIG.not_connected;
   const isConnected = status === "success" || status === "paused";
   const formId = `form-${backendName}`;
   const isGmail = name.toLowerCase() === "gmail";
@@ -77,7 +77,7 @@ export function IntegrationCard({
     e.preventDefault();
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`;
     try {
-      const res = await client.get<{ url: string }>(url);
+      const res: any = await client.get(url);
       window.location.href = res.url;
     } catch (error: unknown) {
       const errorMessage =

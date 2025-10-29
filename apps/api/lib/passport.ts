@@ -87,7 +87,7 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_AUTH_REDIRECT_URI) {
         clientSecret: GOOGLE_CLIENT_SECRET,
         callbackURL: GOOGLE_AUTH_REDIRECT_URI,
       },
-      async (accessToken: string, refreshToken: string, profile: any, done: any) => {
+      async (_accessToken: string, _refreshToken: string, profile: any, done: any) => {
         try {
           const email = profile.emails?.[0]?.value;
           const googleId = profile.id;

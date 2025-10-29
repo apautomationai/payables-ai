@@ -32,11 +32,11 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.use(express.json());
 
 // Special handling for Stripe webhooks - must come before express.json()
 app.use('/api/v1/subscription/webhook', express.raw({ type: 'application/json' }));
 
+// Apply JSON parsing for all other routes
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
@@ -44,7 +44,7 @@ app.use(passport.initialize());
 
 // Apply routes
 app.get("/", (_req, res) => {
-  res.json({ message: "Api is running", version: "0.1.1" });
+  res.json({ message: "Api is running", version: 0.1 });
 });
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/users", usersRoutes);

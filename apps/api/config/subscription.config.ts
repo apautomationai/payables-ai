@@ -6,8 +6,8 @@ export const SUBSCRIPTION_CONFIG = {
     } as const,
 
     TIER_LIMITS: {
-        FREE_MAX: 0,
-        PROMOTIONAL_MAX: 20
+        FREE_MAX: 1,
+        PROMOTIONAL_MAX: 3
     } as const,
 
     PRICING: {

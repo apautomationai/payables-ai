@@ -15,6 +15,7 @@ import { notFoundHandler } from "@/helpers/not-found-handler";
 import healthRouter from "@/routes/health.route";
 import usersRoutes from "@/routes/users.route";
 import googleRoutes from "@/routes/google.routes";
+import authRoutes from "@/routes/auth.routes";
 import settingsRoutes from "@/routes/settings.route";
 import uploadRoutes from "@/routes/upload.routes";
 import invoiceRoutes from "@/routes/invoice.routes";
@@ -52,6 +53,7 @@ app.get("/", (_req, res) => {
 });
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/users", usersRoutes);
+app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/google", googleRoutes);
 app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/upload", uploadRoutes);

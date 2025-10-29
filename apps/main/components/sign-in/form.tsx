@@ -98,6 +98,11 @@ function SignInFormComponent() {
     }
   }, [searchParams]);
 
+  const handleGoogleSignIn = () => {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+    window.location.href = `${apiUrl}/api/v1/auth/google`;
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
@@ -251,8 +256,9 @@ function SignInFormComponent() {
           {/* Social Login Buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button 
+              type="button"
               variant="outline" 
-              disabled
+              onClick={handleGoogleSignIn}
               className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>

@@ -229,9 +229,6 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
                         <Badge variant={getTierBadgeVariant(subscription.tier)}>
                             {getTierDisplayName(subscription.tier)}
                         </Badge>
-                        <span className="text-sm text-muted-foreground">
-                            (Registration #{subscription.registrationOrder})
-                        </span>
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -340,7 +337,7 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
                     </Button>
 
                     {/* Retry Access button for users having access issues */}
-                    {subscription.status === 'trialing' && subscription.hasPaymentMethod && (
+                    {/* {subscription.status === 'trialing' && subscription.hasPaymentMethod && (
                         <Button
                             onClick={() => {
                                 // Force refresh and redirect to dashboard
@@ -358,23 +355,7 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
                             </svg>
                             Retry Access
                         </Button>
-                    )}
-
-                    {/* Debug button - temporary for troubleshooting */}
-                    {subscription.status === 'trialing' && (
-                        <Button
-                            onClick={() => {
-                                console.log('🔍 Debug: Full subscription object:', subscription);
-                                alert(`Debug Info:\nStatus: ${subscription.status}\nTier: ${subscription.tier}\nHas Payment: ${subscription.hasPaymentMethod}\nRequires Setup: ${subscription.requiresPaymentSetup}\nTrial End: ${subscription.trialEnd}\n\nCheck console for full details.`);
-                            }}
-                            disabled={loading}
-                            variant="ghost"
-                            size="sm"
-                            className="flex items-center gap-2 text-xs"
-                        >
-                            🔍 Debug
-                        </Button>
-                    )}
+                    )} */}
                 </div>
 
                 {/* Additional Information */}

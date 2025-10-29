@@ -81,3 +81,6 @@ export interface LineItem {
   amount: number;
   // Add other fields as needed
 }
+
+// Re-export subscription types
+export type { SubscriptionStatus, CheckoutSession, CustomerPortal } from './subscription';

@@ -24,7 +24,13 @@ import processorRoutes from "@/routes/processor.routes";
 const app = express();
 
 // Apply middleware
-app.use(cors());
+// Configure CORS to allow credentials
+const corsOptions = {
+  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3001',
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+app.use(cors(corsOptions));
 app.use(express.json());
 
 app.use(cookieParser());

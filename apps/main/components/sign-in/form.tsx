@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useEffect, Suspense, useActionState, useState } from "react";
+import React, { useEffect, Suspense, useState } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useFormStatus } from "react-dom";
 import { toast } from "sonner";
 import { AtSign, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
@@ -17,12 +16,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@workspace/ui/components/card";
-import { signInAction, SignInFormState } from "@/app/(auth)/sign-in/actions";
+import axios from "axios";
+import { SignInSchema } from "@/lib/validators";
+import { setCookie } from "cookies-next";
 
-const initialState: SignInFormState = {
-  message: "",
-  success: false,
-};
+interface SignInFormState {
+  message: string;
+  errors?: {
+    email?: string[];
+    password?: string[];
+    _form?: string[];
+  };
+  success: boolean;
+  requiresTwoFactor?: boolean;
+}
 
 const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
@@ -54,15 +61,14 @@ const MicrosoftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
+function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
     <Button 
       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
       type="submit" 
-      disabled={pending}
+      disabled={isLoading}
     >
-      {pending ? (
+      {isLoading ? (
         <div className="flex items-center justify-center">
           <Loader2 className="animate-spin h-5 w-5 mr-2" />
           Signing In...
@@ -75,11 +81,12 @@ function SubmitButton() {
 }
 
 function SignInFormComponent() {
-  const [state, formAction] = useActionState(signInAction, {
+  const [state, setState] = useState<SignInFormState>({
     message: "",
     success: false,
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -91,24 +98,124 @@ function SignInFormComponent() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    if (state?.success) {
-      // Show success message
-      toast.success("Login Successful", {
-        description: "You have been successfully logged in!",
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email");
+    const password = formData.get("password");
+
+    // Validate with Zod
+    const validatedFields = SignInSchema.safeParse({ email, password });
+
+    if (!validatedFields.success) {
+      setState({
+        message: "Validation failed",
+        errors: validatedFields.error.flatten().fieldErrors,
+        success: false,
       });
-      
-      // Redirect if needed
-      if (state.redirectTo) {
-        router.push(state.redirectTo);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const response = await axios.post(
+        `${apiUrl}/api/v1/users/login`,
+        { email, password },
+        {
+          withCredentials: true, // Important: enables cookie handling
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+        }
+      );
+
+      // Check if response is successful and contains token
+      if (response.data && response.data.token) {
+        // Set local cookies for Next.js access
+        setCookie("token", response.data.token, {
+          maxAge: 24 * 60 * 60, // 1 day
+          path: "/",
+          // sameSite: "none",
+          secure: process.env.NODE_ENV === "production",
+        });
+
+        if (response.data.user?.id) {
+          setCookie("userId", String(response.data.user.id), {
+            maxAge: 24 * 60 * 60, // 1 day
+            path: "/",
+            // sameSite: "none",
+            secure: process.env.NODE_ENV === "production",
+          });
+        }
+
+        toast.success("Login Successful", {
+          description: "You have been successfully logged in!",
+        });
+
+        // Redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        setState({
+          message: "Invalid response from server",
+          errors: { _form: ["Invalid response from server"] },
+          success: false,
+        });
       }
-    } else if (state?.message && !state?.success) {
-      // Show error message
+    } catch (error: any) {
+      console.error("Sign in error:", error);
+      
+      if (error.response) {
+        const data = error.response.data;
+        
+        // Handle various error scenarios from the API
+        if (error.response.status === 403 && data.requiresTwoFactor) {
+          setState({
+            message: "Two-factor authentication required",
+            requiresTwoFactor: true,
+            success: false,
+          });
+        } else if (error.response.status === 423) {
+          setState({
+            message: data.message || "Account is locked.",
+            errors: { _form: [data.message || "Account is locked"] },
+            success: false,
+          });
+        } else {
+          setState({
+            message: data.message || "Invalid email or password",
+            errors: {
+              _form: [data.message || "Invalid email or password"],
+              ...(data.errors || {}),
+            },
+            success: false,
+          });
+        }
+      } else {
+        setState({
+          message: "Failed to connect to the server",
+          errors: {
+            _form: ["Failed to connect to the server. Please try again later."],
+          },
+          success: false,
+        });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Show error message when state changes
+  useEffect(() => {
+    if (state?.message && !state?.success) {
       toast.error("Sign In Failed", {
         description: state.message,
       });
     }
-  }, [state, router]);
+  }, [state]);
 
   return (
     <div className="relative">
@@ -176,7 +283,7 @@ function SignInFormComponent() {
           </div>
 
           {/* Sign In Form */}
-          <form action={formAction} className="space-y-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-3">
               <Label htmlFor="email" className="text-gray-300 font-medium text-sm">
                 Email Address
@@ -248,7 +355,7 @@ function SignInFormComponent() {
               </div>
             )}
 
-            <SubmitButton />
+            <SubmitButton isLoading={isLoading} />
           </form>
         </CardContent>
 

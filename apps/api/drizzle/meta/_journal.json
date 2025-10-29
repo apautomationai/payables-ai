@@ -15,6 +15,13 @@
       "when": 1760492868792,
       "tag": "0001_large_legion",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1760492868793,
+      "tag": "0002_add_status_enum_values",
+      "breakpoints": true
     }
   ]
 }

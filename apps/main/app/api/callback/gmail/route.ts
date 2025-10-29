@@ -60,9 +60,9 @@ async function handleRequest(request: NextRequest, method: string) {
       }
     );
 
-    // if got 200 response then redirect to /settings page
+    // if got 200 response then redirect to /integrations page
     if (backendResponse.status === 200) {
-      return NextResponse.redirect(new URL("/settings", request.url));
+      return NextResponse.redirect(new URL("/integrations", request.url));
     } else {
       return NextResponse.json(await backendResponse.json(), {
         status: backendResponse.status,

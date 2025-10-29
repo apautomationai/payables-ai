@@ -16,19 +16,36 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import SettingsClient from "@/components/settings/settings-client";
+import IntegrationsClient from "@/components/integrations/integrations-client";
+import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 
-export default function SettingsView({
+interface IntegrationData {
+  name: string;
+  status: string;
+  startReading?: string | null;
+  createdAt?: string | null;
+  lastRead?: string | null;
+}
+
+interface IntegrationsViewProps {
+  integrations: IntegrationData[];
+  searchParams: { [key: string]: string | string[] | undefined };
+  updateIntegrationStatusAction: (
+    prevState: ActionState,
+    formData: FormData,
+  ) => Promise<ActionState>;
+  updateStartTimeAction: (
+    prevState: ActionState,
+    formData: FormData,
+  ) => Promise<ActionState>;
+}
+
+export default function IntegrationsView({
   integrations,
   searchParams,
   updateIntegrationStatusAction,
   updateStartTimeAction,
-}: {
-  integrations: any[];
-  searchParams: { [key: string]: string | string[] | undefined };
-  updateIntegrationStatusAction: any;
-  updateStartTimeAction: any;
-}) {
+}: IntegrationsViewProps) {
   const { message, type } = searchParams;
   const [isRedirectDialogOpen, setRedirectDialogOpen] = useState(false);
 
@@ -41,7 +58,7 @@ export default function SettingsView({
 
   // Logic for the top warning alert
   const needsGmailConfig = integrations.some(
-    (i) => i.name === "gmail" && i.status === "success" && !i.startReading
+    (i) => i.name === "gmail" && i.status === "success" && !i.startReading,
   );
 
   const isSuccess =
@@ -72,7 +89,7 @@ export default function SettingsView({
         </Alert>
       )}
 
-      <SettingsClient
+      <IntegrationsClient
         integrations={integrations}
         updateAction={updateIntegrationStatusAction}
         updateStartTimeAction={updateStartTimeAction}
@@ -102,3 +119,4 @@ export default function SettingsView({
     </div>
   );
 }
+

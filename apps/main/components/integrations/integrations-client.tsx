@@ -3,33 +3,36 @@
 import React, { useEffect, useActionState } from "react";
 import { toast } from "sonner";
 
-import Integrations from "./integrations-settings";
+import IntegrationsList from "./integrations-list";
+import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 
-type ActionState = {
-  success?: boolean;
-  error?: string;
-  message?: string;
-} | undefined;
+interface IntegrationData {
+  name: string;
+  status: string;
+  startReading?: string | null;
+  createdAt?: string | null;
+  lastRead?: string | null;
+}
 
 const initialState: ActionState = undefined;
 
-interface SettingsClientProps {
-  integrations: any[];
+interface IntegrationsClientProps {
+  integrations: IntegrationData[];
   updateAction: (
     prevState: ActionState,
-    formData: FormData
+    formData: FormData,
   ) => Promise<ActionState>;
   updateStartTimeAction: (
     prevState: ActionState,
-    formData: FormData
+    formData: FormData,
   ) => Promise<ActionState>;
 }
 
-export default function SettingsClient({
+export default function IntegrationsClient({
   integrations,
   updateAction,
   updateStartTimeAction,
-}: SettingsClientProps) {
+}: IntegrationsClientProps) {
   const [state, formAction] = useActionState(updateAction, initialState);
 
   useEffect(() => {
@@ -45,10 +48,11 @@ export default function SettingsClient({
   }, [state]);
 
   return (
-    <Integrations
-    integrations={integrations}
-    updateAction={formAction}
-    updateStartTimeAction={updateStartTimeAction}
-  />
+    <IntegrationsList
+      integrations={integrations}
+      updateAction={formAction}
+      updateStartTimeAction={updateStartTimeAction}
+    />
   );
 }
+

@@ -42,7 +42,6 @@ import {
 import { Button, ButtonProps } from "@workspace/ui/components/button";
 import { Calendar } from "@workspace/ui/components/calendar";
 import { cn } from "@workspace/ui/lib/utils";
-import Link from "next/link";
 import {
   Settings,
   Mail,
@@ -55,6 +54,7 @@ import {
   PlayCircle,
 } from "lucide-react";
 import client from "@/lib/axios-client";
+import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 
 // Helper for logos - replace with your actual logo components or images
 const IntegrationLogo = ({ name }: { name: string }) => {
@@ -65,14 +65,14 @@ const IntegrationLogo = ({ name }: { name: string }) => {
   return null;
 };
 
-type IntegrationStatus =
+export type IntegrationStatus =
   | "success"
   | "disconnected"
   | "failed"
   | "not_connected"
   | "paused";
 
-interface Integration {
+export interface Integration {
   name: string;
   path: string;
   category: string;
@@ -84,9 +84,6 @@ interface Integration {
   lastRead?: string | null;
 }
 
-type ActionState =
-  | { success?: boolean; error?: string; message?: string }
-  | undefined;
 const initialState: ActionState = undefined;
 
 interface SubmitButtonProps {
@@ -97,7 +94,7 @@ interface SubmitButtonProps {
   value?: string;
   className?: string;
   children?: React.ReactNode;
-  form?: string; // Added to link button to a form
+  form?: string;
 }
 
 interface ConfigureDialogProps {
@@ -113,6 +110,14 @@ const BACKEND_NAMES_MAP = {
   Outlook: "outlook",
   QuickBooks: "quickbooks",
 } as const;
+
+interface BackendIntegrationData {
+  name: string;
+  status: IntegrationStatus;
+  startReading?: string | null;
+  createdAt?: string | null;
+  lastRead?: string | null;
+}
 
 const initialIntegrations: Omit<
   Integration,
@@ -138,8 +143,8 @@ const initialIntegrations: Omit<
   },
 ];
 
-interface IntegrationsTabProps {
-  integrations: any[];
+interface IntegrationsListProps {
+  integrations: BackendIntegrationData[];
   updateAction: (formData: FormData) => void;
   updateStartTimeAction: (
     prevState: ActionState,
@@ -147,16 +152,16 @@ interface IntegrationsTabProps {
   ) => Promise<ActionState>;
 }
 
-export default function IntegrationsTab({
+export default function IntegrationsList({
   integrations: initialBackendIntegrations,
   updateAction,
   updateStartTimeAction,
-}: IntegrationsTabProps) {
+}: IntegrationsListProps) {
   const integrations: Integration[] = initialIntegrations.map((integration) => {
     const backendName =
       BACKEND_NAMES_MAP[integration.name as keyof typeof BACKEND_NAMES_MAP];
     const existingIntegration = initialBackendIntegrations.find(
-      (i: any) => i?.name === backendName,
+      (i) => i?.name === backendName,
     );
     return {
       ...integration,
@@ -264,17 +269,33 @@ function IntegrationCard({
   const dateTimeFormat = "LLL d, yyyy 'at' p";
 
   const isConnected = status === "success" || status === "paused";
-  const formId = `form-${backendName}`; // Unique ID for the form
+  const formId = `form-${backendName}`;
 
-  const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>, path: string) => {
+  const handleConnect = async (
+    e: React.MouseEvent<HTMLButtonElement>,
+    path: string,
+  ) => {
     e.preventDefault();
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/${path}`;
     try {
-      const res:any = await client.get(url);
+      const res = await client.get<{ url: string }>(url);
       window.location.href = res.url;
-    } catch (error) {
-      console.error((error as any));
-      toast.error((error as any).response?.data.message || "Failed to connect!");
+    } catch (error: unknown) {
+      console.error(error);
+      const errorMessage =
+        error &&
+        typeof error === "object" &&
+        "response" in error &&
+        error.response &&
+        typeof error.response === "object" &&
+        "data" in error.response &&
+        error.response.data &&
+        typeof error.response.data === "object" &&
+        "message" in error.response.data &&
+        typeof error.response.data.message === "string"
+          ? error.response.data.message
+          : "Failed to connect!";
+      toast.error(errorMessage);
     }
   };
 
@@ -340,14 +361,24 @@ function IntegrationCard({
           {status === "not_connected" && (
             <>
               {allowCollection ? (
-                <Button size="sm" className="w-full cursor-pointer" onClick={(e: React.MouseEvent<HTMLButtonElement>) => handleConnect(e, integration.path)}>
-                    Connect Now
+                <Button
+                  size="sm"
+                  className="w-full cursor-pointer"
+                  onClick={(e: React.MouseEvent<HTMLButtonElement>) =>
+                    handleConnect(e, integration.path)
+                  }
+                >
+                  Connect Now
                 </Button>
               ) : (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button size="sm" disabled className="w-full cursor-not-allowed">
+                      <Button
+                        size="sm"
+                        disabled
+                        className="w-full cursor-not-allowed"
+                      >
                         Not Allowed <CircleHelp className="h-4 w-4 ml-2" />
                       </Button>
                     </TooltipTrigger>
@@ -533,3 +564,4 @@ function DisconnectDialog({
     </AlertDialog>
   );
 }
+

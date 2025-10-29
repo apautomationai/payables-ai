@@ -20,11 +20,11 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REPOSITORY: payables-api
-  ECS_SERVICE: payables-api-service
-  ECS_CLUSTER: payables-cluster
+  ECR_REPOSITORY: sledge-api
+  ECS_SERVICE: sledge-api-service
+  ECS_CLUSTER: sledge-cluster
   ECS_TASK_DEFINITION: apps/api/ecs-task-definition.json
-  CONTAINER_NAME: payables-api
+  CONTAINER_NAME: sledge-api
 
 jobs:
   test:
@@ -123,5 +123,5 @@ jobs:
             SERVICE_URL=$(aws elbv2 describe-load-balancers --load-balancer-arns $LOAD_BALANCER_ARN --query 'LoadBalancers[0].DNSName' --output text)
             echo "url=https://$SERVICE_URL" >> $GITHUB_OUTPUT
           else
-            echo "url=https://api.payables.ai" >> $GITHUB_OUTPUT
+            echo "url=https://api.sledge.ai" >> $GITHUB_OUTPUT
           fi

@@ -5,10 +5,10 @@ set -e
 
 # Configuration
 AWS_REGION=${AWS_REGION:-us-east-1}
-ECR_REPOSITORY=${ECR_REPOSITORY:-payables-api}
-ECS_CLUSTER=${ECS_CLUSTER:-payables-cluster}
-ECS_SERVICE=${ECS_SERVICE:-payables-api-service}
-TASK_DEFINITION=${TASK_DEFINITION:-payables-api}
+ECR_REPOSITORY=${ECR_REPOSITORY:-sledge-api}
+ECS_CLUSTER=${ECS_CLUSTER:-sledge-cluster}
+ECS_SERVICE=${ECS_SERVICE:-sledge-api-service}
+TASK_DEFINITION=${TASK_DEFINITION:-sledge-api}
 VPC_ID=${VPC_ID}
 SUBNET_IDS=${SUBNET_IDS}
 SECURITY_GROUP_ID=${SECURITY_GROUP_ID}
@@ -110,18 +110,18 @@ echo -e "${YELLOW}Creating secrets in AWS Secrets Manager...${NC}"
 echo -e "${YELLOW}Note: You'll need to set the actual secret values manually${NC}"
 
 # Database URL secret
-aws secretsmanager describe-secret --secret-id "payables-api/database-url" --region $AWS_REGION 2>/dev/null || \
+aws secretsmanager describe-secret --secret-id "sledge-api/database-url" --region $AWS_REGION 2>/dev/null || \
 aws secretsmanager create-secret \
-    --name "payables-api/database-url" \
-    --description "Database connection URL for Payables API" \
+    --name "sledge-api/database-url" \
+    --description "Database connection URL for sledge API" \
     --secret-string "postgresql://username:password@hostname:5432/database" \
     --region $AWS_REGION
 
 # JWT Secret
-aws secretsmanager describe-secret --secret-id "payables-api/jwt-secret" --region $AWS_REGION 2>/dev/null || \
+aws secretsmanager describe-secret --secret-id "Sledge-api/jwt-secret" --region $AWS_REGION 2>/dev/null || \
 aws secretsmanager create-secret \
-    --name "payables-api/jwt-secret" \
-    --description "JWT secret for Payables API" \
+    --name "sledge-api/jwt-secret" \
+    --description "JWT secret for Sledge API" \
     --secret-string "your-jwt-secret-here" \
     --region $AWS_REGION
 

@@ -24,7 +24,7 @@ export function Founders() {
       color: "text-blue-600",
       bgColor: "bg-blue-50",
       linkedin: "#",
-      email: "davis@payables.ai",
+      email: "davis@getsledge.com",
     },
     {
       name: "Matteo Miralaie",
@@ -35,7 +35,7 @@ export function Founders() {
       color: "text-purple-600",
       bgColor: "bg-purple-50",
       linkedin: "#",
-      email: "matteo@payables.ai",
+      email: "matteo@getsledge.com",
     },
     {
       name: "Raz Danoukh",
@@ -46,7 +46,7 @@ export function Founders() {
       color: "text-emerald-600",
       bgColor: "bg-emerald-50",
       linkedin: "#",
-      email: "raz@payables.ai",
+      email: "raz@getsledge.com",
     },
   ];
 

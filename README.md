@@ -1,6 +1,6 @@
-# Payables Monorepo
+# Sledge Monorepo
 
-This is a monorepo containing the applications for the Payables AI platform, built with Next.js and TypeScript.
+This is a monorepo containing the applications for the Sledge AI platform, built with Next.js and TypeScript.
 
 ## 🚀 Getting Started
 
@@ -14,7 +14,7 @@ This is a monorepo containing the applications for the Payables AI platform, bui
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd payables-ai
+   cd sledge-ai
    ```
 
 2. Install dependencies:
@@ -25,7 +25,7 @@ This is a monorepo containing the applications for the Payables AI platform, bui
 ## 📦 Available Applications
 
 ### 1. Main Application (`apps/main`)
-The core application for managing payables and invoices.
+The core application for managing sledge and invoices.
 
 ### 2. Landing Page (`apps/landing`)
 Marketing website and public-facing pages.

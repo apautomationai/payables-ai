@@ -5,7 +5,7 @@ set -e
 
 # Configuration
 AWS_REGION=${AWS_REGION:-us-east-1}
-ECR_REPOSITORY=${ECR_REPOSITORY:-payables-api}
+ECR_REPOSITORY=${ECR_REPOSITORY:-sledge-api}
 AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}
 
 # Colors for output

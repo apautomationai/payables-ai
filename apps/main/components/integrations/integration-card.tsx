@@ -141,27 +141,25 @@ export function IntegrationCard({
         <form id={formId} action={updateAction} className="flex flex-wrap items-center gap-2 w-full">
           <input type="hidden" name="name" value={backendName} />
 
-          {status === "not_connected" || status === "disconnected" && (
-            <>
-              {allowCollection ? (
+          {allowCollection ? (
+            (status === "not_connected" || status === "disconnected") && (
                 <Button size="sm" className="w-full cursor-pointer" onClick={handleConnect}>
                   Connect Now
                 </Button>
-              ) : (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button size="sm" disabled className="w-full cursor-not-allowed">
-                        Not Allowed <CircleHelp className="h-4 w-4 ml-2" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>This integration is not enabled for your account yet.</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-            </>
+            )
+          ) : (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" disabled className="w-full cursor-not-allowed">
+                    Not Allowed <CircleHelp className="h-4 w-4 ml-2" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>This integration is not enabled for your account yet.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {status === "success" && (

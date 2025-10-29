@@ -33,8 +33,7 @@ const initialSettings = {
   maxFileSize: 10,
   supportedFileTypes: "PDF, PNG, JPG, JPEG, TIFF",
   emailProcessingRules:
-    "Process emails from: invoices@company.com, billing@company.com",
-  webhookEndpoints: "https://api.payables.dev/webhooks/invoice-processed",
+    "Process emails from: invoices@getsledge.com, billing@getsledge.com"
 };
 
 export default function PlatformSettingsForm() {

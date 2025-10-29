@@ -1,4 +1,4 @@
-# Payables API - AWS ECS Deployment
+# Sledge API - AWS ECS Deployment
 
 This directory contains the Express.js TypeScript API application with AWS ECS deployment configuration.
 
@@ -65,18 +65,18 @@ The `buildspec.yml` file is configured for AWS CodeBuild to:
 ## Infrastructure Components
 
 ### ECR Repository
-- **Name:** `payables-api`
-- **Region:** `us-east-1`
+- **Name:** `sledge-api`
+- **Region:** `us-west-2`
 - **Scanning:** Enabled on push
 
 ### ECS Cluster
-- **Name:** `payables-cluster`
+- **Name:** `sledge-cluster`
 - **Capacity Provider:** FARGATE
 - **Launch Type:** Fargate
 
 ### ECS Service
-- **Name:** `payables-api-service`
-- **Task Definition:** `payables-api`
+- **Name:** `sledge-api-service`
+- **Task Definition:** `sledge-api`
 - **Desired Count:** 2 (configurable)
 
 ### IAM Roles
@@ -84,13 +84,13 @@ The `buildspec.yml` file is configured for AWS CodeBuild to:
 - `ecsTaskRole` - For application-level AWS permissions
 
 ### CloudWatch Logs
-- **Log Group:** `/ecs/payables-api`
+- **Log Group:** `/ecs/sledge-api`
 
 ### AWS Secrets Manager
-- `payables-api/database-url`
-- `payables-api/jwt-secret`
-- `payables-api/aws-access-key`
-- `payables-api/aws-secret-key`
+- `sledge-api/database-url`
+- `sledge-api/jwt-secret`
+- `sledge-api/aws-access-key`
+- `sledge-api/aws-secret-key`
 
 ## Configuration
 
@@ -144,7 +144,7 @@ The application includes health check endpoints:
 ### Logs
 
 Application logs are sent to CloudWatch Logs:
-- **Log Group:** `/ecs/payables-api`
+- **Log Group:** `/ecs/sledge-api`
 - **Stream Prefix:** `ecs`
 
 ### Metrics
@@ -177,16 +177,16 @@ ECS automatically provides metrics for:
 
 ```bash
 # Check ECS service status
-aws ecs describe-services --cluster payables-cluster --services payables-api-service
+aws ecs describe-services --cluster sledge-cluster --services sledge-api-service
 
 # View task logs
-aws logs tail /ecs/payables-api --follow
+aws logs tail /ecs/sledge-api --follow
 
 # List ECR images
-aws ecr list-images --repository-name payables-api
+aws ecr list-images --repository-name sledge-api
 
 # Update service
-aws ecs update-service --cluster payables-cluster --service payables-api-service --force-new-deployment
+aws ecs update-service --cluster sledge-cluster --service sledge-api-service --force-new-deployment
 ```
 
 ## Security Considerations

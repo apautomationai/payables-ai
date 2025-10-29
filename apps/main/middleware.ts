@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 const protectedRoutes = [
   "/dashboard",
   "/invoice-review",
-  "/settings",
+  "/integrations",
   "/profile",
 ];
 

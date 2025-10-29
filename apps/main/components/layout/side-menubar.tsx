@@ -265,9 +265,9 @@ export default function SideMenuBar({
                 </span> */}
               </NavLink>
               <NavLink
-                href="/settings"
+                href="/integrations"
                 icon={Settings}
-                isActive={pathname.startsWith("/settings")}
+                isActive={pathname.startsWith("/integrations")}
                 isCollapsed={isCollapsed}
               >
                 Integrations

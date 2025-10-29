@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import client from "@/lib/fetch-client";
 
-type ActionState =
+export type ActionState =
   | {
       success?: boolean;
       error?: string;
@@ -18,7 +18,7 @@ interface UpdatePayload {
 
 /**
  * Handles status updates like Pause, Resume, and Disconnect.
- * It triggers a revalidation of the '/settings' path to refresh data.
+ * It triggers a revalidation of the '/integrations' path to refresh data.
  */
 export async function updateIntegrationStatusAction(
   prevState: ActionState,
@@ -40,7 +40,7 @@ export async function updateIntegrationStatusAction(
         // Handle other integrations with generic endpoint
         await client.delete(`api/v1/settings/integration?name=${name}`);
       }
-      revalidatePath("/settings");
+      revalidatePath("/integrations");
       return {
         success: true,
         message: "Integration disconnected successfully.",
@@ -48,14 +48,16 @@ export async function updateIntegrationStatusAction(
     } else {
       const payload = { name, status };
       await client.patch("api/v1/settings/update-status", payload);
-      revalidatePath("/settings");
+      revalidatePath("/integrations");
       return {
         success: true,
         message: `Integration status updated to ${status}.`,
       };
     }
-  } catch (error: any) {
-    return { error: error.message || "Failed to update integration status." };
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to update integration status.";
+    return { error: errorMessage };
   }
 }
 
@@ -78,9 +80,12 @@ export async function updateStartTimeAction(
       startTime: startTime,
     });
 
-    revalidatePath("/settings");
+    revalidatePath("/integrations");
     return { success: true, message: "Start date saved successfully!" };
-  } catch (error: any) {
-    return { error: error.message || "Failed to update start time." };
+  } catch (error: unknown) {
+    const errorMessage =
+      error instanceof Error ? error.message : "Failed to update start time.";
+    return { error: errorMessage };
   }
 }
+

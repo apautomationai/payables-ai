@@ -25,11 +25,20 @@ const app = express();
 
 // Apply middleware
 // Configure CORS to allow credentials
+const getCorsOrigins = (): string | string[] => {
+  const originsString = process.env.CORS_ORIGIN || 'http://localhost:3000';
+  // Split by comma and trim whitespace
+  const origins = originsString.split(',').map(origin => origin.trim());
+  // If only one origin, return as string; otherwise return array
+  return origins.length === 1 ? origins[0] : origins;
+};
+
 const corsOptions = {
-  origin: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || 'http://localhost:3001',
+  origin: getCorsOrigins(),
   credentials: true,
   optionsSuccessStatus: 200
 };
+
 app.use(cors(corsOptions));
 app.use(express.json());
 

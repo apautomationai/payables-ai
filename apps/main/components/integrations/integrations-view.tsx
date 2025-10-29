@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useActionState } from "react";
+import { toast } from "sonner";
 import {
   Alert,
   AlertDescription,
@@ -16,12 +17,14 @@ import {
 } from "@workspace/ui/components/dialog";
 import { Button } from "@workspace/ui/components/button";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import IntegrationsClient from "@/components/integrations/integrations-client";
+import IntegrationsList from "./integrations-list";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
+
+import type { IntegrationStatus } from "./types";
 
 interface IntegrationData {
   name: string;
-  status: string;
+  status: IntegrationStatus | string;
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
@@ -48,15 +51,23 @@ export default function IntegrationsView({
 }: IntegrationsViewProps) {
   const { message, type } = searchParams;
   const [isRedirectDialogOpen, setRedirectDialogOpen] = useState(false);
+  const [state, formAction] = useActionState(updateIntegrationStatusAction, undefined);
 
-  // Effect to open the dialog if redirect params are in the URL
   useEffect(() => {
     if (message && type) {
       setRedirectDialogOpen(true);
     }
   }, [message, type]);
 
-  // Logic for the top warning alert
+  useEffect(() => {
+    if (!state) return;
+    if (state.error) {
+      toast.error("An error occurred", { description: state.error });
+    } else if (state.success) {
+      toast.success(state.message || "Action successful!");
+    }
+  }, [state]);
+
   const needsGmailConfig = integrations.some(
     (i) => i.name === "gmail" && i.status === "success" && !i.startReading,
   );
@@ -74,7 +85,6 @@ export default function IntegrationsView({
         </p>
       </div>
 
-      {/* Top "Configuration Required" Alert */}
       {needsGmailConfig && (
         <Alert
           variant="destructive"
@@ -89,13 +99,18 @@ export default function IntegrationsView({
         </Alert>
       )}
 
-      <IntegrationsClient
-        integrations={integrations}
-        updateAction={updateIntegrationStatusAction}
+      <IntegrationsList
+        integrations={integrations as Array<{
+          name: string;
+          status: IntegrationStatus;
+          startReading?: string | null;
+          createdAt?: string | null;
+          lastRead?: string | null;
+        }>}
+        updateAction={formAction}
         updateStartTimeAction={updateStartTimeAction}
       />
 
-      {/* Pop-up Dialog for Redirect Feedback */}
       <Dialog open={isRedirectDialogOpen} onOpenChange={setRedirectDialogOpen}>
         <DialogContent>
           <DialogHeader>
@@ -119,4 +134,3 @@ export default function IntegrationsView({
     </div>
   );
 }
-

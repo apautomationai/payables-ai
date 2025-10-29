@@ -311,7 +311,7 @@ function IntegrationCard({
                 </span>
               </div>
             )}
-            {startReading && (
+            {name.toLowerCase() === "gmail" && startReading && (
               <div className="flex items-center gap-2">
                 <CalendarDays className="h-4 w-4" /> Start Reading:{" "}
                 <span className="font-medium text-primary">
@@ -319,7 +319,7 @@ function IntegrationCard({
                 </span>
               </div>
             )}
-            {lastRead && (
+            {name.toLowerCase() === "gmail" && lastRead && (
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4" /> Last Read:{" "}
                 <span className="font-medium text-primary">
@@ -364,7 +364,7 @@ function IntegrationCard({
 
           {status === "success" && (
             <>
-              {!startReading && (
+              {name.toLowerCase() === "gmail" && !startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -384,7 +384,7 @@ function IntegrationCard({
 
           {status === "paused" && (
             <>
-              {!startReading && (
+              {name.toLowerCase() === "gmail" && !startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}

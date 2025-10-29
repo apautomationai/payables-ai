@@ -7,6 +7,7 @@ import {
   NewQuickBooksIntegration,
 } from "@/models/quickbooks.model";
 import { BadRequestError, InternalServerError } from "@/helpers/errors";
+import { integrationsService } from "./integrations.service";
 
 export class QuickBooksService {
   private clientId: string;
@@ -141,7 +142,7 @@ export class QuickBooksService {
         .limit(1);
 
       if (existingIntegration.length > 0) {
-        // Update existing integration
+        // Update existing integration in quickbooks_integrations table
         const [updated] = await db
           .update(quickbooksIntegrationsModel)
           .set({
@@ -154,13 +155,66 @@ export class QuickBooksService {
           .where(eq(quickbooksIntegrationsModel.id, existingIntegration[0].id))
           .returning();
 
+        // Also update integrations table
+        const existingIntegrationsRecord = await integrationsService.checkIntegration(
+          userId,
+          "quickbooks"
+        );
+
+        const metadata = {
+          realmId: tokenData.realmId,
+          companyId: tokenData.realmId,
+          companyName: companyInfo?.name || "Unknown Company",
+          isActive: true,
+          lastSyncAt: null,
+        };
+
+        if (existingIntegrationsRecord) {
+          await integrationsService.updateIntegration(existingIntegrationsRecord.id, {
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            expiryDate: expiresAt,
+            status: "success",
+            metadata,
+          });
+        } else {
+          await integrationsService.insertIntegration({
+            userId,
+            name: "quickbooks",
+            status: "success",
+            accessToken: tokenData.accessToken,
+            refreshToken: tokenData.refreshToken,
+            expiryDate: expiresAt,
+            metadata,
+          });
+        }
+
         return updated;
       } else {
-        // Create new integration
+        // Create new integration in quickbooks_integrations table
         const [created] = await db
           .insert(quickbooksIntegrationsModel)
           .values(integrationData)
           .returning();
+
+        // Also create in integrations table
+        const metadata = {
+          realmId: tokenData.realmId,
+          companyId: tokenData.realmId,
+          companyName: companyInfo?.name || "Unknown Company",
+          isActive: true,
+          lastSyncAt: null,
+        };
+
+        await integrationsService.insertIntegration({
+          userId,
+          name: "quickbooks",
+          status: "success",
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiryDate: expiresAt,
+          metadata,
+        });
 
         return created;
       }
@@ -208,25 +262,46 @@ export class QuickBooksService {
             integration.refreshToken,
           );
 
-          // Update integration with new tokens
+          const newExpiresAt = new Date(
+            Date.now() + refreshedTokens.expiresIn * 1000,
+          );
+
+          // Update integration with new tokens in quickbooks_integrations table
           await db
             .update(quickbooksIntegrationsModel)
             .set({
               accessToken: refreshedTokens.accessToken,
               refreshToken: refreshedTokens.refreshToken,
-              tokenExpiresAt: new Date(
-                Date.now() + refreshedTokens.expiresIn * 1000,
-              ),
+              tokenExpiresAt: newExpiresAt,
               updatedAt: new Date(),
             })
             .where(eq(quickbooksIntegrationsModel.id, integration.id));
+
+          // Also update integrations table
+          const existingIntegrationsRecord = await integrationsService.checkIntegration(
+            integration.userId,
+            "quickbooks"
+          );
+
+          if (existingIntegrationsRecord) {
+            const metadata = existingIntegrationsRecord.metadata || {};
+            await integrationsService.updateIntegration(existingIntegrationsRecord.id, {
+              accessToken: refreshedTokens.accessToken,
+              refreshToken: refreshedTokens.refreshToken,
+              expiryDate: newExpiresAt,
+              metadata: {
+                ...metadata,
+                lastSyncAt: new Date(),
+              },
+            });
+          }
 
           integration.accessToken = refreshedTokens.accessToken;
         } catch (refreshError: any) {
           // If refresh fails, the refresh token might be expired
           console.error("Token refresh failed:", refreshError);
 
-          // Mark integration as inactive so user knows to reconnect
+          // Mark integration as inactive in quickbooks_integrations table
           await db
             .update(quickbooksIntegrationsModel)
             .set({
@@ -234,6 +309,23 @@ export class QuickBooksService {
               updatedAt: new Date(),
             })
             .where(eq(quickbooksIntegrationsModel.id, integration.id));
+
+          // Also update integrations table
+          const existingIntegrationsRecord = await integrationsService.checkIntegration(
+            integration.userId,
+            "quickbooks"
+          );
+
+          if (existingIntegrationsRecord) {
+            const metadata = existingIntegrationsRecord.metadata || {};
+            await integrationsService.updateIntegration(existingIntegrationsRecord.id, {
+              status: "disconnected",
+              metadata: {
+                ...metadata,
+                isActive: false,
+              },
+            });
+          }
 
           throw new BadRequestError(
             "QuickBooks connection expired. Please reconnect your QuickBooks account in Settings.",
@@ -667,6 +759,7 @@ export class QuickBooksService {
   // Disconnect integration
   async disconnectIntegration(userId: number): Promise<void> {
     try {
+      // Update quickbooks_integrations table
       await db
         .update(quickbooksIntegrationsModel)
         .set({
@@ -674,6 +767,23 @@ export class QuickBooksService {
           updatedAt: new Date(),
         })
         .where(eq(quickbooksIntegrationsModel.userId, userId));
+
+      // Also update integrations table
+      const existingIntegrationsRecord = await integrationsService.checkIntegration(
+        userId,
+        "quickbooks"
+      );
+
+      if (existingIntegrationsRecord) {
+        const metadata = existingIntegrationsRecord.metadata || {};
+        await integrationsService.updateIntegration(existingIntegrationsRecord.id, {
+          status: "disconnected",
+          metadata: {
+            ...metadata,
+            isActive: false,
+          },
+        });
+      }
     } catch (error: any) {
       console.error("Error disconnecting QuickBooks integration:", error);
       throw new InternalServerError(

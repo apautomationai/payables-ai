@@ -20,6 +20,7 @@ import uploadRoutes from "@/routes/upload.routes";
 import invoiceRoutes from "@/routes/invoice.routes";
 import quickbooksRoutes from "@/routes/quickbooks.routes";
 import processorRoutes from "@/routes/processor.routes";
+import subscriptionRoutes from "@/routes/subscription.routes";
 
 const app = express();
 
@@ -33,6 +34,10 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Special handling for Stripe webhooks - must come before express.json()
+app.use('/api/v1/subscription/webhook', express.raw({ type: 'application/json' }));
+
+app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
@@ -49,6 +54,7 @@ app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/invoice", invoiceRoutes);
 app.use("/api/v1/quickbooks", quickbooksRoutes);
 app.use("/api/v1/processor", processorRoutes);
+app.use("/api/v1/subscription", subscriptionRoutes);
 
 // Apply error handlers
 app.use(notFoundHandler);

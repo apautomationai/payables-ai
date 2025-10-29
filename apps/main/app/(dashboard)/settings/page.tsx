@@ -1,4 +1,5 @@
 import React, { Suspense } from "react";
+import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import SettingsView from "@/components/settings/settings-view";
 import client from "@/lib/fetch-client";
 import {
@@ -18,8 +19,8 @@ async function getIntegrations(): Promise<any[]> {
   }
 }
 
-// UPDATED: The entire props object is typed as 'any' to bypass the build error.
-export default async function SettingsPage(props: any) {
+// Settings Content Component
+async function SettingsContent(props: any) {
   // Destructure searchParams from the props object
   const { searchParams } = props;
 
@@ -34,6 +35,15 @@ export default async function SettingsPage(props: any) {
         updateStartTimeAction={updateStartTimeAction}
       />
     </Suspense>
+  );
+}
+
+// UPDATED: The entire props object is typed as 'any' to bypass the build error.
+export default function SettingsPage(props: any) {
+  return (
+    <SubscriptionGuard requiresAccess={true} loadingType="skeleton">
+      <SettingsContent {...props} />
+    </SubscriptionGuard>
   );
 }
 

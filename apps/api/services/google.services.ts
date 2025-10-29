@@ -176,7 +176,7 @@ export class GoogleServices {
         .from(attachmentsModel)
         .where(eq(attachmentsModel.userId, userId));
       const totalAttachments = attachmentCount.count;
-      return {attachments, totalAttachments};
+      return { attachments, totalAttachments };
     } catch (error: any) {
       const result = {
         success: false,

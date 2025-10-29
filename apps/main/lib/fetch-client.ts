@@ -1,8 +1,6 @@
 // A wrapper around the native fetch API to provide a more convenient interface
 // and centralize API logic, similar to an Axios instance.
 
-import { cookies } from "next/headers";
-
 // 1. Define the base URL for the API.
 const BASE_URL: string | undefined = process.env.NEXT_PUBLIC_API_URL;
 
@@ -20,6 +18,24 @@ export interface ApiFetchOptions extends RequestInit {
 // Narrow route type for readability
 type Route = string;
 
+// Helper function to get token from cookies (client-side compatible)
+function getTokenFromCookies(): string | null {
+  if (typeof window === 'undefined') {
+    // Server-side: return null, let server components handle auth
+    return null;
+  }
+
+  // Client-side: read from document.cookie
+  const cookies = document.cookie.split(';');
+  for (let cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === 'token' && value) {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
 // 2. Define a generic request function that handles the core fetch logic.
 const request = async <T = unknown>(
   route: Route,
@@ -29,9 +45,8 @@ const request = async <T = unknown>(
     throw new Error("Base URL is not defined in NEXT_PUBLIC_API_URL");
   }
 
-  // Server-side: read cookies via next/headers
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value || null;
+  // Get token from cookies (works both client and server side)
+  const token = getTokenFromCookies();
 
   // Initialize headers if they don't exist in options
   let headers: Headers;

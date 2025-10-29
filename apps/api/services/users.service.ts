@@ -9,6 +9,7 @@ import {
   InternalServerError,
   NotFoundError,
 } from "@/helpers/errors";
+import { RegistrationService } from "./registration.service";
 
 type User = InferSelectModel<typeof usersModel>;
 
@@ -68,6 +69,15 @@ export class UserServices {
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
+
+      // Assign subscription to user (with error handling to not break registration)
+      try {
+        await RegistrationService.assignSubscriptionToUser(createdUser.id);
+      } catch (subscriptionError: any) {
+        // Log the error but don't fail the registration
+        console.error(`Subscription assignment failed for user ${createdUser.id}:`, subscriptionError);
+        // Note: In production, you might want to add this to a retry queue
+      }
 
       // Issue JWT
       const token = signJwt({ sub: createdUser.id, email: createdUser.email });

@@ -7,213 +7,91 @@ import type { SubscriptionStatus } from '@/lib/types';
 
 interface SubscriptionGuardProps {
     children: React.ReactNode;
-    requiresAccess?: boolean; // If true, blocks incomplete users
-    loadingType?: 'fullscreen' | 'skeleton'; // Type of loading state to show
+    requiresAccess?: boolean;
+    loadingType?: 'fullscreen' | 'skeleton';
 }
 
 export function SubscriptionGuard({ children, requiresAccess = true, loadingType = 'fullscreen' }: SubscriptionGuardProps) {
     const [isChecking, setIsChecking] = useState(true);
     const [hasAccess, setHasAccess] = useState(false);
-    const [loadingMessage, setLoadingMessage] = useState('Verifying your subscription status...');
     const router = useRouter();
 
-    useEffect(() => {
-        checkSubscriptionAccess();
+    const hasValidSubscription = (subscription: SubscriptionStatus): boolean => {
+        if (!subscription) return false;
 
-        // Check for payment success parameter and refresh if present
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('payment_success') === 'true') {
-            // Remove the parameter from URL
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, '', newUrl);
-
-            // Force a fresh check after a short delay to allow webhook processing
-            setTimeout(() => {
-                console.log('Payment success detected, refreshing subscription status...');
-                checkSubscriptionAccess();
-            }, 2000);
-
-            // Also try refreshing multiple times to ensure webhook has processed
-            setTimeout(() => {
-                console.log('Second refresh attempt after payment...');
-                checkSubscriptionAccess();
-            }, 5000);
+        // Free tier has access
+        if (subscription.tier === 'free') {
+            return true;
         }
 
-        // Add window focus listener to refresh subscription status when user returns
-        const handleWindowFocus = () => {
-            console.log('Window focused, checking if subscription status needs refresh...');
-            // Only refresh if we don't currently have access
-            if (!hasAccess && !isChecking) {
-                console.log('Refreshing subscription status on window focus...');
-                checkSubscriptionAccess();
-            }
-        };
+        // Active subscription has access
+        if (subscription.status === 'active') {
+            return true;
+        }
 
-        window.addEventListener('focus', handleWindowFocus);
+        // Trialing subscription has access
+        if (subscription.status === 'trialing') {
+            return true;
+        }
 
-        // Timeout fallback - if checking takes too long, redirect to profile
-        const timeout = setTimeout(() => {
-            if (isChecking) {
-                console.warn('Subscription check timed out, redirecting to profile');
-                setLoadingMessage('Connection timeout, redirecting...');
-                setTimeout(() => {
-                    router.replace('/profile?tab=subscription');
-                }, 1000);
-            }
-        }, 10000); // 10 second timeout
+        // User with payment method but incomplete status (webhook processing)
+        if (subscription.hasPaymentMethod && subscription.status === 'incomplete') {
+            return true;
+        }
 
-        return () => {
-            clearTimeout(timeout);
-            window.removeEventListener('focus', handleWindowFocus);
-        };
-    }, []);
+        return false;
+    };
 
-    const checkSubscriptionAccess = async () => {
+    const checkAccess = async () => {
         try {
             setIsChecking(true);
-            setLoadingMessage('Verifying your subscription status...');
 
-            // Add a small delay to show loading state (optional)
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // If access is not required, grant immediately
+            if (!requiresAccess) {
+                setHasAccess(true);
+                return;
+            }
 
-            // Update loading message
-            setLoadingMessage('Checking access permissions...');
-
-            // Get subscription status with cache busting
-            const cacheBuster = Date.now();
-            const response = await client.get(`api/v1/subscription/status?_t=${cacheBuster}`);
+            // Get subscription status
+            const response = await client.get(`api/v1/subscription/status?_t=${Date.now()}`);
             const subscription = (response as any)?.data;
 
-            console.log('Subscription status received:', {
-                tier: subscription.tier,
-                status: subscription.status,
-                trialEnd: subscription.trialEnd,
-                requiresPaymentSetup: subscription.requiresPaymentSetup,
-                hasPaymentMethod: subscription.hasPaymentMethod,
-                fullResponse: subscription
-            });
+            console.log('🔍 Subscription check:', subscription);
 
-            // Debug: Log the exact API response
-            console.log('Full API response:', response);
+            // Determine access based on subscription
+            const access = hasValidSubscription(subscription);
 
-            if (!requiresAccess) {
-                // If access is not required, always allow
+            if (access) {
+                console.log('✅ Access granted');
                 setHasAccess(true);
-                setIsChecking(false);
-                return;
-            }
-
-            // Check if user has access
-            const userHasAccess = checkUserAccess(subscription);
-
-            // Debug: Check for force access parameter
-            const urlParams = new URLSearchParams(window.location.search);
-            const forceAccess = urlParams.get('force_access') === 'true';
-
-            if (forceAccess) {
-                console.log('🚨 FORCE ACCESS ENABLED - Bypassing access check');
-                setHasAccess(true);
-                setIsChecking(false);
-                return;
-            }
-
-            // TEMPORARY: Auto-grant access for trialing users
-            if (subscription.status === 'trialing') {
-                console.log('🚨 TEMPORARY FIX: Auto-granting access for trialing users');
-                setHasAccess(true);
-                setIsChecking(false);
-                return;
-            }
-
-            if (!userHasAccess) {
-                console.log('❌ User does not have access, redirecting to payment setup');
-                console.log('❌ Subscription details that failed access check:', {
-                    tier: subscription.tier,
-                    status: subscription.status,
-                    trialEnd: subscription.trialEnd,
-                    trialValid: subscription.trialEnd ? new Date() < new Date(subscription.trialEnd) : false
-                });
-                setLoadingMessage('Redirecting to payment setup...');
-                // Small delay before redirect for better UX
-                await new Promise(resolve => setTimeout(resolve, 500));
-                // Redirect to payment setup
+            } else {
+                console.log('❌ Access denied, redirecting to subscription setup');
                 router.replace('/profile?tab=subscription&setup=required');
+            }
+
+        } catch (error) {
+            console.error('❌ Subscription check failed:', error);
+
+            // Check if user just completed payment
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === 'true') {
+                console.log('✅ Payment success detected, granting temporary access');
+                setHasAccess(true);
                 return;
             }
 
-            console.log('✅ Access granted! User can proceed.');
-
-            setHasAccess(true);
-        } catch (error: any) {
-            console.error('Error checking subscription access:', error);
-
-            if (requiresAccess) {
-                // If we can't check subscription and access is required, redirect to profile
-                router.replace('/profile?tab=subscription');
-                return;
-            }
-
-            // If access is not required, allow through
-            setHasAccess(true);
+            // On error, redirect to subscription page
+            router.replace('/profile?tab=subscription');
         } finally {
             setIsChecking(false);
         }
     };
 
-    const checkUserAccess = (subscription: SubscriptionStatus): boolean => {
-        console.log('🔍 Checking user access with subscription:', subscription);
+    useEffect(() => {
+        checkAccess();
+    }, []);
 
-        // Free tier always has access
-        if (subscription.tier === 'free') {
-            console.log('✅ Access granted: Free tier');
-            return true;
-        }
-
-        // Check if subscription is active
-        if (subscription.status === 'active') {
-            console.log('✅ Access granted: Active subscription');
-            return true;
-        }
-
-        // TEMPORARY FIX: Grant access to ALL trialing users regardless of trial end date
-        if (subscription.status === 'trialing') {
-            console.log('✅ Access granted: Trialing status (temporary fix)');
-            console.log('🔍 Trial details:', {
-                status: subscription.status,
-                trialEnd: subscription.trialEnd,
-                hasPaymentMethod: subscription.hasPaymentMethod,
-                requiresPaymentSetup: subscription.requiresPaymentSetup
-            });
-            return true;
-        }
-
-        // Check if in trial period (original logic - keeping for reference)
-        // if (subscription.status === 'trialing' && subscription.trialEnd) {
-        //     const trialValid = new Date() < new Date(subscription.trialEnd);
-        //     console.log('Trial status:', { status: subscription.status, trialEnd: subscription.trialEnd, trialValid });
-        //     if (trialValid) {
-        //         console.log('Access granted: Valid trial period');
-        //         return true;
-        //     }
-        // }
-
-        // Incomplete subscriptions have no access until payment is set up
-        if (subscription.status === 'incomplete') {
-            console.log('❌ Access denied: Incomplete subscription');
-            return false;
-        }
-
-        console.log('❌ Access denied: No matching conditions');
-        console.log('🔍 Subscription details:', {
-            tier: subscription.tier,
-            status: subscription.status,
-            trialEnd: subscription.trialEnd
-        });
-        return false;
-    };
-
-    // Show loading state while checking
+    // Show loading while checking
     if (isChecking) {
         if (loadingType === 'skeleton') {
             return (
@@ -237,34 +115,20 @@ export function SubscriptionGuard({ children, requiresAccess = true, loadingType
         }
 
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gradient-to-br transition-colors duration-300">
-                <div className="text-center space-y-4 p-8 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-xl dark:shadow-2xl">
-                    {/* Loading Spinner */}
-                    <div className="relative">
-                        {/* Glow effect for dark mode */}
-                        <div className="absolute inset-0 rounded-full h-12 w-12 bg-blue-500/20 dark:bg-blue-400/30 blur-md animate-pulse mx-auto"></div>
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-600 border-t-primary dark:border-t-primary mx-auto relative z-10"></div>
-                        <div className="absolute inset-0 rounded-full h-12 w-12 border-4 border-transparent border-t-primary dark:border-t-primary animate-spin mx-auto z-10" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
-                    </div>
-
-
-
-                    {/* Loading Dots Animation */}
-                    <div className="flex justify-center space-x-1">
-                        <div className="w-2 h-2 bg-primary dark:bg-primary rounded-full animate-bounce shadow-sm dark:shadow-blue-400/50" style={{ animationDelay: '0ms' }}></div>
-                        <div className="w-2 h-2 bg-primary dark:bg-primary rounded-full animate-bounce shadow-sm dark:shadow-blue-400/50" style={{ animationDelay: '150ms' }}></div>
-                        <div className="w-2 h-2 bg-primary dark:bg-primary rounded-full animate-bounce shadow-sm dark:shadow-blue-400/50" style={{ animationDelay: '300ms' }}></div>
-                    </div>
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="text-center space-y-4 p-8 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/50 dark:border-gray-700/50 shadow-xl">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-gray-200 dark:border-gray-600 border-t-blue-600 mx-auto"></div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Verifying access...</p>
                 </div>
             </div>
         );
     }
 
-    // If access is required but user doesn't have it, don't render children
+    // Block access if required but not granted
     if (requiresAccess && !hasAccess) {
         return null;
     }
 
-    // Render children if access is granted or not required
+    // Render children
     return <>{children}</>;
 }

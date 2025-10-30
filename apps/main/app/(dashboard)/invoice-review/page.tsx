@@ -63,7 +63,7 @@ async function InvoiceReviewContent({
   searchParams: any;
 }) {
 
-  const { page } = await searchParams;
+  const {page, tab} = await searchParams;
 
   const currentPage = Number(page);
 
@@ -110,6 +110,7 @@ async function InvoiceReviewContent({
       initialSelectedInvoice={initialSelectedInvoice}
       initialInvoiceDetails={initialInvoiceDetails}
       initialInvoiceCache={initialInvoiceCache}
+      activeTab={tab}
     />
   );
 }

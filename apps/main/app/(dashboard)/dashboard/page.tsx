@@ -1,3 +1,4 @@
+
 import React from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
 import { SubscriptionGuard } from "@/components/auth/subscription-guard";

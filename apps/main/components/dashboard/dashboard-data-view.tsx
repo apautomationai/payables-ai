@@ -88,6 +88,7 @@ import StatsCards from "./stats-cards";
 import InvoiceList from "./invoice-list";
 import AttachmentViewer from "./attachment-viewer";
 import InvoiceDetailsComponent from "@/components/dashboard/invoice-list-details";
+import NewInvoiceButton from "./new-invoice-button";
 
 interface DashboardDataViewProps {
   invoices: InvoiceListItem[];
@@ -113,12 +114,13 @@ export default function DashboardDataView({
         </div>
         <div className="flex items-center gap-2">
           
-          <Button size="sm" asChild>
+          <NewInvoiceButton />
+          {/* <Button size="sm" asChild>
             <Link href="/invoice-review">
               <Plus className="h-4 w-4 mr-2" />
               New Invoice
             </Link>
-          </Button>
+          </Button> */}
         </div>
       </header>
 

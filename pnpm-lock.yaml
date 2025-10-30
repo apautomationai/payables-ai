@@ -39,6 +39,9 @@ importers:
       '@aws-sdk/s3-request-presigner':
         specifier: ^3.901.0
         version: 3.901.0
+      '@thednp/dommatrix':
+        specifier: ^2.0.12
+        version: 2.0.12
       axios:
         specifier: ^1.12.2
         version: 1.12.2
@@ -73,8 +76,8 @@ importers:
         specifier: ^10.3.0
         version: 10.3.0
       googleapis:
-        specifier: ^163.0.0
-        version: 163.0.0
+        specifier: ^164.1.0
+        version: 164.1.0
       jsonwebtoken:
         specifier: ^9.0.2
         version: 9.0.2
@@ -114,6 +117,9 @@ importers:
       postgres:
         specifier: ^3.4.7
         version: 3.4.7
+      stripe:
+        specifier: ^19.1.0
+        version: 19.1.0(@types/node@20.19.17)
       tesseract.js:
         specifier: ^6.0.1
         version: 6.0.1
@@ -172,6 +178,9 @@ importers:
       '@types/pino':
         specifier: ^7.0.5
         version: 7.0.5
+      '@types/stripe':
+        specifier: ^8.0.417
+        version: 8.0.417(@types/node@20.19.17)
       '@typescript-eslint/eslint-plugin':
         specifier: ^6.19.1
         version: 6.21.0(@typescript-eslint/parser@6.21.0(eslint@8.57.1)(typescript@5.9.2))(eslint@8.57.1)(typescript@5.9.2)
@@ -2481,6 +2490,10 @@ packages:
   '@tailwindcss/postcss@4.1.13':
     resolution: {integrity: sha512-HLgx6YSFKJT7rJqh9oJs/TkBFhxuMOfUKSBEPYwV+t78POOBsdQ7crhZLzwcH3T0UyUuOzU/GK5pk5eKr3wCiQ==}
 
+  '@thednp/dommatrix@2.0.12':
+    resolution: {integrity: sha512-eOshhlSShBXLfrMQqqhA450TppJXhKriaQdN43mmniOCMn9sD60QKF1Axsj7bKl339WH058LuGFS6H84njYH5w==}
+    engines: {node: '>=20', pnpm: '>=8.6.0'}
+
   '@tootallnate/quickjs-emscripten@0.23.0':
     resolution: {integrity: sha512-C5Mc6rdnsaJDjO3UpGW/CQTHtCKaYlScZTly4JIu97Jxo/odCiH0ITnDXSJPTOrEKk/ycSZ0AOgTmkDtkOsvIA==}
 
@@ -2631,6 +2644,10 @@ packages:
 
   '@types/serve-static@1.15.8':
     resolution: {integrity: sha512-roei0UY3LhpOJvjbIP6ZZFngyLKl5dskOtDhxY5THRSpO+ZI+nzJ+m5yUMzGrp89YRa7lvknKkMYjqQFGwA7Sg==}
+
+  '@types/stripe@8.0.417':
+    resolution: {integrity: sha512-PTuqskh9YKNENnOHGVJBm4sM0zE8B1jZw1JIskuGAPkMB+OH236QeN8scclhYGPA4nG6zTtPXgwpXdp+HPDTVw==}
+    deprecated: This is a stub types definition. stripe provides its own type definitions, so you do not need this installed.
 
   '@types/through@0.0.33':
     resolution: {integrity: sha512-HsJ+z3QuETzP3cswwtzt2vEIiHBk/dCcHGhbmG5X3ecnwFD/lPrMpliGXxSCg03L9AhrdwA4Oz/qfspkDW+xGQ==}
@@ -3927,8 +3944,8 @@ packages:
     resolution: {integrity: sha512-66if47It7y+Sab3HMkwEXx1kCq9qUC9px8ZXoj1CMrmLmUw81GpbnsNlXnlyZyGbGPGcj+tDD9XsZ23m7GLaJQ==}
     engines: {node: '>=18.0.0'}
 
-  googleapis@163.0.0:
-    resolution: {integrity: sha512-5c94aCqw5awp2YbWXXlDJT5CnDGr7F/Aw43XHKFb5vQI0CcoZgx9bSImdIAYst2mOIWtnP62+HBBrEw15budNw==}
+  googleapis@164.1.0:
+    resolution: {integrity: sha512-dIN768H8so9qGucFtjYPBZJ+OCEgDi/xYyvYQHniPL1ZCYvrRDBTmtbjVjKCPG1CuOhG4CKHZDXiFe6QZ2qBeQ==}
     engines: {node: '>=18'}
 
   gopd@1.2.0:
@@ -5301,6 +5318,15 @@ packages:
   strip-json-comments@5.0.3:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
+
+  stripe@19.1.0:
+    resolution: {integrity: sha512-FjgIiE98dMMTNssfdjMvFdD4eZyEzdWAOwPYqzhPRNZeg9ggFWlPXmX1iJKD5pPIwZBaPlC3SayQQkwsPo6/YQ==}
+    engines: {node: '>=16'}
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   strnum@2.1.1:
     resolution: {integrity: sha512-7ZvoFTiCnGxBtDqJ//Cu6fWtZtc7Y3x+QOirG15wztbdngGSkht27o2pyGWrVy0b4WAy3jbKmnoK6g5VlVNUUw==}
@@ -8401,6 +8427,8 @@ snapshots:
       postcss: 8.5.6
       tailwindcss: 4.1.13
 
+  '@thednp/dommatrix@2.0.12': {}
+
   '@tootallnate/quickjs-emscripten@0.23.0': {}
 
   '@tsconfig/node10@1.0.11': {}
@@ -8610,6 +8638,12 @@ snapshots:
       '@types/http-errors': 2.0.5
       '@types/node': 20.19.17
       '@types/send': 0.17.5
+
+  '@types/stripe@8.0.417(@types/node@20.19.17)':
+    dependencies:
+      stripe: 19.1.0(@types/node@20.19.17)
+    transitivePeerDependencies:
+      - '@types/node'
 
   '@types/through@0.0.33':
     dependencies:
@@ -10165,7 +10199,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  googleapis@163.0.0:
+  googleapis@164.1.0:
     dependencies:
       google-auth-library: 10.3.0
       googleapis-common: 8.0.0
@@ -11643,6 +11677,12 @@ snapshots:
   strip-json-comments@3.1.1: {}
 
   strip-json-comments@5.0.3: {}
+
+  stripe@19.1.0(@types/node@20.19.17):
+    dependencies:
+      qs: 6.14.0
+    optionalDependencies:
+      '@types/node': 20.19.17
 
   strnum@2.1.1: {}
 

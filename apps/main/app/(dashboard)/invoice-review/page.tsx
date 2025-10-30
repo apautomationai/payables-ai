@@ -1,5 +1,6 @@
 import React from "react";
 import client from "@/lib/fetch-client";
+import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import InvoiceReviewClient from "@/components/invoice-process/invoice-review-client";
 import type { Attachment, InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
 
@@ -45,7 +46,7 @@ async function getInvoices(page: number) {
 
 async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | null> {
   try {
-    const response = await client.get<{data: InvoiceDetails}>(`api/v1/invoice/invoices/${invoiceId}`, {
+    const response = await client.get<{ data: InvoiceDetails }>(`api/v1/invoice/invoices/${invoiceId}`, {
       cache: "no-store",
     });
     return response.data;
@@ -55,8 +56,8 @@ async function getInvoiceDetails(invoiceId: number): Promise<InvoiceDetails | nu
   }
 }
 
-// --- Page Component ---
-export default async function InvoiceReviewPage({
+// --- Invoice Review Content Component ---
+async function InvoiceReviewContent({
   searchParams,
 }: {
   searchParams: any;
@@ -70,13 +71,13 @@ export default async function InvoiceReviewPage({
   const invoicesResult = await getInvoices(currentPage);
 
   // UPDATED: Provide default empty values if the API call fails, instead of showing an error.
-  const { invoices, pagination: invoicesPagination } = invoicesResult.data || { 
-    invoices: [], 
-    pagination: { totalPages: 1 } 
+  const { invoices, pagination: invoicesPagination } = invoicesResult.data || {
+    invoices: [],
+    pagination: { totalPages: 1 }
   };
-  
-  const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || { 
-    attachments: [], 
+
+  const { attachments, pagination: attachmentsPagination } = attachmentsResult.data || {
+    attachments: [],
     pagination: { totalPages: 1 }
   };
 
@@ -90,9 +91,9 @@ export default async function InvoiceReviewPage({
       initialInvoiceCache[details.id] = details;
     }
   });
-  
+
   const initialSelectedInvoice = invoices.length > 0 ? invoices[0] : null;
-  
+
   const initialInvoiceDetails = initialSelectedInvoice
     ? initialInvoiceCache[initialSelectedInvoice.id] || null
     : null;
@@ -114,3 +115,15 @@ export default async function InvoiceReviewPage({
   );
 }
 
+// --- Page Component ---
+export default function InvoiceReviewPage({
+  searchParams,
+}: {
+  searchParams: any;
+}) {
+  return (
+    <SubscriptionGuard requiresAccess={true}>
+      <InvoiceReviewContent searchParams={searchParams} />
+    </SubscriptionGuard>
+  );
+}

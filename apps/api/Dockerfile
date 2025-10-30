@@ -1,8 +1,8 @@
 # Multi-stage build for optimized Express.js TypeScript application with pnpm
 
 # Stage 1: Base image with pnpm
-FROM public.ecr.aws/docker/library/node:22-alpine AS base
 # FROM node:22-alpine AS base
+FROM public.ecr.aws/docker/library/node:22-alpine AS base
 RUN corepack enable pnpm
 WORKDIR /app
 

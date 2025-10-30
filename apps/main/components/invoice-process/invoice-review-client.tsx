@@ -143,9 +143,18 @@ export default function InvoiceReviewClient({
   const handleSaveChanges = async () => {
     if (!invoiceDetails) return;
     try {
+      // If invoice was approved or rejected, reset status to pending when editing
+      const dataToSave = {
+        ...invoiceDetails,
+        ...(invoiceDetails.status === 'approved' || invoiceDetails.status === 'rejected'
+          ? { status: 'pending' }
+          : {}
+        )
+      };
+
       const response = await client.patch(
         `/api/v1/invoice/${invoiceDetails.id}`,
-        invoiceDetails
+        dataToSave
       );
 
       // Access the data property from the response
@@ -158,7 +167,13 @@ export default function InvoiceReviewClient({
         [updatedData?.id]: updatedData
       }));
 
-      toast.success("Changes saved successfully");
+      // Show appropriate success message
+      const statusChanged = invoiceDetails.status !== updatedData?.status;
+      const message = statusChanged
+        ? "Changes saved successfully. Invoice status reset to pending for review."
+        : "Changes saved successfully";
+
+      toast.success(message);
       setIsEditing(false);
       router.refresh();
     } catch (err) {

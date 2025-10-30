@@ -274,11 +274,9 @@ export default function ConfirmationModals({
         </>
       ) : (
         <>
-          {!isInvoiceFinalized && (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
-              Edit
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
+            Edit
+          </Button>
           {!isInvoiceFinalized && (
             <div className="flex gap-2">
               <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
@@ -380,7 +378,7 @@ export default function ConfirmationModals({
             </div>
           )}
           {isInvoiceFinalized && (
-            <div className="flex items-center justify-center w-full">
+            <div className="flex items-center justify-end">
               <div className={`px-4 py-2 rounded-full text-sm font-medium ${invoiceDetails.status === "approved"
                 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                 : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"

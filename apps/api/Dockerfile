@@ -8,25 +8,26 @@ WORKDIR /app
 
 # Stage 2: Dependencies installation
 FROM base AS deps
-COPY package.json package.json
 
-# Install dependencies with frozen lockfile for reproducible builds
+COPY package.json ./
+
 RUN pnpm install
 
 # Stage 3: Build stage
 FROM base AS builder
-COPY --from=deps /app/node_modules ./node_modules
+WORKDIR /app
+COPY --from=deps /app/node_modules node_modules
 
 # Copy source code
-COPY . .
 COPY package.json tsconfig.json ./
 
+COPY . .
+
 # Build the application
-WORKDIR /app
-RUN pnpm run build
+RUN pnpm build
 
 # Stage 4: Production image
-FROM node:22-alpine AS runner
+FROM base AS runner
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 appgroup

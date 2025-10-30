@@ -4,7 +4,7 @@ import { SUBSCRIPTION_CONFIG } from '../config/subscription.config';
 
 // Initialize Stripe with API key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2025-09-30.clover',
+    apiVersion: process.env.STRIPE_API_VERSION as Stripe.LatestApiVersion | undefined,
 });
 
 export class WebhookService {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@workspace/ui/components/button";
 import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
@@ -48,16 +49,37 @@ export default function ConfirmationModals({
   onApprovalSuccess,
   onInvoiceDetailsUpdate,
 }: ConfirmationModalsProps) {
+  const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
   const [isRejecting, setIsRejecting] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
 
   const handleSaveChanges = async () => {
     setIsSaving(true);
     await onSave();
     setIsSaving(false);
+  };
+
+  const checkQuickBooksIntegration = async (): Promise<boolean> => {
+    try {
+      const response: any = await client.get('/api/v1/quickbooks/status');
+      return response?.data?.connected === true;
+    } catch (error) {
+      console.error('Error checking QuickBooks integration:', error);
+      return false;
+    }
+  };
+
+  const handleApproveClick = async () => {
+    const isConnected = await checkQuickBooksIntegration();
+    if (!isConnected) {
+      setIsQuickBooksErrorOpen(true);
+      return;
+    }
+    setIsDialogOpen(true);
   };
 
   const handleConfirmApproval = async () => {
@@ -132,81 +154,94 @@ export default function ConfirmationModals({
           }
         }
 
-        // Step 4: Search for vendor and create bill
-        const vendorName = invoiceDetails.vendorName;
-        if (vendorName) {
-          const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/search-vendors", {
-            params: { searchTerm: vendorName }
-          });
+        // Step 4: Hierarchical vendor search (email → phone → address → name)
+        const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/hierarchical-vendor-search", {
+          params: {
+            email: invoiceDetails.vendorEmail,
+            phone: invoiceDetails.vendorPhone,
+            address: invoiceDetails.vendorAddress,
+            name: invoiceDetails.vendorName
+          }
+        });
 
-          let vendor = null;
-          if (vendorSearchResponse.success && vendorSearchResponse.data.results.length > 0) {
-            // Found vendor with 95%+ match
-            vendor = vendorSearchResponse.data.results[0];
-          } else {
-            // No vendor found with 95%+ match, create new vendor
+        let vendor = null;
+        if (vendorSearchResponse.success && vendorSearchResponse.data.found) {
+          // Found vendor using hierarchical search
+          vendor = vendorSearchResponse.data.vendor;
+          console.log(`Vendor found by ${vendorSearchResponse.data.matchType}:`, vendor.DisplayName || vendor.Name);
+        } else {
+          // No vendor found, create new vendor with all available information
+          const vendorName = invoiceDetails.vendorName;
+          if (vendorName) {
             const createVendorResponse: any = await client.post("/api/v1/quickbooks/create-vendor", {
-              name: vendorName
+              name: vendorName,
+              email: invoiceDetails.vendorEmail,
+              phone: invoiceDetails.vendorPhone,
+              address: invoiceDetails.vendorAddress
             });
             // Handle create vendor response format: data.Vendor
             vendor = createVendorResponse.data?.Vendor || createVendorResponse.data;
-          }
-
-          if (vendor) {
-
-            // Step 4: Create bill in QuickBooks using processed line items
-            const billLineItems = processedItems.map((item: any) => ({
-              amount: parseFloat(item.dbLineItem.amount) || 0,
-              description: item.dbLineItem.description || item.dbLineItem.item_name,
-              itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
-            }));
-
-            // Calculate discount by comparing popup total with line items sum
-            const totalAmountFromPopup = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
-            const lineItemsSum = billLineItems.reduce((sum, item) => sum + item.amount, 0);
-            const discountAmount = lineItemsSum - totalAmountFromPopup;
-
-            // Extract vendor ID (handle both search and create response formats)
-            const vendorId = vendor.Id || vendor.id;
-
-            await client.post("/api/v1/quickbooks/create-bill", {
-              vendorId: vendorId,
-              lineItems: billLineItems,
-              totalAmount: totalAmountFromPopup,
-              dueDate: invoiceDetails.dueDate,
-              invoiceDate: invoiceDetails.invoiceDate,
-              // Add discount if there's a positive difference (line items > total)
-              ...(discountAmount > 0 && {
-                discountAmount: discountAmount,
-                discountDescription: "Invoice Discount"
-              })
-            });
-
-            // Step 5: Update invoice status to approved
-            const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
-              status: "approved"
-            });
-
-            // Update local invoice details state
-            if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
-              const updatedDetails = { ...invoiceDetails, status: "approved" };
-              onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
-            }
-
-            toast.success("Invoice approved and bill created in QuickBooks successfully!");
-
-            // Close the dialog first
-            setIsDialogOpen(false);
-
-            // Call success callback to close popup and refetch
-            if (onApprovalSuccess) {
-              onApprovalSuccess();
-            }
+            console.log("Created new vendor with full details:", vendor.DisplayName || vendor.Name);
           } else {
-            throw new Error("Failed to find or create vendor in QuickBooks");
+            throw new Error("No vendor information available to create vendor");
           }
-        } else {
-          throw new Error("Vendor name not found in invoice details");
+        }
+
+        if (!vendor) {
+          throw new Error("Failed to find or create vendor in QuickBooks");
+        }
+
+        // Step 5: Create bill in QuickBooks using processed line items
+        const billLineItems = processedItems.map((item: any) => ({
+          amount: parseFloat(item.dbLineItem.amount) || 0,
+          description: item.dbLineItem.description || item.dbLineItem.item_name,
+          itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
+        }));
+
+        // Calculate discount by comparing popup total with line items sum
+        const totalAmountFromPopup = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
+        const lineItemsSum = billLineItems.reduce((sum, item) => sum + item.amount, 0);
+        const discountAmount = lineItemsSum - totalAmountFromPopup;
+
+        // Extract vendor ID (handle both search and create response formats)
+        const vendorId = vendor.Id || vendor.id;
+
+        // Extract tax amount if available
+        const totalTaxAmount = parseFloat(invoiceDetails?.totalTax ?? "0") || 0;
+
+        await client.post("/api/v1/quickbooks/create-bill", {
+          vendorId: vendorId,
+          lineItems: billLineItems,
+          totalAmount: totalAmountFromPopup,
+          ...(totalTaxAmount > 0 && { totalTax: totalTaxAmount }),
+          dueDate: invoiceDetails.dueDate,
+          invoiceDate: invoiceDetails.invoiceDate,
+          // Add discount if there's a positive difference (line items > total)
+          ...(discountAmount > 0 && {
+            discountAmount: discountAmount,
+            discountDescription: "Invoice Discount"
+          })
+        });
+
+        // Step 6: Update invoice status to approved
+        const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+          status: "approved"
+        });
+
+        // Update local invoice details state
+        if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
+          const updatedDetails = { ...invoiceDetails, status: "approved" };
+          onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
+        }
+
+        toast.success("Invoice approved and bill created in QuickBooks successfully!");
+
+        // Close the dialog first
+        setIsDialogOpen(false);
+
+        // Call success callback to close popup and refetch
+        if (onApprovalSuccess) {
+          onApprovalSuccess();
         }
       } else {
         throw new Error("No line items found for this invoice");
@@ -309,14 +344,13 @@ export default function ConfirmationModals({
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+              <Button
+                onClick={handleApproveClick}
+                variant="default"
+              >
+                Approve
+              </Button>
               <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    variant="default"
-                  >
-                    Approve
-                  </Button>
-                </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Confirm Invoice Approval</DialogTitle>
@@ -389,6 +423,53 @@ export default function ConfirmationModals({
           )}
         </>
       )}
+
+      {/* QuickBooks Integration Error Dialog */}
+      <Dialog open={isQuickBooksErrorOpen} onOpenChange={setIsQuickBooksErrorOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>QuickBooks Integration Required</DialogTitle>
+            <DialogDescription>
+              To approve invoices and create bills in QuickBooks, you need to connect your QuickBooks account first.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Integration Not Connected
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>
+                      Please connect your QuickBooks account in the integrations page to enable invoice approval and bill creation.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                setIsQuickBooksErrorOpen(false);
+                router.push('/integrations');
+              }}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Go to Integrations
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

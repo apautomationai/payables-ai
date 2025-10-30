@@ -56,11 +56,15 @@ export interface InvoiceDetails {
   attachmentId: number;
   invoiceNumber: string;
   vendorName: string | null;
+  vendorAddress: string | null;
+  vendorPhone: string | null;
+  vendorEmail: string | null;
   customerName: string | null;
   invoiceDate: string | null;
   dueDate: string | null;
   totalAmount: string | null;
   currency: string | null;
+  totalTax: string | null;
   lineItems: string | null;
   costCode: string | null;
   quantity: string | null;

@@ -121,9 +121,9 @@ export class QuickBooksController {
         data: {
           connected: true,
           status: "success",
-          companyName: integration.companyName,
+          companyName: integration.metadata?.companyName || "Unknown Company",
           connectedAt: integration.createdAt,
-          lastSync: integration.lastSyncAt,
+          lastSync: integration.metadata?.lastSyncAt,
         },
       });
     } catch (error) {

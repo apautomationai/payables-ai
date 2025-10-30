@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar, boolean, text, numeric, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar, boolean, text, numeric, pgEnum, jsonb } from "drizzle-orm/pg-core"
 
 export const provider = pgEnum("provider", ['local', 'gmail', 'outlook'])
 export const status = pgEnum("status", ['pending', 'approved', 'rejected', 'failed', 'not_connected'])
@@ -70,6 +70,7 @@ export const integrations = pgTable("integrations", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 	startReading: timestamp("start_reading", { mode: 'string' }),
 	lastRead: timestamp("last_read", { mode: 'string' }).defaultNow(),
+	metadata: jsonb().default({}), // JSONB field for integration-specific data
 });
 
 export const invoices = pgTable("invoices", {
@@ -119,17 +120,4 @@ export const lineItems = pgTable("line_items", {
 	amount: numeric(),
 });
 
-export const quickbooksIntegrations = pgTable("quickbooks_integrations", {
-	id: serial().primaryKey().notNull(),
-	userId: integer("user_id").notNull(),
-	companyId: varchar("company_id", { length: 255 }).notNull(),
-	accessToken: text("access_token").notNull(),
-	refreshToken: text("refresh_token").notNull(),
-	tokenExpiresAt: timestamp("token_expires_at", { mode: 'string' }).notNull(),
-	realmId: varchar("realm_id", { length: 255 }).notNull(),
-	companyName: varchar("company_name", { length: 255 }),
-	isActive: boolean("is_active").default(true).notNull(),
-	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
-});
+

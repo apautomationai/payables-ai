@@ -87,7 +87,10 @@ export class SubscriptionService {
         }
 
         // Check if in trial period
-        if (subscription.status === SUBSCRIPTION_CONFIG.STATUS.TRIALING && subscription.trialEnd) {
+        if (subscription.status === SUBSCRIPTION_CONFIG.STATUS.TRIALING) {
+            if (!subscription.trialEnd) {
+                return true;
+            }
             return new Date() < subscription.trialEnd;
         }
 

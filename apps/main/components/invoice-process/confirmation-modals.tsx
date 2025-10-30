@@ -15,7 +15,13 @@ import {
   DialogClose,
 } from "@workspace/ui/components/dialog";
 import { InvoiceDetails } from "@/lib/types/invoice";
-import { formatLabel, renderValue } from "@/lib/utility/formatters";
+import { formatLabel, renderValue, formatDate } from "@/lib/utility/formatters";
+
+// Helper function to capitalize status
+const capitalizeStatus = (status: string | null | undefined): string => {
+  if (!status) return '';
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+};
 
 interface ConfirmationModalsProps {
   isEditing: boolean;
@@ -64,7 +70,7 @@ export default function ConfirmationModals({
         throw new Error("Invoice ID not found");
       }
 
-      const dbLineItemsResponse:any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
+      const dbLineItemsResponse: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
 
       if (dbLineItemsResponse.success && dbLineItemsResponse.data.length > 0) {
         const processedItems = [];
@@ -74,7 +80,7 @@ export default function ConfirmationModals({
           const itemName = lineItem.item_name;
 
           // Search for this specific item in QuickBooks
-          const searchResponse:any = await client.get("/api/v1/quickbooks/search-items", {
+          const searchResponse: any = await client.get("/api/v1/quickbooks/search-items", {
             params: { searchTerm: itemName }
           });
 
@@ -84,7 +90,7 @@ export default function ConfirmationModals({
             qbItem = searchResponse.data.results[0];
           } else {
             // Item not found, create new one
-            const createItemResponse:any = await client.post("/api/v1/quickbooks/create-item", {
+            const createItemResponse: any = await client.post("/api/v1/quickbooks/create-item", {
               name: itemName,
               description: lineItem.description || `${itemName} service item`,
               type: "Service",
@@ -109,7 +115,7 @@ export default function ConfirmationModals({
         let customer = null;
 
         if (customerName) {
-          const customerSearchResponse:any = await client.get("/api/v1/quickbooks/search-customers", {
+          const customerSearchResponse: any = await client.get("/api/v1/quickbooks/search-customers", {
             params: { searchTerm: customerName }
           });
 
@@ -118,7 +124,7 @@ export default function ConfirmationModals({
             customer = customerSearchResponse.data.results[0];
           } else {
             // No customer found with 95%+ match, create new customer
-            const createCustomerResponse:any = await client.post("/api/v1/quickbooks/create-customer", {
+            const createCustomerResponse: any = await client.post("/api/v1/quickbooks/create-customer", {
               name: customerName
             });
             // Handle create customer response format: data.Customer
@@ -129,7 +135,7 @@ export default function ConfirmationModals({
         // Step 4: Search for vendor and create bill
         const vendorName = invoiceDetails.vendorName;
         if (vendorName) {
-          const vendorSearchResponse:any = await client.get("/api/v1/quickbooks/search-vendors", {
+          const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/search-vendors", {
             params: { searchTerm: vendorName }
           });
 
@@ -139,7 +145,7 @@ export default function ConfirmationModals({
             vendor = vendorSearchResponse.data.results[0];
           } else {
             // No vendor found with 95%+ match, create new vendor
-            const createVendorResponse:any = await client.post("/api/v1/quickbooks/create-vendor", {
+            const createVendorResponse: any = await client.post("/api/v1/quickbooks/create-vendor", {
               name: vendorName
             });
             // Handle create vendor response format: data.Vendor
@@ -177,7 +183,7 @@ export default function ConfirmationModals({
             });
 
             // Step 5: Update invoice status to approved
-            const statusUpdateResponse:any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+            const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
               status: "approved"
             });
 
@@ -225,7 +231,7 @@ export default function ConfirmationModals({
       const invoiceId = invoiceDetails.id;
 
       // Update invoice status to rejected
-      const statusUpdateResponse:any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+      const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
         status: "rejected"
       });
 
@@ -268,11 +274,9 @@ export default function ConfirmationModals({
         </>
       ) : (
         <>
-          {!isInvoiceFinalized && (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
-              Edit
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
+            Edit
+          </Button>
           {!isInvoiceFinalized && (
             <div className="flex gap-2">
               <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
@@ -322,21 +326,40 @@ export default function ConfirmationModals({
                   </DialogHeader>
                   <div className="max-h-60 overflow-y-auto my-4 pr-2">
                     <div className="grid gap-2 text-sm">
-                      {selectedFields.map((key) => (
-                        <div
-                          key={key}
-                          className="grid grid-cols-2 gap-4 items-center"
-                        >
-                          <span className="text-muted-foreground">
-                            {formatLabel(key)}
-                          </span>
-                          <span className="font-semibold text-right truncate">
-                            {renderValue(
-                              invoiceDetails[key as keyof InvoiceDetails]
-                            )}
-                          </span>
-                        </div>
-                      ))}
+                      {selectedFields
+                        .filter((key) => {
+                          // Hide internal/system fields from the approval popup
+                          const hiddenFields = [
+                            'id',
+                            'userId',
+                            'attachmentId',
+                            'fileUrl',
+                            'fileKey',
+                            's3JsonKey',
+                            'createdAt',
+                            'updatedAt',
+                            'sourcePdfUrl'
+                          ];
+                          return !hiddenFields.includes(key);
+                        })
+                        .map((key) => (
+                          <div
+                            key={key}
+                            className="grid grid-cols-2 gap-4 items-center"
+                          >
+                            <span className="text-muted-foreground">
+                              {formatLabel(key)}
+                            </span>
+                            <span className="font-semibold text-right truncate">
+                              {key === 'status'
+                                ? capitalizeStatus(invoiceDetails[key as keyof InvoiceDetails] as string)
+                                : (key === 'invoiceDate' || key === 'dueDate')
+                                  ? formatDate(invoiceDetails[key as keyof InvoiceDetails] as string)
+                                  : renderValue(invoiceDetails[key as keyof InvoiceDetails])
+                              }
+                            </span>
+                          </div>
+                        ))}
                     </div>
                   </div>
                   <DialogFooter>
@@ -355,12 +378,12 @@ export default function ConfirmationModals({
             </div>
           )}
           {isInvoiceFinalized && (
-            <div className="flex items-center justify-center w-full">
+            <div className="flex items-center justify-end">
               <div className={`px-4 py-2 rounded-full text-sm font-medium ${invoiceDetails.status === "approved"
                 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                 : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
                 }`}>
-                {invoiceDetails.status === "approved" ? "✓ Approved" : "✗ Rejected"}
+                {invoiceDetails.status === "approved" ? "✓ Approved" : invoiceDetails.status === "rejected" ? "✗ Rejected" : `✓ ${capitalizeStatus(invoiceDetails.status)}`}
               </div>
             </div>
           )}

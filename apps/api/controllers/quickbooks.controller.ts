@@ -343,6 +343,52 @@ export class QuickBooksController {
     }
   };
 
+  // Hierarchical vendor search: email → phone → address → name
+  hierarchicalVendorSearch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { email, phone, address, name } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!email && !phone && !address && !name) {
+        throw new BadRequestError("At least one search parameter (email, phone, address, or name) is required");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Get all vendors first
+      const allVendorsResponse = await quickbooksService.getVendors(integration);
+      const vendors = allVendorsResponse?.QueryResponse?.Vendor || [];
+
+      // Perform hierarchical search
+      const searchResult = quickbooksService.hierarchicalVendorSearch({
+        email: email as string,
+        phone: phone as string,
+        address: address as string,
+        name: name as string,
+      }, vendors);
+
+      res.json({
+        success: true,
+        data: {
+          vendor: searchResult.vendor,
+          matchType: searchResult.matchType,
+          found: searchResult.vendor !== null,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Vector search for vendors
   searchVendors = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -501,7 +547,7 @@ export class QuickBooksController {
     try {
       // @ts-ignore - user is added by auth middleware
       const userId = req.user?.id;
-      const { name } = req.body;
+      const { name, email, phone, address } = req.body;
 
       if (!userId) {
         throw new BadRequestError("User not authenticated");
@@ -519,6 +565,9 @@ export class QuickBooksController {
 
       const newVendor = await quickbooksService.createVendor(integration, {
         name,
+        email,
+        phone,
+        address,
       });
 
       res.json({
@@ -535,7 +584,7 @@ export class QuickBooksController {
     try {
       // @ts-ignore - user is added by auth middleware
       const userId = req.user?.id;
-      const { vendorId, lineItems, totalAmount, dueDate, invoiceDate, discountAmount, discountDescription } = req.body;
+      const { vendorId, lineItems, totalAmount, totalTax, dueDate, invoiceDate, discountAmount, discountDescription } = req.body;
 
       if (!userId) {
         throw new BadRequestError("User not authenticated");
@@ -555,6 +604,7 @@ export class QuickBooksController {
         vendorId,
         lineItems,
         totalAmount,
+        totalTax,
         dueDate,
         invoiceDate,
         discountAmount,

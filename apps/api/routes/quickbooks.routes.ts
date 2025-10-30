@@ -19,6 +19,7 @@ router.get("/line-items", authenticate, requireSubscriptionAccess, quickbooksCon
 router.get("/invoice-line-items/:invoiceId", authenticate, requireSubscriptionAccess, quickbooksController.getInvoiceLineItems);
 router.get("/search-items", authenticate, requireSubscriptionAccess, quickbooksController.searchItems);
 router.get("/search-vendors", authenticate, requireSubscriptionAccess, quickbooksController.searchVendors);
+router.get("/hierarchical-vendor-search", authenticate, requireSubscriptionAccess, quickbooksController.hierarchicalVendorSearch);
 router.get("/search-customers", authenticate, requireSubscriptionAccess, quickbooksController.searchCustomers);
 router.post("/create-item", authenticate, requireSubscriptionAccess, quickbooksController.createItem);
 router.post("/create-vendor", authenticate, requireSubscriptionAccess, quickbooksController.createVendor);

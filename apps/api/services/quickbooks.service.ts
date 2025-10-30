@@ -343,6 +343,11 @@ export class QuickBooksService {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Expense'");
   }
 
+  // Get tax accounts for bill creation
+  async getTaxAccounts(integration: QuickBooksIntegration) {
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Other Current Liability' OR AccountType = 'Expense'");
+  }
+
   // Create a bill in QuickBooks
   async createBill(integration: QuickBooksIntegration, billData: {
     vendorId: string;
@@ -352,6 +357,7 @@ export class QuickBooksService {
       itemId?: string;
     }>;
     totalAmount: number;
+    totalTax?: number;
     dueDate?: string;
     invoiceDate?: string;
     discountAmount?: number;
@@ -375,6 +381,26 @@ export class QuickBooksService {
         throw new Error("No expense account found in QuickBooks");
       }
 
+      // Get tax accounts if tax amount is provided
+      let taxAccount = null;
+      if (billData.totalTax && billData.totalTax > 0) {
+        const taxAccountsResponse = await this.getTaxAccounts(integration);
+        const taxAccounts = taxAccountsResponse?.QueryResponse?.Account || [];
+
+        // Look for tax-related accounts
+        taxAccount = taxAccounts.find((acc: any) =>
+          acc.Name?.toLowerCase().includes('tax') ||
+          acc.Name?.toLowerCase().includes('sales tax') ||
+          acc.Name?.toLowerCase().includes('vat') ||
+          acc.AccountType === 'Other Current Liability'
+        );
+
+        // If no specific tax account found, use expense account
+        if (!taxAccount) {
+          taxAccount = expenseAccount;
+        }
+      }
+
       // Create line items array
       const lineItems = billData.lineItems.map((item, index) => ({
         DetailType: "AccountBasedExpenseLineDetail",
@@ -387,6 +413,21 @@ export class QuickBooksService {
         },
         ...(item.description && { Description: item.description })
       }));
+
+      // Add tax line item if tax amount is provided
+      if (billData.totalTax && billData.totalTax > 0 && taxAccount) {
+        lineItems.push({
+          DetailType: "AccountBasedExpenseLineDetail",
+          Amount: billData.totalTax,
+          Id: (lineItems.length + 1).toString(),
+          AccountBasedExpenseLineDetail: {
+            AccountRef: {
+              value: taxAccount.Id
+            }
+          },
+          Description: "Tax"
+        });
+      }
 
       // Add discount line item if discount is provided
       if (billData.discountAmount && billData.discountAmount > 0) {
@@ -507,6 +548,75 @@ export class QuickBooksService {
     return scoredItems
       .filter(item => item.similarityScore >= 95)
       .sort((a, b) => b.similarityScore - a.similarityScore);
+  }
+
+  // Hierarchical vendor search: email → phone → address → name
+  hierarchicalVendorSearch(vendorData: {
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    name?: string | null;
+  }, vendors: any[]): { vendor: any | null; matchType: string } {
+    if (!vendors || vendors.length === 0) {
+      return { vendor: null, matchType: 'none' };
+    }
+
+    // Helper function to normalize strings for comparison
+    const normalize = (str: string) => {
+      return str.toLowerCase()
+        .replace(/[^\w\s]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    // Helper function to check exact match
+    const isExactMatch = (searchValue: string, vendorValue: string) => {
+      if (!searchValue || !vendorValue) return false;
+      return normalize(searchValue) === normalize(vendorValue);
+    };
+
+    // 1. Search by email (highest priority)
+    if (vendorData.email) {
+      const emailMatch = vendors.find(vendor => {
+        const vendorEmail = vendor.PrimaryEmailAddr?.Address || vendor.Email || '';
+        return isExactMatch(vendorData.email!, vendorEmail);
+      });
+      if (emailMatch) {
+        return { vendor: emailMatch, matchType: 'email' };
+      }
+    }
+
+    // 2. Search by phone (second priority)
+    if (vendorData.phone) {
+      const phoneMatch = vendors.find(vendor => {
+        const vendorPhone = vendor.PrimaryPhone?.FreeFormNumber || vendor.Phone || '';
+        return isExactMatch(vendorData.phone!, vendorPhone);
+      });
+      if (phoneMatch) {
+        return { vendor: phoneMatch, matchType: 'phone' };
+      }
+    }
+
+    // 3. Search by address (third priority)
+    if (vendorData.address) {
+      const addressMatch = vendors.find(vendor => {
+        const vendorAddress = vendor.BillAddr?.Line1 || vendor.Address || '';
+        return isExactMatch(vendorData.address!, vendorAddress);
+      });
+      if (addressMatch) {
+        return { vendor: addressMatch, matchType: 'address' };
+      }
+    }
+
+    // 4. Search by name (lowest priority - existing logic)
+    if (vendorData.name) {
+      const nameMatches = this.vectorSearchVendors(vendorData.name, vendors);
+      if (nameMatches.length > 0) {
+        return { vendor: nameMatches[0], matchType: 'name' };
+      }
+    }
+
+    return { vendor: null, matchType: 'none' };
   }
 
   // Strict vector search for vendors (95% match required)
@@ -653,6 +763,9 @@ export class QuickBooksService {
   // Create a new vendor in QuickBooks
   async createVendor(integration: QuickBooksIntegration, vendorData: {
     name: string;
+    email?: string;
+    phone?: string;
+    address?: string;
   }) {
     try {
       // Sanitize vendor name for QuickBooks (more aggressive sanitization)
@@ -669,13 +782,33 @@ export class QuickBooksService {
         throw new Error("Invalid vendor name after sanitization");
       }
 
-      // QuickBooks Vendor API format - DisplayName only
-      const payload = {
+      // Build QuickBooks Vendor payload with additional information
+      const payload: any = {
         DisplayName: sanitizedName
       };
 
-      console.log("Creating QuickBooks vendor with sanitized name:", sanitizedName);
-      console.log("Full payload:", JSON.stringify(payload, null, 2));
+      // Add email if provided
+      if (vendorData.email) {
+        payload.PrimaryEmailAddr = {
+          Address: vendorData.email
+        };
+      }
+
+      // Add phone if provided
+      if (vendorData.phone) {
+        payload.PrimaryPhone = {
+          FreeFormNumber: vendorData.phone
+        };
+      }
+
+      // Add address if provided
+      if (vendorData.address) {
+        payload.BillAddr = {
+          Line1: vendorData.address
+        };
+      }
+
+      console.log("Creating QuickBooks vendor with data:", payload);
       return this.makeApiCall(integration, "vendor", "POST", payload);
     } catch (error) {
       console.error("Error creating QuickBooks vendor:", error);

@@ -41,7 +41,7 @@ class ProcessorController {
     if (isNaN(attachmentIdNumber)) {
       throw new BadRequestError("Invalid attachment ID");
     }
-    const response = await attachmentServices.updateAttachment(attachmentIdNumber, {status, ...updatedData});
+    const response = await attachmentServices.updateAttachment(attachmentIdNumber, { status, ...updatedData });
     return res.status(200).json({
       success: true,
       data: response,
@@ -58,9 +58,14 @@ class ProcessorController {
         invoice_number,
         customer_name,
         vendor_name,
+        vendor_address,
+        vendor_phone,
+        vendor_email,
         invoice_date,
         due_date,
         total_amount,
+        currency,
+        total_tax,
         description,
         line_items,
         attachment_id,
@@ -118,10 +123,15 @@ class ProcessorController {
         attachmentId: attachment_id,
         invoiceNumber: invoice_number,
         vendorName: vendor_name,
+        vendorAddress: vendor_address,
+        vendorPhone: vendor_phone,
+        vendorEmail: vendor_email,
         customerName: customer_name,
         invoiceDate: parsedInvoiceDate,
         dueDate: parsedDueDate,
-        totalAmount: total_amount.toString(),
+        totalAmount: total_amount ? total_amount.toString() : null,
+        currency: currency,
+        totalTax: total_tax ? total_tax.toString() : null,
         description: description || "",
         fileKey: s3_pdf_key || "",
         s3JsonKey: s3_json_key || "",
@@ -142,10 +152,10 @@ class ProcessorController {
       );
 
       const { invoice, operation } = result;
-      
+
       let message = "";
       let statusCode = 201;
-      
+
       switch (operation) {
         case 'created':
           message = "Invoice created successfully";

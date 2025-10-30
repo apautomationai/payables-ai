@@ -154,81 +154,94 @@ export default function ConfirmationModals({
           }
         }
 
-        // Step 4: Search for vendor and create bill
-        const vendorName = invoiceDetails.vendorName;
-        if (vendorName) {
-          const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/search-vendors", {
-            params: { searchTerm: vendorName }
-          });
+        // Step 4: Hierarchical vendor search (email → phone → address → name)
+        const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/hierarchical-vendor-search", {
+          params: {
+            email: invoiceDetails.vendorEmail,
+            phone: invoiceDetails.vendorPhone,
+            address: invoiceDetails.vendorAddress,
+            name: invoiceDetails.vendorName
+          }
+        });
 
-          let vendor = null;
-          if (vendorSearchResponse.success && vendorSearchResponse.data.results.length > 0) {
-            // Found vendor with 95%+ match
-            vendor = vendorSearchResponse.data.results[0];
-          } else {
-            // No vendor found with 95%+ match, create new vendor
+        let vendor = null;
+        if (vendorSearchResponse.success && vendorSearchResponse.data.found) {
+          // Found vendor using hierarchical search
+          vendor = vendorSearchResponse.data.vendor;
+          console.log(`Vendor found by ${vendorSearchResponse.data.matchType}:`, vendor.DisplayName || vendor.Name);
+        } else {
+          // No vendor found, create new vendor with all available information
+          const vendorName = invoiceDetails.vendorName;
+          if (vendorName) {
             const createVendorResponse: any = await client.post("/api/v1/quickbooks/create-vendor", {
-              name: vendorName
+              name: vendorName,
+              email: invoiceDetails.vendorEmail,
+              phone: invoiceDetails.vendorPhone,
+              address: invoiceDetails.vendorAddress
             });
             // Handle create vendor response format: data.Vendor
             vendor = createVendorResponse.data?.Vendor || createVendorResponse.data;
-          }
-
-          if (vendor) {
-
-            // Step 4: Create bill in QuickBooks using processed line items
-            const billLineItems = processedItems.map((item: any) => ({
-              amount: parseFloat(item.dbLineItem.amount) || 0,
-              description: item.dbLineItem.description || item.dbLineItem.item_name,
-              itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
-            }));
-
-            // Calculate discount by comparing popup total with line items sum
-            const totalAmountFromPopup = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
-            const lineItemsSum = billLineItems.reduce((sum, item) => sum + item.amount, 0);
-            const discountAmount = lineItemsSum - totalAmountFromPopup;
-
-            // Extract vendor ID (handle both search and create response formats)
-            const vendorId = vendor.Id || vendor.id;
-
-            await client.post("/api/v1/quickbooks/create-bill", {
-              vendorId: vendorId,
-              lineItems: billLineItems,
-              totalAmount: totalAmountFromPopup,
-              dueDate: invoiceDetails.dueDate,
-              invoiceDate: invoiceDetails.invoiceDate,
-              // Add discount if there's a positive difference (line items > total)
-              ...(discountAmount > 0 && {
-                discountAmount: discountAmount,
-                discountDescription: "Invoice Discount"
-              })
-            });
-
-            // Step 5: Update invoice status to approved
-            const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
-              status: "approved"
-            });
-
-            // Update local invoice details state
-            if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
-              const updatedDetails = { ...invoiceDetails, status: "approved" };
-              onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
-            }
-
-            toast.success("Invoice approved and bill created in QuickBooks successfully!");
-
-            // Close the dialog first
-            setIsDialogOpen(false);
-
-            // Call success callback to close popup and refetch
-            if (onApprovalSuccess) {
-              onApprovalSuccess();
-            }
+            console.log("Created new vendor with full details:", vendor.DisplayName || vendor.Name);
           } else {
-            throw new Error("Failed to find or create vendor in QuickBooks");
+            throw new Error("No vendor information available to create vendor");
           }
-        } else {
-          throw new Error("Vendor name not found in invoice details");
+        }
+
+        if (!vendor) {
+          throw new Error("Failed to find or create vendor in QuickBooks");
+        }
+
+        // Step 5: Create bill in QuickBooks using processed line items
+        const billLineItems = processedItems.map((item: any) => ({
+          amount: parseFloat(item.dbLineItem.amount) || 0,
+          description: item.dbLineItem.description || item.dbLineItem.item_name,
+          itemId: item.qbItem?.Id || item.qbItem?.QueryResponse?.Item?.[0]?.Id
+        }));
+
+        // Calculate discount by comparing popup total with line items sum
+        const totalAmountFromPopup = parseFloat(invoiceDetails?.totalAmount ?? "0") || 0;
+        const lineItemsSum = billLineItems.reduce((sum, item) => sum + item.amount, 0);
+        const discountAmount = lineItemsSum - totalAmountFromPopup;
+
+        // Extract vendor ID (handle both search and create response formats)
+        const vendorId = vendor.Id || vendor.id;
+
+        // Extract tax amount if available
+        const totalTaxAmount = parseFloat(invoiceDetails?.totalTax ?? "0") || 0;
+
+        await client.post("/api/v1/quickbooks/create-bill", {
+          vendorId: vendorId,
+          lineItems: billLineItems,
+          totalAmount: totalAmountFromPopup,
+          ...(totalTaxAmount > 0 && { totalTax: totalTaxAmount }),
+          dueDate: invoiceDetails.dueDate,
+          invoiceDate: invoiceDetails.invoiceDate,
+          // Add discount if there's a positive difference (line items > total)
+          ...(discountAmount > 0 && {
+            discountAmount: discountAmount,
+            discountDescription: "Invoice Discount"
+          })
+        });
+
+        // Step 6: Update invoice status to approved
+        const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
+          status: "approved"
+        });
+
+        // Update local invoice details state
+        if (onInvoiceDetailsUpdate && statusUpdateResponse.success) {
+          const updatedDetails = { ...invoiceDetails, status: "approved" };
+          onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
+        }
+
+        toast.success("Invoice approved and bill created in QuickBooks successfully!");
+
+        // Close the dialog first
+        setIsDialogOpen(false);
+
+        // Call success callback to close popup and refetch
+        if (onApprovalSuccess) {
+          onApprovalSuccess();
         }
       } else {
         throw new Error("No line items found for this invoice");

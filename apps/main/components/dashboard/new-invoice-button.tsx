@@ -42,7 +42,7 @@ export default function NewInvoiceButton() {
                 fileKey: key,
             });
             toast.success("PDF uploaded and processed successfully!", { id: uploadToast });
-            router.push("/invoice-review");
+            router.push("/invoice-review?tab=attachments");
         } catch (error: any) {
             let errorMessage = "An unexpected error occurred during upload.";
             if (error.response?.data?.message) {

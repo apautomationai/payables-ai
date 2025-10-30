@@ -62,7 +62,7 @@ export default async function InvoiceReviewPage({
   searchParams: any;
 }) {
 
-  const {page} = await searchParams;
+  const {page, tab} = await searchParams;
 
   const currentPage = Number(page);
 
@@ -109,6 +109,7 @@ export default async function InvoiceReviewPage({
       initialSelectedInvoice={initialSelectedInvoice}
       initialInvoiceDetails={initialInvoiceDetails}
       initialInvoiceCache={initialInvoiceCache}
+      activeTab={tab}
     />
   );
 }

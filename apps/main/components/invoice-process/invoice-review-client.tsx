@@ -34,6 +34,7 @@ export default function InvoiceReviewClient({
   invoiceTotalPages,
   initialSelectedInvoice,
   initialInvoiceCache,
+  activeTab,
 }: {
   attachments: Attachment[];
   initialInvoiceDetails: InvoiceDetails | null;
@@ -44,11 +45,12 @@ export default function InvoiceReviewClient({
   invoiceTotalPages: number;
   initialSelectedInvoice: InvoiceListItem | null | undefined;
   initialInvoiceCache: Record<number, InvoiceDetails>;
+  activeTab: "attachments" | "invoices";
 }) {
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
-  const [activeTab, setActiveTab] = useState<"attachments" | "invoices">("invoices");
+  const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "invoices");
 
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments?.length > 0 ? attachments[0]!.id : null
@@ -286,7 +288,7 @@ export default function InvoiceReviewClient({
     const sliderRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-      const activeTabIndex = activeTab === 'invoices' ? 0 : 1;
+      const activeTabIndex = activeTabState === 'invoices' ? 0 : 1;
       const activeTabNode = tabsRef.current[activeTabIndex];
       const sliderNode = sliderRef.current;
 
@@ -294,7 +296,7 @@ export default function InvoiceReviewClient({
         sliderNode.style.left = `${activeTabNode.offsetLeft}px`;
         sliderNode.style.width = `${activeTabNode.offsetWidth}px`;
       }
-    }, [activeTab]);
+    }, [activeTabState]);
 
     return (
       <div className="relative flex items-center bg-muted p-1 rounded-lg self-start md:-mt-5">
@@ -306,8 +308,8 @@ export default function InvoiceReviewClient({
           <button
             key={tab}
             ref={(el) => { tabsRef.current[index] = el; }}
-            onClick={() => setActiveTab(tab as "invoices" | "attachments")}
-            className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${activeTab === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
+            onClick={() => setActiveTabState(tab as "invoices" | "attachments")}
+            className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${activeTabState === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -324,8 +326,8 @@ export default function InvoiceReviewClient({
       </div>
 
       <div className="flex-grow p-4 min-h-0">
-        <div key={activeTab} className="animate-fade-in h-full">
-          {activeTab === 'attachments' && (
+        <div key={activeTabState} className="animate-fade-in h-full">
+          {activeTabState === 'attachments' && (
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-4">
                 <AttachmentsList
@@ -353,7 +355,7 @@ export default function InvoiceReviewClient({
             </div>
           )}
 
-          {activeTab === 'invoices' && (
+          {activeTabState === 'invoices' && (
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-3">
                 <InvoicesList

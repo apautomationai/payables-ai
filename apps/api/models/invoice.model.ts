@@ -11,7 +11,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { usersModel } from "./users.model";
 import { attachmentsModel } from "./attachments.model";
-export const statusEnum = pgEnum("status", [
+export const invoiceStatusEnum = pgEnum("invoice_status", [
   "pending",
   "approved",
   "rejected",
@@ -38,7 +38,7 @@ export const invoiceModel = pgTable("invoices", {
   fileUrl: text("file_url"),
   fileKey: text("file_key"),
   s3JsonKey: text("s3_json_key"),
-  status: statusEnum("status").notNull().default("pending"),
+  status: invoiceStatusEnum("status").notNull().default("pending"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

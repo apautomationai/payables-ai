@@ -23,7 +23,8 @@ export class QuickBooksController {
       const authUrl = quickbooksService.generateAuthUrl(state);
 
       // Redirect to QuickBooks authorization page
-      res.redirect(authUrl);
+      res.json({ url: authUrl });
+      // res.redirect(authUrl);
     } catch (error) {
       next(error);
     }
@@ -78,8 +79,14 @@ export class QuickBooksController {
       }
 
       // Redirect to frontend settings page with success
-      const frontendUrl = process.env.OAUTH_REDIRECT_URI;
-      res.redirect(`${frontendUrl}?quickbooks=success`);
+      // const frontendUrl = process.env.OAUTH_REDIRECT_URI;
+      // res.redirect(`${frontendUrl}?quickbooks=success`);
+      res.status(200).json({
+        message: "OAuth successful",
+        access_token: tokenData.accessToken,
+        refresh_token: tokenData.refreshToken,
+        expiry_date: tokenData.expiresIn,
+      });
     } catch (error) {
       next(error);
     }

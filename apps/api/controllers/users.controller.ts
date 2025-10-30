@@ -77,6 +77,22 @@ export class UserController {
           await userServices.updateLastLogin(user.email);
         }
 
+        res.cookie("token", token, {
+          // httpOnly: true, // prevents JavaScript access
+          secure: process.env.NODE_ENV === "production", // only sent over HTTPS in production
+          sameSite: "none", // controls cross-site behavior
+          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+          path: "/", // cookie is valid across all routes
+        });
+
+        res.cookie("userId", (user as any).id, {
+          // httpOnly: true, // prevents JavaScript access
+          secure: process.env.NODE_ENV === "production", // only sent over HTTPS in production
+          sameSite: "none", // controls cross-site behavior
+          maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
+          path: "/", // cookie is valid across all routes
+        });
+      
         return res.json({ user, token });
       }
     )(req, res, next);

@@ -1,5 +1,5 @@
 # @baseUrl = http://localhost:5000
-@baseUrl = https://dev-api.payables.dev
+@baseUrl = https://dev.api.getsledge.com
 @contentType = application/json
 
 ### User Registration

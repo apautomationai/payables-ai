@@ -5,11 +5,11 @@ set -e
 
 # Configuration
 AWS_REGION=${AWS_REGION:-us-east-1}
-ECR_REPOSITORY=${ECR_REPOSITORY:-payables-api}
-ECS_CLUSTER=${ECS_CLUSTER:-payables-cluster}
-ECS_SERVICE=${ECS_SERVICE:-payables-api-service}
-TASK_DEFINITION=${TASK_DEFINITION:-payables-api}
-CONTAINER_NAME=${CONTAINER_NAME:-payables-api}
+ECR_REPOSITORY=${ECR_REPOSITORY:-sledge-api}
+ECS_CLUSTER=${ECS_CLUSTER:-sledge-cluster}
+ECS_SERVICE=${ECS_SERVICE:-sledge-api-service}
+TASK_DEFINITION=${TASK_DEFINITION:-sledge-api}
+CONTAINER_NAME=${CONTAINER_NAME:-sledge-api}
 
 # Colors for output
 RED='\033[0;31m'

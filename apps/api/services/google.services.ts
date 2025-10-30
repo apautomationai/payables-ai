@@ -8,6 +8,7 @@ import { attachmentsModel } from "@/models/attachments.model";
 import { count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
+import { sendAttachmentMessage } from "@/helpers/sqs";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID,
@@ -54,28 +55,25 @@ export class GoogleServices {
     tokens: any,
     userId: number,
     integrationId: number,
-    startedReadingAt: string
+    lastRead: string
   ) => {
+    if (!lastRead) {
+      return
+    }
+    const startDate = new Date(lastRead);
+    if (isNaN(startDate.getTime())) {
+      return
+    }
     try {
       const auth = this.getOAuthClient(tokens);
       const gmail = google.gmail({ version: "v1", auth });
-      let query = "has:attachment";
-
-      if (!startedReadingAt) {
-        throw new BadRequestError("Select a starting date");
-      }
-      const startDate = new Date(startedReadingAt);
-      if (isNaN(startDate.getTime())) {
-        throw new Error("Invalid date format");
-      }
       const afterTimestamp = Math.floor(startDate.getTime() / 1000);
-      query = `after:${afterTimestamp} has:attachment`;
-
+      
+      const query = `invoice has:attachment label:INBOX after:${afterTimestamp}`;
       const res = await gmail.users.messages.list({
         userId: "me",
         q: query,
       });
-
       const messages = res.data.messages || [];
       const results: any[] = [];
       for (const msg of messages) {
@@ -93,12 +91,12 @@ export class GoogleServices {
 
         for (const part of parts) {
           if (part.filename && part.body?.attachmentId) {
-            const attachment = await gmail.users.messages.attachments.get({
+            const emailAttachment = await gmail.users.messages.attachments.get({
               userId: "me",
               messageId: msg.id!,
               id: part.body.attachmentId,
             });
-            const data = attachment.data.data;
+            const data = emailAttachment.data.data;
             //hash id
             const partInfo = `${msg.id}-${part.filename}-${part.mimeType}-${part.body?.size}`;
             const hashId = crypto
@@ -107,11 +105,10 @@ export class GoogleServices {
               .digest("hex");
 
             const isExists = await googleServices.getAttachmentWithId(hashId);
-
             if (isExists.length > 0) {
-              throw new BadRequestError("attachment already exists");
+              console.info('Email invoiceattachment already exists');
+              continue;
             }
-
             // upload to S3
             const buffer = Buffer.from(data!, "base64url");
             const key = `attachments/${hashId}-${part.filename}`;
@@ -121,10 +118,9 @@ export class GoogleServices {
               part.mimeType || "application/pdf"
             );
             const s3Key = s3Url!.split(".amazonaws.com/")[1];
-
             // insert meta data to database
             //@ts-ignore
-            await db.insert(attachmentsModel).values({
+            const [attachmentInfo] = await db.insert(attachmentsModel).values({
               hashId,
               userId,
               emailId: msg.id!,
@@ -135,11 +131,11 @@ export class GoogleServices {
               provider: "gmail",
               fileUrl: s3Url,
               fileKey: s3Key,
-            });
-            await integrationsService.updateIntegration(integrationId, {
-              lastRead: new Date(),
-              startReading: new Date(),
-            });
+            }).returning();
+
+            if (attachmentInfo.id) {
+              await sendAttachmentMessage(attachmentInfo.id);
+            }
 
             results.push({
               hashId,
@@ -154,6 +150,11 @@ export class GoogleServices {
             });
           }
         }
+
+        // update last read
+        await integrationsService.updateIntegration(integrationId, {
+          lastRead: new Date(),
+        });
       }
       return results;
     } catch (error) {
@@ -176,7 +177,7 @@ export class GoogleServices {
         .from(attachmentsModel)
         .where(eq(attachmentsModel.userId, userId));
       const totalAttachments = attachmentCount.count;
-      return {attachments, totalAttachments};
+      return { attachments, totalAttachments };
     } catch (error: any) {
       const result = {
         success: false,

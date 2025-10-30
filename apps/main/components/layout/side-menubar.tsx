@@ -265,9 +265,9 @@ export default function SideMenuBar({
                 </span> */}
               </NavLink>
               <NavLink
-                href="/settings"
+                href="/integrations"
                 icon={Settings}
-                isActive={pathname.startsWith("/settings")}
+                isActive={pathname.startsWith("/integrations")}
                 isCollapsed={isCollapsed}
               >
                 Integrations
@@ -280,7 +280,7 @@ export default function SideMenuBar({
             {/* Support Link */}
             <div className={cn("p-3", isCollapsed && "px-2 py-3")}>
               <Link
-                href="mailto:support@sledge.dev"
+                href="mailto:support@getsledge.com"
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
@@ -298,7 +298,7 @@ export default function SideMenuBar({
                     isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                   )}
                 >
-                  support@sledge.dev
+                  support@getsledge.com
                 </span>
               </Link>
             </div>

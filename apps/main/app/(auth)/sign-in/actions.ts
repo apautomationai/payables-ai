@@ -116,17 +116,17 @@ export async function signInAction(
       // Set the token in an HTTP-only cookie for security
       cookieStore.set("token", data.token, {
         // httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax", // Changed from "strict" to "lax" for better client-side access
+        // secure: process.env.NODE_ENV === "production",
+        // sameSite: "lax", // Changed from "strict" to "lax" for better client-side access
         path: "/",
       });
 
       // Set user ID in a separate cookie for client-side access
       if (data.user?.id) {
         cookieStore.set("userId", String(data.user.id), {
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          path: "/",
+          // secure: process.env.NODE_ENV === "production",
+          // sameSite: "lax",
+          path: "/",  
         });
       }
       // This will throw a special NEXT_REDIRECT error

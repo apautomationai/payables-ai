@@ -1,14 +1,9 @@
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { BadRequestError } from "./errors";
+import { config } from "@/lib/config";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-export const s3Client = new S3Client({
-  region: process.env.AWS_REGION,
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-  },
-});
+export const s3Client = new S3Client();
 
 export const uploadBufferToS3 = async (
   buffer: Buffer,
@@ -16,21 +11,24 @@ export const uploadBufferToS3 = async (
   mimeType: string
 ) => {
   const command = new PutObjectCommand({
-    Bucket: process.env.S3_BUCKET_NAME!,
+    Bucket: config.s3.bucketName,
     Key: key,
     Body: buffer,
     ContentType: mimeType,
   });
 
   await s3Client.send(command);
-  return `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+  if (config.s3.publicUrl) {
+    return `${config.s3.publicUrl}/${key}`;
+  }
+  return `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
 };
 
 export const generateSignUrl = async (filename: string, mimetype: string) => {
   try {
     const key = `attachments/${Date.now()}-${filename}`;
     const command = new PutObjectCommand({
-      Bucket: process.env.S3_BUCKET_NAME,
+      Bucket: config.s3.bucketName,
       Key: key,
       ContentType: mimetype,
     });
@@ -38,10 +36,16 @@ export const generateSignUrl = async (filename: string, mimetype: string) => {
     const url = await getSignedUrl(s3Client, command, {
       expiresIn: process.env.UPLOAD_EXPIRY,
     });
+    let publicUrl = "";
+    if (config.s3.publicUrl) {
+      publicUrl = `${config.s3.publicUrl}/${key}`;
+    } else {
+      publicUrl = `https://${config.s3.bucketName}.s3.${config.s3.region}.amazonaws.com/${key}`;
+    }
     return {
       url,
       key,
-      publicUrl: `https://${process.env.S3_BUCKET_NAME}.s3.${process.env.AWS_REGION || "us-east-2"}.amazonaws.com/${key}`,
+      publicUrl,
     };
   } catch (error) {
     throw new BadRequestError("failed to generate url");

@@ -1,6 +1,6 @@
 import db from "@/lib/db";
 import { hashPassword, verifyPassword } from "@/lib/utils/hash";
-import { eq, InferSelectModel } from "drizzle-orm";
+import { eq, or, InferSelectModel } from "drizzle-orm";
 import { usersModel } from "@/models/users.model";
 import { signJwt } from "@/lib/utils/jwt";
 import {
@@ -9,6 +9,7 @@ import {
   InternalServerError,
   NotFoundError,
 } from "@/helpers/errors";
+import { RegistrationService } from "./registration.service";
 
 type User = InferSelectModel<typeof usersModel>;
 
@@ -68,6 +69,15 @@ export class UserServices {
         .returning();
 
       const createdUser = Array.isArray(inserted) ? inserted[0] : inserted;
+
+      // Assign subscription to user (with error handling to not break registration)
+      try {
+        await RegistrationService.assignSubscriptionToUser(createdUser.id);
+      } catch (subscriptionError: any) {
+        // Log the error but don't fail the registration
+        console.error(`Subscription assignment failed for user ${createdUser.id}:`, subscriptionError);
+        // Note: In production, you might want to add this to a retry queue
+      }
 
       // Issue JWT
       const token = signJwt({ sub: createdUser.id, email: createdUser.email });
@@ -197,6 +207,85 @@ export class UserServices {
       return response;
     } catch (error: any) {
       throw new BadRequestError(error.message);
+    }
+  };
+
+  findOrCreateGoogleUser = async ({
+    googleId,
+    email,
+    firstName,
+    lastName,
+    avatar,
+  }: {
+    googleId: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    avatar?: string | null;
+  }) => {
+    try {
+      if (!email || !googleId) {
+        throw new BadRequestError("Email and Google ID are required");
+      }
+
+      // Check if user exists by providerId or email
+      const [existingUser] = await db
+        .select()
+        .from(usersModel)
+        .where(
+          or(
+            eq(usersModel.providerId, googleId),
+            eq(usersModel.email, email)
+          )
+        )
+        .limit(1);
+
+      if (existingUser) {
+        // If user exists but doesn't have provider set, update it
+        if (!existingUser.provider || existingUser.provider === 'credentials') {
+          await db
+            .update(usersModel)
+            .set({ 
+              provider: 'google', 
+              providerId: googleId,
+              ...(avatar && { avatar }),
+            })
+            .where(eq(usersModel.id, existingUser.id));
+          
+          const [updatedUser] = await db
+            .select()
+            .from(usersModel)
+            .where(eq(usersModel.id, existingUser.id))
+            .limit(1);
+          
+          return updatedUser || existingUser;
+        }
+        return existingUser;
+      }
+
+      // Create new user
+      // For OAuth users, use a placeholder passwordHash since they don't have passwords
+      const placeholderPassword = `oauth_${googleId}_${Date.now()}`;
+      const passwordHash = await hashPassword(placeholderPassword);
+
+      const [newUser] = await db
+        .insert(usersModel)
+        .values({
+          email,
+          firstName: firstName || '',
+          lastName: lastName || '',
+          avatar: avatar || null,
+          provider: 'google',
+          providerId: googleId,
+          passwordHash,
+          isActive: true,
+          isBanned: false,
+        })
+        .returning();
+
+      return newUser;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Failed to find or create Google user");
     }
   };
 }

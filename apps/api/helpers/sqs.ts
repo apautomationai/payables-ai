@@ -1,9 +1,8 @@
+import { config } from "@/lib/config";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 // Initialize SQS client
-const sqsClient = new SQSClient({
-  region: process.env.AWS_REGION || "us-east-1",
-});
+const sqsClient = new SQSClient();
 
 /**
  * Send a message to SQS queue
@@ -12,7 +11,7 @@ const sqsClient = new SQSClient({
  */
 export const sendSQSMessage = async (messageBody: string): Promise<boolean> => {
   try {
-    const queueUrl = process.env.SQS_QUEUE_URL;
+    const queueUrl = config.sqs.queueUrl;
     
     if (!queueUrl) {
       console.error("SQS_QUEUE_URL environment variable is not set");

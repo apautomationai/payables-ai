@@ -11,10 +11,10 @@ async function updateUserProfile(updateData: { [key: string]: any }): Promise<{ 
 
   try {
     // The email is no longer in the payload, so no need to delete it.
-    
+
     // Pass the plain object directly to the fetch client.
     const response = await client.patch('api/v1/users/me', updateData);
-    
+
     revalidatePath('/profile');
     return { data: response.data };
 
@@ -22,6 +22,7 @@ async function updateUserProfile(updateData: { [key: string]: any }): Promise<{ 
     return { error: error.response?.data?.message || 'Failed to update user profile' };
   }
 }
+
 // SERVER ACTION for changing password
 async function changeUserPassword(
   data: ChangePasswordFormData
@@ -34,7 +35,7 @@ async function changeUserPassword(
   }
 
   const { oldPassword, newPassword, confirmPassword } = validatedFields.data;
-  
+
   try {
     await client.patch('api/v1/users/change-password', {
       oldPassword,
@@ -49,48 +50,65 @@ async function changeUserPassword(
   }
 }
 
-// Main page component
-export default async function Profile() {
+// Separate component to handle data fetching
+async function ProfileWrapper({
+  updateUserAction,
+  changeUserPasswordAction
+}: {
+  updateUserAction: any;
+  changeUserPasswordAction: any;
+}) {
   let responseData;
+  let hasError = false;
+
   try {
     const response = await client.get('api/v1/users/me', { cache: 'no-store' });
     responseData = response.data;
   } catch (error) {
     console.error('Error fetching user data:', error);
-    return (
-      <div className="space-y-4 p-4">
-        <p className="font-semibold text-red-500">Could not load profile data.</p>
-        <p className="text-sm text-muted-foreground">The user was not found or an API error occurred. Please try again later.</p>
-      </div>
-    );
+    hasError = true;
+    // For incomplete users, we'll still show the profile with subscription tab
   }
-  
-  if (!responseData) {
-    console.error("API did not return a user object.");
-    return (
-      <div className="space-y-4 p-4">
-        <p className="font-semibold text-red-500">Profile data is in an unexpected format.</p>
-      </div>
-    );
-  }
-  
-  const userData = responseData;
-  const formData = {
-    id: userData.id,
-    firstName: userData.firstName || "",
-    lastName: userData.lastName || "",
-    email: userData.email || "",
-    phone: userData.phone || "",
-    avatarUrl: userData.avatarUrl || "",
-    businessName: userData.businessName || "",
-  };
 
+  let formData;
+  if (responseData) {
+    formData = {
+      firstName: responseData.firstName || "",
+      lastName: responseData.lastName || "",
+      email: responseData.email || "",
+      phone: responseData.phone || "",
+      avatarUrl: responseData.avatarUrl || "",
+      businessName: responseData.businessName || "",
+    };
+  } else {
+    // Default data for incomplete users
+    formData = {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      avatarUrl: "",
+      businessName: "",
+    };
+  }
+
+  return (
+    <ProfileClient
+      initialData={formData}
+      updateUserAction={updateUserAction}
+      changeUserPasswordAction={changeUserPasswordAction}
+      showError={hasError}
+    />
+  );
+}
+
+// Main page component
+export default function Profile() {
   return (
     <div className="space-y-4">
       <Suspense fallback={<FormSkeleton />}>
-        <ProfileClient 
-          initialData={formData} 
-          updateUserAction={updateUserProfile} 
+        <ProfileWrapper
+          updateUserAction={updateUserProfile}
           changeUserPasswordAction={changeUserPassword}
         />
       </Suspense>

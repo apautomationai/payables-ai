@@ -4,7 +4,7 @@ import { integrationsModel } from "@/models/integrations.model";
 import { and, eq } from "drizzle-orm";
 interface UpdatedData {
   name: "google";
-  status: "success" | "disconnected" | "failed" | "not_connected" | "paused";
+  status: "pending" | "approved" | "rejected" | "failed" | "not_connected";
 }
 
 class IntegrationsService {
@@ -45,6 +45,26 @@ class IntegrationsService {
 
       return result;
     } catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
+
+  async getGmailIntegration() {
+    try {
+      const integrations = await db
+        .select()
+        .from(integrationsModel)
+        .where(and(eq(integrationsModel.name, "gmail"), eq(integrationsModel.status, "success")));
+      return {
+        success: true,
+        data: integrations || [],
+      };
+    }
+    catch (error: any) {
       const result = {
         success: false,
         message: error.message,
@@ -95,11 +115,15 @@ class IntegrationsService {
     // check if this integration exists for the user
 
     try {
-      const [integration] = await db.select().from(integrationsModel).where(
-        eq(integrationsModel.userId, userId),
-        //@ts-ignore
-        eq(integrationsModel.name, name)
-      );
+      const [integration] = await db
+        .select()
+        .from(integrationsModel)
+        .where(
+          and(
+            eq(integrationsModel.userId, userId),
+            eq(integrationsModel.name, name)
+          )
+        );
       return integration;
     } catch (error: any) {
       return false;
@@ -121,7 +145,8 @@ class IntegrationsService {
       }
       const response = await db
         .update(integrationsModel)
-        .set({ status: updatedData.status, updatedAt: new Date() })
+        //@ts-ignore
+        .set({ status: updatedData.status as any, updatedAt: new Date() })
         .where(
           and(
             eq(integrationsModel.userId, userId),

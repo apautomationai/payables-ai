@@ -82,8 +82,8 @@ export function SubscriptionGuard({ children, requiresAccess = true, loadingType
 
             // Get subscription status with cache busting
             const cacheBuster = Date.now();
-            const response = await client.get<SubscriptionStatus>(`api/v1/subscription/status?_t=${cacheBuster}`);
-            const subscription = response as unknown as SubscriptionStatus;
+            const response = await client.get(`api/v1/subscription/status?_t=${cacheBuster}`);
+            const subscription = (response as any)?.data;
 
             console.log('Subscription status received:', {
                 tier: subscription.tier,

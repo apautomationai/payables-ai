@@ -16,14 +16,8 @@ export default function DebugSubscriptionPage() {
         try {
             setLoading(true);
             setError(null);
-
-            console.log('🔍 Fetching subscription data...');
-
             const response = await client.get('api/v1/subscription/status');
-
-            console.log('✅ Raw API response:', response);
-
-            setSubscriptionData(response.data);
+            setSubscriptionData((response as any)?.data);
 
         } catch (err: any) {
             console.error('❌ API Error:', err);

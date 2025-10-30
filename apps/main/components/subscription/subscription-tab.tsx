@@ -38,8 +38,9 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
         try {
             setLoading(true);
             setError(null);
-            const response = await client.get<SubscriptionStatus>('api/v1/subscription/status');
-            setSubscription(response as unknown as SubscriptionStatus);
+            const response = await client.get('api/v1/subscription/status');
+            const subscriptionData = (response as any)?.data;
+            setSubscription(subscriptionData);
         } catch (err: any) {
             setError(err?.message || 'Failed to load subscription information');
         } finally {
@@ -52,10 +53,17 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
 
         try {
             setActionLoading(true);
-            const response = await client.post<{ url: string }>('api/v1/subscription/create-checkout');
-            // Redirect to Stripe checkout
-            const responseData = response as unknown as { url: string };
-            window.location.href = responseData?.url || '';
+            const baseUrl = window.location.origin;
+            const currentPath = window.location.pathname;
+            const successUrl = `${baseUrl}${currentPath}?success=true`;
+            const cancelUrl = `${baseUrl}${currentPath}?canceled=true`;
+
+            const response = await client.post('api/v1/subscription/create-checkout', {
+                successUrl,
+                cancelUrl
+            });
+            const checkoutData = (response as any)?.data;
+            window.location.href = checkoutData?.url || '';
         } catch (err: any) {
             setError(err?.message || 'Failed to create checkout session');
             setActionLoading(false);
@@ -67,10 +75,15 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
 
         try {
             setActionLoading(true);
-            const response = await client.post<{ url: string }>('api/v1/subscription/create-portal');
-            // Redirect to Stripe customer portal
-            const responseData = response as unknown as { url: string };
-            window.location.href = responseData?.url || '';
+            const baseUrl = window.location.origin;
+            const currentPath = window.location.pathname;
+            const returnUrl = `${baseUrl}${currentPath}`;
+
+            const response = await client.post('api/v1/subscription/create-portal', {
+                returnUrl
+            });
+            const portalData = (response as any)?.data;
+            window.location.href = portalData?.url || '';
         } catch (err: any) {
             setError(err?.message || 'Failed to create customer portal session');
             setActionLoading(false);

@@ -2,16 +2,16 @@
 
 import React from "react";
 import Link from "next/link";
-import { InvoiceListItem } from "@/lib/types";
+import { InvoiceDetails } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import { cn } from "@workspace/ui/lib/utils";
-import { FileText, Building, CalendarDays } from "lucide-react"; // Icons updated
+import { FileText, Building, CalendarDays } from "lucide-react";
 
 interface InvoiceListProps {
-  invoices: InvoiceListItem[];
+  invoices: InvoiceDetails[];
   selectedInvoiceId: number | null;
   onSelectInvoice: (invoiceId: number) => void;
 }

@@ -32,7 +32,8 @@ export default function AttachmentViewer({
   selectedInvoice,
   isLoading,
 }: AttachmentViewerProps) {
-  const fileUrl = selectedInvoice?.fileUrl;
+  // Use sourcePdfUrl (from attachment) if available, otherwise fall back to fileUrl (from invoice)
+  const fileUrl = selectedInvoice?.sourcePdfUrl || selectedInvoice?.fileUrl;
 
   return (
     <Card className="h-[calc(100vh-10rem)] w-full flex flex-col overflow-hidden">

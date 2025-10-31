@@ -570,20 +570,11 @@ export class InvoiceServices {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-      // Fetch last 10 invoices with attachment URL
+      // Fetch last 10 invoices with full details including attachment URL
       const recentInvoices = await db
         .select({
-          id: invoiceModel.id,
-          userId: invoiceModel.userId,
-          invoiceNumber: invoiceModel.invoiceNumber,
-          totalAmount: invoiceModel.totalAmount,
-          attachmentId: invoiceModel.attachmentId,
-          attachmentUrl: attachmentsModel.fileUrl,
-          fileUrl: invoiceModel.fileUrl,
-          createdAt: invoiceModel.createdAt,
-          vendorName: invoiceModel.vendorName,
-          invoiceDate: invoiceModel.invoiceDate,
-          status: invoiceModel.status,
+          ...getTableColumns(invoiceModel),
+          sourcePdfUrl: attachmentsModel.fileUrl,
         })
         .from(invoiceModel)
         .leftJoin(

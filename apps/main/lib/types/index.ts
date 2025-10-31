@@ -86,7 +86,7 @@ export interface DashboardMetrics {
 }
 
 export interface DashboardData {
-  recentInvoices: InvoiceListItem[];
+  recentInvoices: InvoiceDetails[];
   metrics: DashboardMetrics;
 }
 

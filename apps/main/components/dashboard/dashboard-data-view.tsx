@@ -2,7 +2,7 @@
 "use client";
 
 import React from "react";
-import { InvoiceListItem, InvoiceDetails, DashboardMetrics } from "@/lib/types";
+import { InvoiceDetails, DashboardMetrics } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
 import StatsCards from "./stats-cards";
 import InvoiceList from "./invoice-list";
@@ -11,7 +11,7 @@ import InvoiceDetailsComponent from "@/components/dashboard/invoice-list-details
 import NewInvoiceButton from "./new-invoice-button";
 
 interface DashboardDataViewProps {
-  invoices: InvoiceListItem[];
+  invoices: InvoiceDetails[];
   metrics: DashboardMetrics;
   selectedInvoice: InvoiceDetails | null;
   onSelectInvoice: (invoiceId: number) => void;

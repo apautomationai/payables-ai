@@ -1,16 +1,15 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { InvoiceListItem, InvoiceDetails, DashboardMetrics } from "@/lib/types";
+import { InvoiceDetails, DashboardMetrics } from "@/lib/types";
 import EmptyState from "./empty-state";
 import DashboardDataView from "./dashboard-data-view";
 import { AlertCircle, X } from "lucide-react";
-import client from "@/lib/axios-client";
 
 interface DashboardClientProps {
   userName: string;
-  invoices: InvoiceListItem[];
+  invoices: InvoiceDetails[];
   metrics: DashboardMetrics;
   integrationError: string | null;
 }
@@ -51,39 +50,24 @@ export default function DashboardClient({
   metrics,
   integrationError,
 }: DashboardClientProps) {
-  const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDetails | null>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState<number | null>(null);
 
-  const fetchInvoiceDetails = useCallback(async (invoiceId: number) => {
-    setIsLoadingDetails(true);
-    try {
-      const response = await client.get<{ success: boolean; data: InvoiceDetails }>(
-        `api/v1/invoice/invoices/${invoiceId}`
-      );
-      // axios interceptor returns response.data, which contains { success, data }
-      setSelectedInvoice(response.data.data);
-    } catch (error) {
-      console.error(`Failed to fetch details for invoice ${invoiceId}:`, error);
-      setSelectedInvoice(null);
-    } finally {
-      setIsLoadingDetails(false);
-    }
-  }, []);
+  // Find selected invoice from the already-fetched data
+  const selectedInvoice = invoices.find((inv) => inv.id === selectedInvoiceId) || invoices[0] || null;
 
   useEffect(() => {
-    const initialInvoice = invoices?.[0];
-    if (initialInvoice) {
-      fetchInvoiceDetails(initialInvoice.id);
+    // Set initial selection to first invoice
+    if (invoices.length > 0 && !selectedInvoiceId) {
+      const firstInvoice = invoices[0];
+      if (firstInvoice) {
+        setSelectedInvoiceId(firstInvoice.id);
+      }
     }
-  }, [invoices, fetchInvoiceDetails]);
+  }, [invoices, selectedInvoiceId]);
 
-  const handleSelectInvoice = useCallback(
-    (invoiceId: number) => {
-      setSelectedInvoice(null);
-      fetchInvoiceDetails(invoiceId);
-    },
-    [fetchInvoiceDetails]
-  );
+  const handleSelectInvoice = (invoiceId: number) => {
+    setSelectedInvoiceId(invoiceId);
+  };
 
   if (!invoices || invoices.length === 0) {
     return <EmptyState userName={userName} />;
@@ -104,7 +88,7 @@ export default function DashboardClient({
         metrics={metrics}
         selectedInvoice={selectedInvoice}
         onSelectInvoice={handleSelectInvoice}
-        isLoading={isLoadingDetails}
+        isLoading={false}
       />
     </div>
   );

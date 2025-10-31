@@ -1,6 +1,7 @@
 
 import React from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
+import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
 import { User, InvoiceListItem, ApiResponse } from "@/lib/types";
 
@@ -15,7 +16,7 @@ interface InvoicesPayload {
   };
 }
 
-export default async function DashboardPage() {
+async function DashboardContent() {
   let userName = "User";
   let invoices: InvoiceListItem[] = [];
   let integrationError: string | null = null;
@@ -53,7 +54,7 @@ export default async function DashboardPage() {
         errorReason?.error?.message && typeof errorReason.error.message === "string"
           ? errorReason.error.message
           : "";
-      
+
       if (errorMessage.includes("No integrations found for this user")) {
         integrationError = "Connect Email in Settings";
       } else {
@@ -65,4 +66,12 @@ export default async function DashboardPage() {
   }
 
   return <DashboardClient userName={userName} invoices={invoices} integrationError={integrationError} />;
+}
+
+export default function DashboardPage() {
+  return (
+    <SubscriptionGuard requiresAccess={true}>
+      <DashboardContent />
+    </SubscriptionGuard>
+  );
 }

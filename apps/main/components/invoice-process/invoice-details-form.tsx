@@ -10,7 +10,7 @@ import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Checkbox } from "@workspace/ui/components/checkbox";
 import { cn } from "@workspace/ui/lib/utils";
-import { formatLabel } from "@/lib/utility/formatters";
+import { formatLabel, formatDate } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 
@@ -33,7 +33,9 @@ const FormField = ({
 }) => {
   const displayValue = Array.isArray(value)
     ? `${value.length} item(s)`
-    : value ?? "N/A";
+    : (fieldKey === 'invoiceDate' || fieldKey === 'dueDate')
+      ? formatDate(value as string)
+      : value ?? "N/A";
 
   return (
     <div className="flex items-start gap-4">
@@ -111,7 +113,7 @@ export default function InvoiceDetailsForm({
 
       setIsLoadingLineItems(true);
       try {
-        const response:any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        const response: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
         if (response.success) {
           setLineItems(response.data);
         }
@@ -145,6 +147,7 @@ export default function InvoiceDetailsForm({
     "fileUrl",
     "fileKey",
     "sourcePdfUrl",
+    "s3JsonKey"
   ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 

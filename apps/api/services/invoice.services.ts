@@ -50,10 +50,15 @@ export class InvoiceServices {
           // Check if data is different from existing invoice
           const hasChanges =
             existingInvoice.vendorName !== invoiceData.vendorName ||
+            existingInvoice.vendorAddress !== invoiceData.vendorAddress ||
+            existingInvoice.vendorPhone !== invoiceData.vendorPhone ||
+            existingInvoice.vendorEmail !== invoiceData.vendorEmail ||
             existingInvoice.customerName !== invoiceData.customerName ||
             existingInvoice.invoiceDate?.getTime() !== invoiceData.invoiceDate?.getTime() ||
             existingInvoice.dueDate?.getTime() !== invoiceData.dueDate?.getTime() ||
             existingInvoice.totalAmount !== invoiceData.totalAmount ||
+            existingInvoice.currency !== invoiceData.currency ||
+            existingInvoice.totalTax !== invoiceData.totalTax ||
             existingInvoice.description !== invoiceData.description ||
             existingInvoice.fileKey !== invoiceData.fileKey ||
             existingInvoice.fileUrl !== generateS3PublicUrl(invoiceData.fileKey!) ||
@@ -65,10 +70,15 @@ export class InvoiceServices {
               .update(invoiceModel)
               .set({
                 vendorName: invoiceData.vendorName,
+                vendorAddress: invoiceData.vendorAddress,
+                vendorPhone: invoiceData.vendorPhone,
+                vendorEmail: invoiceData.vendorEmail,
                 customerName: invoiceData.customerName,
                 invoiceDate: invoiceData.invoiceDate,
                 dueDate: invoiceData.dueDate,
                 totalAmount: invoiceData.totalAmount,
+                currency: invoiceData.currency,
+                totalTax: invoiceData.totalTax,
                 description: invoiceData.description,
                 fileKey: invoiceData.fileKey,
                 fileUrl: invoiceData.fileKey ? generateS3PublicUrl(invoiceData.fileKey) : existingInvoice.fileUrl,
@@ -229,7 +239,7 @@ export class InvoiceServices {
         const dommatrix = await import("dommatrix");
         // The package exports a DOMMatrix constructor
         (globalThis as any).DOMMatrix =
-        // @ts-ignore
+          // @ts-ignore
           dommatrix.DOMMatrix || dommatrix.default;
       } catch (err) {
         // If polyfill install is missing, rethrow a helpful error.

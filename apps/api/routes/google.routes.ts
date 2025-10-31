@@ -1,5 +1,6 @@
 import { googleController } from "@/controllers/google.controller";
 import { authenticate } from "@/middlewares/auth.middleware";
+import { requireSubscriptionAccess } from "@/middlewares/subscription.middleware";
 import { Router } from "express";
 
 const router = Router();
@@ -12,6 +13,7 @@ router.get("/attachments", authenticate, googleController.getAttachments);
 router.get(
   "/attachment/:id",
   authenticate,
+  requireSubscriptionAccess,
   googleController.getAttachmentWithId
 );
 

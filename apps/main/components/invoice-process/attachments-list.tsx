@@ -8,9 +8,11 @@ import {
   CardHeader,
   CardTitle,
   CardFooter,
+  CardAction,
+  CardDescription,
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
-import { Search, FileText } from "lucide-react";
+import { Search, FileText, Loader2, RefreshCcw } from "lucide-react";
 import type { Attachment } from "@/lib/types/invoice";
 import { cn } from "@workspace/ui/lib/utils";
 import PdfUploader from "./pdf-uploader";
@@ -23,6 +25,10 @@ import {
   PaginationNext,
 } from "@workspace/ui/components/pagination"; // MODIFIED: Added Pagination imports
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
+import client from "@/lib/axios-client";
+import { toast } from "sonner";
+import { useRouter } from "next/navigation";
 
 const SupportStatus = ({ isSupported }: { isSupported: boolean }) => (
   <div className="flex items-center gap-1.5">
@@ -56,6 +62,9 @@ export default function AttachmentsList({
   totalPages: number;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const router = useRouter();
+
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const filteredAttachments = useMemo(() => {
     if (!attachments) return [];
@@ -72,15 +81,47 @@ export default function AttachmentsList({
   const hasNextPage = currentPage < totalPages;
   const hasPreviousPage = currentPage > 1;
 
+  const handleSyncEmails = async () => {
+    setIsSyncing(true);
+    try {
+      await client.get('/api/v1/google/emails/my');
+      toast.success('Emails synced successfully');
+      router.refresh();
+    } catch (error) {
+      toast.error('Failed to sync emails');
+      console.error(error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }
+
   return (
     <Card className="h-[calc(100vh-10rem)] flex flex-col">
       <CardHeader>
         <CardTitle>Upload & Review</CardTitle>
-        <div className="mt-4">
-          <PdfUploader onFileUpload={onFileUpload} isUploading={isUploading} />
-        </div>
+        <CardAction>
+          <Button variant={'outline'} size={'sm'}
+            className={cn("cursor-pointer", {
+              "opacity-50 cursor-not-allowed": isSyncing,
+            })}
+            onClick={handleSyncEmails}
+            disabled={isSyncing}
+          >
+            {isSyncing ?
+              <>
+                <RefreshCcw className="w-4 h-4 mr-2 animate-spin " /> <span className="text-sm">Syncing Emails...</span>
+              </>
+              : <>
+                <RefreshCcw className="w-4 h-4 mr-2" /> <span className="text-sm">Sync Emails</span>
+              </>
+            }
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex-1 flex flex-col min-h-0">
+        <div className="mb-4">
+          <PdfUploader onFileUpload={onFileUpload} isUploading={isUploading} />
+        </div>
         <div className="relative mb-4">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -119,13 +160,13 @@ export default function AttachmentsList({
                         >
                           {displayName}
                         </p>
-                        <Badge variant="outline" 
-                        className={cn("capitalize", {
-                          "bg-yellow-100 text-yellow-800 border-yellow-200": attachment.status === "pending",
-                          "bg-red-100 text-red-800 border-red-200": attachment.status === "failed",
-                          "bg-blue-100 text-blue-800 border-blue-200": attachment.status === "processing",
-                          "bg-green-100 text-green-800 border-green-200": attachment.status === "success",
-                        })}
+                        <Badge variant="outline"
+                          className={cn("capitalize", {
+                            "bg-yellow-100 text-yellow-800 border-yellow-200": attachment.status === "pending",
+                            "bg-red-100 text-red-800 border-red-200": attachment.status === "failed",
+                            "bg-blue-100 text-blue-800 border-blue-200": attachment.status === "processing",
+                            "bg-green-100 text-green-800 border-green-200": attachment.status === "success",
+                          })}
                         >{attachment.status}</Badge>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">

@@ -55,7 +55,7 @@ export class GoogleServices {
     tokens: any,
     userId: number,
     integrationId: number,
-    lastRead: string
+    lastRead?: string | null | undefined
   ) => {
     if (!lastRead) {
       return
@@ -152,9 +152,9 @@ export class GoogleServices {
         }
 
         // update last read
-        await integrationsService.updateIntegration(integrationId, {
-          lastRead: new Date(),
-        });
+        // await integrationsService.updateIntegration(integrationId, {
+        //   lastRead: new Date(),
+        // });
       }
       return results;
     } catch (error) {

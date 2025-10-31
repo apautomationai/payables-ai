@@ -28,7 +28,7 @@ export const integrationsModel = pgTable("integrations", {
   tokenType: text("token_type"),
   expiryDate: timestamp("expiry_date"),
   startReading: timestamp("start_reading"),
-  lastRead: timestamp("last_read").defaultNow(),
+  lastRead: timestamp("last_read"),
   metadata: jsonb("metadata").default({}),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

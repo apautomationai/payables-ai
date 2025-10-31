@@ -152,9 +152,9 @@ export class GoogleServices {
         }
 
         // update last read
-        // await integrationsService.updateIntegration(integrationId, {
-        //   lastRead: new Date(),
-        // });
+        await integrationsService.updateIntegration(integrationId, {
+          lastRead: new Date(),
+        });
       }
       return results;
     } catch (error) {

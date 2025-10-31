@@ -86,6 +86,25 @@ class InvoiceController {
     }
   }
 
+  async getDashboardMetrics(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      const dashboardData = await invoiceServices.getDashboardMetrics(userId);
+
+      return res.json({
+        success: true,
+        data: dashboardData,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async getInvoice(req: Request, res: Response) {
     try {
       // UPDATED: Parse the 'id' from URL parameter into a number

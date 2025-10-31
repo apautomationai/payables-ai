@@ -2,11 +2,8 @@
 "use client";
 
 import React from "react";
-import { InvoiceListItem, InvoiceDetails } from "@/lib/types";
-import { Button } from "@workspace/ui/components/button";
+import { InvoiceListItem, InvoiceDetails, DashboardMetrics } from "@/lib/types";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
-import { Plus } from "lucide-react";
-import Link from "next/link";
 import StatsCards from "./stats-cards";
 import InvoiceList from "./invoice-list";
 import AttachmentViewer from "./attachment-viewer";
@@ -15,6 +12,7 @@ import NewInvoiceButton from "./new-invoice-button";
 
 interface DashboardDataViewProps {
   invoices: InvoiceListItem[];
+  metrics: DashboardMetrics;
   selectedInvoice: InvoiceDetails | null;
   onSelectInvoice: (invoiceId: number) => void;
   isLoading: boolean;
@@ -22,6 +20,7 @@ interface DashboardDataViewProps {
 
 export default function DashboardDataView({
   invoices,
+  metrics,
   selectedInvoice,
   onSelectInvoice,
   isLoading,
@@ -36,12 +35,11 @@ export default function DashboardDataView({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          
           <NewInvoiceButton />
         </div>
       </header>
 
-      <StatsCards invoices={invoices} />
+      <StatsCards metrics={metrics} />
 
       <main className="grid grid-cols-1 md:grid-cols-5 gap-6 mt-4 flex-1 overflow-hidden">
         <div className="md:col-span-2 flex flex-col h-full">

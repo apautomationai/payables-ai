@@ -77,6 +77,18 @@ export interface InvoiceDetails {
   sourcePdfUrl: string | null;
 }
 
+export interface DashboardMetrics {
+  invoicesThisMonth: number;
+  pendingThisMonth: number;
+  approvedThisMonth: number;
+  rejectedThisMonth: number;
+  totalOutstanding: number;
+}
+
+export interface DashboardData {
+  recentInvoices: InvoiceListItem[];
+  metrics: DashboardMetrics;
+}
 
 export interface LineItem {
   description: string;

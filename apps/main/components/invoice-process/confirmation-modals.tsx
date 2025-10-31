@@ -337,7 +337,7 @@ export default function ConfirmationModals({
                     <Button
                       onClick={handleConfirmReject}
                       disabled={isRejecting}
-                      className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900 cursor-pointer"
+                      className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-200 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900"
                     >
                       {isRejecting ? "Rejecting..." : "Confirm Rejection"}
                     </Button>
@@ -348,7 +348,7 @@ export default function ConfirmationModals({
                 onClick={handleApproveClick}
                 variant="outline"
                 disabled={isApproving}
-                className="bg-green-50 text-green-600 border border-green-200 hover:bg-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900 cursor-pointer"
+                className="bg-green-50 text-green-600 border border-green-200 hover:bg-green-200 dark:bg-green-950 dark:text-green-400 dark:border-green-800 dark:hover:bg-green-900"
               >
                 {isApproving ? "Approving..." : "Approve"}
               </Button>

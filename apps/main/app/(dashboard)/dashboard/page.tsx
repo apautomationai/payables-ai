@@ -4,6 +4,13 @@ import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
 import { User, ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
 
+function getErrorMessage(error: any): string | null {
+  const message = error?.error?.message || error?.message || "";
+  return typeof message === "string" && message.includes("No integrations found")
+    ? "Connect Email in Settings"
+    : null;
+}
+
 async function DashboardContent() {
   let userName = "User";
   let dashboardData: DashboardData | null = null;
@@ -19,15 +26,8 @@ async function DashboardContent() {
       const user = userResult.value.data;
       userName = `${user.firstName} ${user.lastName}`.trim();
     } else if (userResult.status === "rejected") {
-      const errorReason = userResult.reason as any;
-      const errorMessage =
-        errorReason?.error?.message && typeof errorReason.error.message === "string"
-          ? errorReason.error.message
-          : "";
-
-      if (errorMessage.includes("No integrations found for this user")) {
-        integrationError = "Connect Email in Settings";
-      } else {
+      integrationError = getErrorMessage(userResult.reason);
+      if (!integrationError) {
         console.error("Failed to fetch user data:", userResult.reason);
       }
     }
@@ -35,15 +35,8 @@ async function DashboardContent() {
     if (dashboardResult.status === "fulfilled" && dashboardResult.value?.data) {
       dashboardData = dashboardResult.value.data;
     } else if (dashboardResult.status === "rejected") {
-      const errorReason = dashboardResult.reason as any;
-      const errorMessage =
-        errorReason?.error?.message && typeof errorReason.error.message === "string"
-          ? errorReason.error.message
-          : "";
-
-      if (errorMessage.includes("No integrations found for this user")) {
-        integrationError = "Connect Email in Settings";
-      } else {
+      integrationError = getErrorMessage(dashboardResult.reason);
+      if (!integrationError) {
         console.error("Failed to fetch dashboard data:", dashboardResult.reason);
       }
     }
@@ -51,7 +44,6 @@ async function DashboardContent() {
     console.error("An unexpected error occurred while fetching dashboard data:", error);
   }
 
-  // Provide fallback values
   const defaultMetrics: DashboardMetrics = {
     invoicesThisMonth: 0,
     pendingThisMonth: 0,

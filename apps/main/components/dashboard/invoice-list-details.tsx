@@ -79,7 +79,6 @@ import React from "react";
 import { InvoiceDetails } from "@/lib/types";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@workspace/ui/components/card";
 import { Badge } from "@workspace/ui/components/badge";
-import { Skeleton } from "@workspace/ui/components/skeleton";
 
 const DetailItem = ({ label, value }: { label: string; value: React.ReactNode }) => (
   <div>
@@ -90,33 +89,12 @@ const DetailItem = ({ label, value }: { label: string; value: React.ReactNode })
   </div>
 );
 
-const DetailItemSkeleton = () => (
-  <div>
-    <Skeleton className="h-3 w-16 mb-2" />
-    <Skeleton className="h-5 w-full" />
-  </div>
-)
 
 interface InvoiceDetailsComponentProps {
   invoice: InvoiceDetails | null;
-  isLoading: boolean;
 }
 
-export default function InvoiceDetailsComponent({ invoice, isLoading }: InvoiceDetailsComponentProps) {
-  if (isLoading) {
-    return (
-      <Card className="h-[400px]">
-        <CardHeader>
-          <Skeleton className="h-6 w-3/4 mb-2" />
-          <Skeleton className="h-4 w-1/4" />
-        </CardHeader>
-        <CardContent className="pt-4 grid grid-cols-2 gap-y-6 gap-x-8">
-          {[...Array(8)].map((_, i) => <DetailItemSkeleton key={i} />)}
-        </CardContent>
-      </Card>
-    );
-  }
-
+export default function InvoiceDetailsComponent({ invoice }: InvoiceDetailsComponentProps) {
   if (!invoice) {
     return (
       <Card className="flex items-center justify-center h-full min-h-[400px]">

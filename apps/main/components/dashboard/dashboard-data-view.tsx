@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from "react";
@@ -7,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/componen
 import StatsCards from "./stats-cards";
 import InvoiceList from "./invoice-list";
 import AttachmentViewer from "./attachment-viewer";
-import InvoiceDetailsComponent from "@/components/dashboard/invoice-list-details";
+import InvoiceDetailsComponent from "./invoice-list-details";
 import NewInvoiceButton from "./new-invoice-button";
 
 interface DashboardDataViewProps {
@@ -15,7 +14,6 @@ interface DashboardDataViewProps {
   metrics: DashboardMetrics;
   selectedInvoice: InvoiceDetails | null;
   onSelectInvoice: (invoiceId: number) => void;
-  isLoading: boolean;
 }
 
 export default function DashboardDataView({
@@ -23,7 +21,6 @@ export default function DashboardDataView({
   metrics,
   selectedInvoice,
   onSelectInvoice,
-  isLoading,
 }: DashboardDataViewProps) {
   return (
     <div className="flex flex-col h-full min-h-screen overflow-hidden">
@@ -49,20 +46,20 @@ export default function DashboardDataView({
             onSelectInvoice={onSelectInvoice}
           />
         </div>
-        
+
         <div className="md:col-span-3 hidden md:flex flex-col h-full">
           <Tabs defaultValue="document" className="flex flex-col h-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="document">Document</TabsTrigger>
               <TabsTrigger value="details">Details</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="document" className="flex-1 overflow-hidden mt-2">
-              <AttachmentViewer selectedInvoice={selectedInvoice} isLoading={isLoading} />
+              <AttachmentViewer selectedInvoice={selectedInvoice} />
             </TabsContent>
-            
+
             <TabsContent value="details" className="flex-1 overflow-hidden mt-2">
-              <InvoiceDetailsComponent invoice={selectedInvoice} isLoading={isLoading} />
+              <InvoiceDetailsComponent invoice={selectedInvoice} />
             </TabsContent>
           </Tabs>
         </div>

@@ -1,10 +1,9 @@
 "use client";
 
 import React from "react";
-import Link from "next/link";
-import { Button } from "@workspace/ui/components/button"; // Adjust path if needed
 import { UploadCloud } from "lucide-react";
 import { motion } from "framer-motion";
+import NewInvoiceButton from "./new-invoice-button";
 
 // Define the type for the props this component expects
 interface EmptyStateProps {
@@ -32,17 +31,15 @@ export default function EmptyState({ userName }: EmptyStateProps) {
         </div>
         <h2 className="text-2xl font-bold tracking-tight">
           {/* The dynamic userName prop is used here for a personalized greeting */}
-          Welcome to Payable.ai, {userName}!
+          Welcome to Sledge, {userName}!
         </h2>
         <p className="mt-2 text-muted-foreground">
-          You're all set up! Upload your first invoice to get started.
+          You're all set up! Upload your first invoice to get started. It's as easy as 1, 2, 3.
         </p>
-        <Button size="lg" className="mt-6" asChild>
-          <Link href="/invoice-review">
-            <UploadCloud className="h-4 w-4 mr-2" />
-            Upload Your First Invoice
-          </Link>
-        </Button>
+        <NewInvoiceButton size="lg" className="mt-6 w-4/5 mx-auto cursor-pointer">
+            <UploadCloud className="h-6 w-6 mr-2" />
+            Upload our first invoice
+        </NewInvoiceButton>
       </motion.div>
     </div>
   );

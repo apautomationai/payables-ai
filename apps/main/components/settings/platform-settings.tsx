@@ -20,10 +20,9 @@ import {
   SelectValue,
 } from "@workspace/ui/components/select";
 import { Checkbox } from "@workspace/ui/components/checkbox";
-import { Textarea } from "@workspace/ui/components/textarea";
 
 const initialSettings = {
-  platformName: "PayableAI",
+  platformName: "Sledge",
   defaultCurrency: "USD",
   timeZone: "UTC-5",
   dateFormat: "MM/DD/YYYY",

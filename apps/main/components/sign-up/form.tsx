@@ -159,7 +159,7 @@ export default function SignUpForm() {
             Create an Account
           </CardTitle>
           <CardDescription className="text-gray-300 text-base mt-2">
-            Get started with Payable.ai today
+            Get started with Sledge today
           </CardDescription>
         </CardHeader>
         

@@ -19,7 +19,7 @@ export default function AuthLayout({
         <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-cyan-600/5 rounded-full blur-3xl"></div>
-        
+
         {/* Floating Animated Elements */}
         <motion.div
           className="absolute top-20 left-20"
@@ -78,7 +78,7 @@ export default function AuthLayout({
       <div className="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
         <div className="w-full max-w-7xl">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            
+
             {/* Left Side - Promotional Content */}
             <motion.div
               initial={{ opacity: 0, x: -50 }}
@@ -122,7 +122,7 @@ export default function AuthLayout({
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="text-lg lg:text-xl text-gray-300 mb-8 leading-relaxed"
               >
-                Join Payable.ai and turn complex PDFs into actionable data effortlessly.
+                Join Sledge and turn complex PDFs into actionable data effortlessly.
               </motion.p>
 
               {/* Features List */}
@@ -163,23 +163,23 @@ export default function AuthLayout({
               </motion.div> */}
             </motion.div>
 
-           {/* Right Side - Login Form with Glowing Dot Spline */}
-<motion.div
-  initial={{ opacity: 0, x: 50 }}
-  animate={{ opacity: 1, x: 0 }}
-  transition={{ duration: 0.8, delay: 0.2 }}
-  className="flex justify-center lg:justify-end"
->
-  <div className="relative w-full max-w-md">
+            {/* Right Side - Login Form with Glowing Dot Spline */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="flex justify-center lg:justify-end"
+            >
+              <div className="relative w-full max-w-md">
 
-    {/* Main Card Container */}
-    <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-2xl">
-      {children}
-    </div>
-  </div>
-</motion.div>
+                {/* Main Card Container */}
+                <div className="relative bg-white/10 backdrop-blur-sm border border-white/20 rounded-2xl p-8 shadow-2xl">
+                  {children}
+                </div>
+              </div>
+            </motion.div>
 
-             
+
           </div>
         </div>
       </div>

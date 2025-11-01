@@ -64,6 +64,8 @@ export default function InvoiceReviewClient({
 
   const [invoiceDetailsCache, setInvoiceDetailsCache] = useState<Record<number, InvoiceDetails>>(initialInvoiceCache);
 
+  const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>(invoices);
+
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -73,6 +75,17 @@ export default function InvoiceReviewClient({
       setSelectedFields(Object.keys(invoiceDetails));
     }
   }, [invoiceDetails]);
+
+  // Function to update invoice status in the list
+  const updateInvoiceStatusInList = (invoiceId: number, newStatus: InvoiceStatus) => {
+    setInvoicesList(prevList =>
+      prevList.map(invoice =>
+        invoice.id === invoiceId
+          ? { ...invoice, status: newStatus }
+          : invoice
+      )
+    );
+  };
 
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
@@ -167,6 +180,11 @@ export default function InvoiceReviewClient({
         [updatedData?.id]: updatedData
       }));
 
+      // Update the invoice status in the list for real-time UI update
+      if (updatedData?.status) {
+        updateInvoiceStatusInList(updatedData.id, updatedData.status);
+      }
+
       // Show appropriate success message
       const statusChanged = invoiceDetails.status !== updatedData?.status;
       const message = statusChanged
@@ -199,6 +217,9 @@ export default function InvoiceReviewClient({
         [updatedData.id]: updatedData
       }));
 
+      // Update the invoice status in the list for real-time UI update
+      updateInvoiceStatusInList(updatedData.id, "approved");
+
       toast.success("Invoice has been approved");
       router.refresh();
     } catch (err) {
@@ -224,6 +245,9 @@ export default function InvoiceReviewClient({
         ...prevCache,
         [updatedData.id]: updatedData
       }));
+
+      // Update the invoice status in the list for real-time UI update
+      updateInvoiceStatusInList(updatedData.id, "rejected");
 
       toast.success("Invoice has been rejected");
       router.refresh();
@@ -374,7 +398,7 @@ export default function InvoiceReviewClient({
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-3">
                 <InvoicesList
-                  invoices={invoices}
+                  invoices={invoicesList}
                   selectedInvoiceId={selectedInvoiceId}
                   onSelectInvoice={handleSelectInvoice}
                   currentPage={invoiceCurrentPage}
@@ -410,6 +434,10 @@ export default function InvoiceReviewClient({
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
                       onApprovalSuccess={() => {
+                        // Update the invoice status in the list for real-time UI update
+                        if (invoiceDetails) {
+                          updateInvoiceStatusInList(invoiceDetails.id, "approved");
+                        }
                         setSelectedInvoiceId(null);
                         router.refresh();
                       }}
@@ -420,6 +448,10 @@ export default function InvoiceReviewClient({
                           ...prevCache,
                           [updatedDetails.id]: updatedDetails
                         }));
+                        // Update the invoice status in the list for real-time UI update
+                        if (updatedDetails.status) {
+                          updateInvoiceStatusInList(updatedDetails.id, updatedDetails.status);
+                        }
                       }}
                     />
                   </div>

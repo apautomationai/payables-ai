@@ -13,6 +13,7 @@ import { cn } from "@workspace/ui/lib/utils";
 import { formatLabel, formatDate } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const FormField = ({
   fieldKey,
@@ -22,6 +23,7 @@ const FormField = ({
   isSelected,
   onToggle,
   onChange,
+  onDateChange,
 }: {
   fieldKey: string;
   label: string;
@@ -30,12 +32,18 @@ const FormField = ({
   isSelected: boolean;
   onToggle: (fieldKey: string) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onDateChange?: (fieldKey: string, dateString: string | undefined) => void;
 }) => {
+  const isDateField = fieldKey === 'invoiceDate' || fieldKey === 'dueDate';
+
   const displayValue = Array.isArray(value)
     ? `${value.length} item(s)`
-    : (fieldKey === 'invoiceDate' || fieldKey === 'dueDate')
+    : isDateField
       ? formatDate(value as string)
       : value ?? "N/A";
+
+  // For date fields, use the formatted date string directly
+  const dateStringValue = isDateField && value ? formatDate(value as string) : undefined;
 
   return (
     <div className="flex items-start gap-4">
@@ -55,19 +63,34 @@ const FormField = ({
         >
           {label}
         </Label>
-        <Input
-          id={fieldKey}
-          name={fieldKey}
-          value={String(displayValue)}
-          readOnly={!isEditing || Array.isArray(value)}
-          onChange={onChange}
-          className={cn(
-            "h-9 read-only:bg-muted/50 read-only:border-dashed",
-            isSelected
-              ? "border-green-500 focus-visible:ring-green-500/20"
-              : "border-input"
-          )}
-        />
+
+        {isDateField && isEditing ? (
+          <DatePicker
+            value={dateStringValue}
+            onDateChange={(dateString) => onDateChange?.(fieldKey, dateString)}
+            placeholder={`Select ${label.toLowerCase()}`}
+            className={cn(
+              "h-9",
+              isSelected
+                ? "border-green-500 focus-visible:ring-green-500/20"
+                : "border-input"
+            )}
+          />
+        ) : (
+          <Input
+            id={fieldKey}
+            name={fieldKey}
+            value={String(displayValue)}
+            readOnly={!isEditing || Array.isArray(value)}
+            onChange={onChange}
+            className={cn(
+              "h-9 read-only:bg-muted/50 read-only:border-dashed",
+              isSelected
+                ? "border-green-500 focus-visible:ring-green-500/20"
+                : "border-input"
+            )}
+          />
+        )}
       </div>
     </div>
   );
@@ -105,6 +128,12 @@ export default function InvoiceDetailsForm({
 
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
+  const [localInvoiceDetails, setLocalInvoiceDetails] = useState<InvoiceDetails>(invoiceDetails);
+
+  // Update local state when invoiceDetails prop changes
+  useEffect(() => {
+    setLocalInvoiceDetails(invoiceDetails);
+  }, [invoiceDetails]);
 
   // Fetch line items when invoice details change
   useEffect(() => {
@@ -136,6 +165,26 @@ export default function InvoiceDetailsForm({
     );
   };
 
+  const handleDateChange = (fieldKey: string, dateString: string | undefined) => {
+    // Convert YYYY-MM-DD to ISO string for storage (but keep it as date-only)
+    const isoString = dateString ? `${dateString}T00:00:00.000Z` : null;
+
+    setLocalInvoiceDetails(prev => ({
+      ...prev,
+      [fieldKey]: isoString
+    }));
+
+    // Create a synthetic event to maintain compatibility with existing onChange handler
+    const syntheticEvent = {
+      target: {
+        name: fieldKey,
+        value: isoString || ''
+      }
+    } as React.ChangeEvent<HTMLInputElement>;
+
+    onDetailsChange(syntheticEvent);
+  };
+
   const allFields = Object.keys(invoiceDetails || {});
   const hiddenFields = [
     "id",
@@ -161,7 +210,7 @@ export default function InvoiceDetailsForm({
   ];
 
   const completedMandatoryFields = mandatoryFields.filter((field) =>
-    selectedFields.includes(field) && invoiceDetails[field as keyof InvoiceDetails]
+    selectedFields.includes(field) && localInvoiceDetails[field as keyof InvoiceDetails]
   ).length;
 
   const progress =
@@ -180,11 +229,12 @@ export default function InvoiceDetailsForm({
                 key={key}
                 fieldKey={key}
                 label={formatLabel(key)}
-                value={invoiceDetails[key as keyof InvoiceDetails] ?? null}
+                value={localInvoiceDetails[key as keyof InvoiceDetails] ?? null}
                 isEditing={isEditing}
                 isSelected={selectedFields.includes(key)}
                 onToggle={handleFieldToggle}
                 onChange={onDetailsChange}
+                onDateChange={handleDateChange}
               />
             ))}
 

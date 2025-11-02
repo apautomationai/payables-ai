@@ -245,19 +245,19 @@ export class UserServices {
         if (!existingUser.provider || existingUser.provider === 'credentials') {
           await db
             .update(usersModel)
-            .set({ 
-              provider: 'google', 
+            .set({
+              provider: 'google',
               providerId: googleId,
               ...(avatar && { avatar }),
             })
             .where(eq(usersModel.id, existingUser.id));
-          
+
           const [updatedUser] = await db
             .select()
             .from(usersModel)
             .where(eq(usersModel.id, existingUser.id))
             .limit(1);
-          
+
           return updatedUser || existingUser;
         }
         return existingUser;
@@ -282,6 +282,15 @@ export class UserServices {
           isBanned: false,
         })
         .returning();
+
+      // Assign subscription to user (with error handling to not break registration)
+      try {
+        await RegistrationService.assignSubscriptionToUser(newUser.id);
+      } catch (subscriptionError: any) {
+        // Log the error but don't fail the registration
+        console.error(`Subscription assignment failed for Google user ${newUser.id}:`, subscriptionError);
+        // Note: In production, you might want to add this to a retry queue
+      }
 
       return newUser;
     } catch (error: any) {

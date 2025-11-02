@@ -45,7 +45,7 @@ class WebSocketClient {
                 return;
             }
 
-            const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+            const serverUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 
             this.socket = io(serverUrl, {
                 auth: {
@@ -57,6 +57,10 @@ class WebSocketClient {
                 reconnection: true,
                 reconnectionAttempts: this.maxReconnectAttempts,
                 reconnectionDelay: this.reconnectDelay,
+                // Handle HTTPS/WSS automatically
+                secure: serverUrl.startsWith('https://'),
+                upgrade: true,
+                rememberUpgrade: true
             });
 
             this.socket.on('connect', () => {

@@ -7,12 +7,41 @@ export class WebSocketService {
     private static instance: WebSocketService;
 
     constructor(server: HTTPServer) {
+        // Configure allowed origins for different environments
+        const getAllowedOrigins = () => {
+            const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+            const allowedOrigins = process.env.ALLOWED_ORIGINS || process.env.CORS_ORIGIN || frontendUrl;
+
+            // Parse comma-separated origins
+            const origins = allowedOrigins.split(',').map(origin => origin.trim());
+
+            // Add common production domains if not already included
+            const productionDomains = [
+                "https://getsledge.com",
+                "https://www.getsledge.com",
+                "https://dev.getsledge.com"
+            ];
+
+            productionDomains.forEach(domain => {
+                if (!origins.includes(domain)) {
+                    origins.push(domain);
+                }
+            });
+
+            return origins;
+        };
+
         this.io = new SocketIOServer(server, {
             cors: {
-                origin: process.env.FRONTEND_URL || "http://localhost:3000",
-                methods: ["GET", "POST"],
-                credentials: true
-            }
+                origin: getAllowedOrigins(),
+                methods: ["GET", "POST", "PUT", "DELETE"],
+                credentials: true,
+                allowedHeaders: ["Content-Type", "Authorization"]
+            },
+            allowEIO3: true, // Support older clients
+            transports: ['websocket', 'polling'], // Allow fallback to polling
+            pingTimeout: 60000,
+            pingInterval: 25000
         });
 
         this.setupMiddleware();

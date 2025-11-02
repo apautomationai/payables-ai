@@ -7,6 +7,8 @@ const router = Router();
 // POST /api/v1/subscription/webhook - Handle Stripe webhook events (no auth required)
 router.post('/webhook', subscriptionController.handleStripeWebhook);
 
+
+
 // All other subscription routes require authentication
 router.use(authenticate);
 
@@ -19,7 +21,6 @@ router.post('/create-checkout', subscriptionController.createCheckoutSession);
 // POST /api/v1/subscription/create-portal - Create Stripe customer portal session
 router.post('/create-portal', subscriptionController.createCustomerPortal);
 
-// GET /api/v1/subscription/debug - Debug subscription issues (development only)
-router.get('/debug', subscriptionController.debugSubscriptions);
+
 
 export default router;

@@ -22,6 +22,7 @@ import invoiceRoutes from "@/routes/invoice.routes";
 import quickbooksRoutes from "@/routes/quickbooks.routes";
 import processorRoutes from "@/routes/processor.routes";
 import subscriptionRoutes from "@/routes/subscription.routes";
+import testWebSocketRoutes from "@/routes/test-websocket.routes";
 
 const app = express();
 
@@ -66,6 +67,7 @@ app.use("/api/v1/invoice", invoiceRoutes);
 app.use("/api/v1/quickbooks", quickbooksRoutes);
 app.use("/api/v1/processor", processorRoutes);
 app.use("/api/v1/subscription", subscriptionRoutes);
+app.use("/api/v1/test-websocket", testWebSocketRoutes);
 
 // Apply error handlers
 app.use(notFoundHandler);

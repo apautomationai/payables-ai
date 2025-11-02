@@ -1,6 +1,7 @@
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import { attachmentServices } from "@/services/attachment.services";
 import { invoiceServices } from "@/services/invoice.services";
+import { getWebSocketService } from "@/services/websocket.service";
 import { Request, Response } from "express";
 
 class ProcessorController {
@@ -156,14 +157,20 @@ class ProcessorController {
       let message = "";
       let statusCode = 201;
 
+      // Emit WebSocket events for real-time updates
+      const wsService = getWebSocketService();
+
       switch (operation) {
         case 'created':
           message = "Invoice created successfully";
           statusCode = 201;
+          wsService.emitInvoiceCreated(userId, invoice);
           break;
         case 'updated':
           message = "Invoice updated successfully";
           statusCode = 200;
+          // Emit invoice updated event
+          wsService.emitInvoiceUpdated(userId, invoice);
           break;
         case 'no_changes':
           message = "Invoice already exists with same data";

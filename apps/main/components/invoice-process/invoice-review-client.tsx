@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { client } from "@/lib/axios-client";
@@ -12,6 +12,7 @@ import InvoiceDetailsForm from "./invoice-details-form";
 import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
 import type { Attachment, InvoiceDetails, InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
+import { useRealtimeInvoices } from "@/hooks/use-realtime-invoices";
 
 // API Response type for single invoice/attachment actions
 interface InvoiceApiResponse {
@@ -86,6 +87,88 @@ export default function InvoiceReviewClient({
       )
     );
   };
+
+  // Function to add new invoice to the list
+  const addInvoiceToList = (newInvoice: InvoiceDetails) => {
+    console.log('Invoice Review Client: Adding new invoice to list:', newInvoice);
+
+    const invoiceListItem: InvoiceListItem = {
+      id: newInvoice.id,
+      invoiceNumber: newInvoice.invoiceNumber,
+      vendorName: newInvoice.vendorName,
+      totalAmount: newInvoice.totalAmount,
+      status: newInvoice.status,
+      createdAt: newInvoice.createdAt,
+    };
+
+    console.log('Invoice Review Client: Created list item:', invoiceListItem);
+
+    setInvoicesList(prevList => {
+      console.log('Invoice Review Client: Previous list length:', prevList.length);
+      const newList = [invoiceListItem, ...prevList];
+      console.log('Invoice Review Client: New list length:', newList.length);
+      return newList;
+    });
+  };
+
+  // Function to update existing invoice in the list
+  const updateInvoiceInList = (updatedInvoice: InvoiceDetails) => {
+    const invoiceListItem: InvoiceListItem = {
+      id: updatedInvoice.id,
+      invoiceNumber: updatedInvoice.invoiceNumber,
+      vendorName: updatedInvoice.vendorName,
+      totalAmount: updatedInvoice.totalAmount,
+      status: updatedInvoice.status,
+      createdAt: updatedInvoice.createdAt,
+    };
+
+    setInvoicesList(prevList =>
+      prevList.map(invoice =>
+        invoice.id === updatedInvoice.id ? invoiceListItem : invoice
+      )
+    );
+
+    // Update invoice details if it's currently selected
+    if (selectedInvoiceId === updatedInvoice.id) {
+      setInvoiceDetails(updatedInvoice);
+      setOriginalInvoiceDetails(updatedInvoice);
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [updatedInvoice.id]: updatedInvoice
+      }));
+    }
+  };
+
+  // Function to refresh invoice data from API
+  const refreshInvoiceData = useCallback(async () => {
+    try {
+      console.log('Invoice Review Client: Refreshing invoice data from API');
+
+      // Refresh the page to get latest data
+      // You could also implement a more sophisticated refresh by calling the API directly
+      router.refresh();
+    } catch (error) {
+      console.error('Invoice Review Client: Error refreshing data:', error);
+    }
+  }, [router]);
+
+  // Set up real-time WebSocket connection
+  const { joinInvoiceList, leaveInvoiceList } = useRealtimeInvoices({
+    onRefreshNeeded: refreshInvoiceData,
+    enableToasts: true,
+    autoConnect: true,
+  });
+
+  // Join invoice list room when component mounts, leave when unmounts
+  useEffect(() => {
+    if (activeTabState === 'invoices') {
+      joinInvoiceList();
+    }
+
+    return () => {
+      leaveInvoiceList();
+    };
+  }, [activeTabState, joinInvoiceList, leaveInvoiceList]);
 
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,

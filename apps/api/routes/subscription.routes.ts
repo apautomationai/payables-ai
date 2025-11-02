@@ -19,4 +19,7 @@ router.post('/create-checkout', subscriptionController.createCheckoutSession);
 // POST /api/v1/subscription/create-portal - Create Stripe customer portal session
 router.post('/create-portal', subscriptionController.createCustomerPortal);
 
+// GET /api/v1/subscription/debug - Debug subscription issues (development only)
+router.get('/debug', subscriptionController.debugSubscriptions);
+
 export default router;

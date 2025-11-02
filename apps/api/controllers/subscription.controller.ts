@@ -4,8 +4,6 @@ import { StripeService } from '@/services/stripe.service';
 import { WebhookService } from '@/services/webhook.service';
 import { SUBSCRIPTION_CONFIG } from '@/config/subscription.config';
 import { BadRequestError, InternalServerError, NotFoundError } from '@/helpers/errors';
-import { SubscriptionFixUtility } from '@/utils/fix-missing-subscriptions';
-import { RegistrationService } from '@/services/registration.service';
 
 export class SubscriptionController {
     /**
@@ -272,96 +270,7 @@ export class SubscriptionController {
         }
     };
 
-    /**
-     * Debug endpoint to check and fix subscription issues
-     * Only available in development mode
-     */
-    debugSubscriptions = async (req: Request, res: Response) => {
-        try {
-            // Only allow in development
-            if (process.env.NODE_ENV === 'production') {
-                throw new BadRequestError('Debug endpoints not available in production');
-            }
 
-            //@ts-ignore
-            const userId = req.user?.id;
-            const { action } = req.query;
-
-            switch (action) {
-                case 'check-missing':
-                    const usersWithoutSubscriptions = await SubscriptionFixUtility.findUsersWithoutSubscriptions();
-                    return res.json({
-                        success: true,
-                        data: {
-                            count: usersWithoutSubscriptions.length,
-                            users: usersWithoutSubscriptions
-                        }
-                    });
-
-                case 'fix-missing':
-                    const fixResults = await SubscriptionFixUtility.fixMissingSubscriptions();
-                    return res.json({
-                        success: true,
-                        data: fixResults
-                    });
-
-                case 'check-user':
-                    if (!userId) {
-                        throw new BadRequestError('User ID required for check-user action');
-                    }
-                    const userSubscription = await SubscriptionFixUtility.checkUserSubscription(userId);
-                    return res.json({
-                        success: true,
-                        data: userSubscription
-                    });
-
-                case 'assign-subscription':
-                    if (!userId) {
-                        throw new BadRequestError('User ID required for assign-subscription action');
-                    }
-                    // Check if user already has subscription
-                    const existingSubscription = await SubscriptionService.getSubscriptionByUserId(userId);
-                    if (existingSubscription) {
-                        return res.json({
-                            success: false,
-                            message: 'User already has a subscription',
-                            data: existingSubscription
-                        });
-                    }
-                    // Assign new subscription
-                    await RegistrationService.assignSubscriptionToUser(userId);
-                    const newSubscription = await SubscriptionService.getSubscriptionByUserId(userId);
-                    return res.json({
-                        success: true,
-                        message: 'Subscription assigned successfully',
-                        data: newSubscription
-                    });
-
-                default:
-                    return res.json({
-                        success: true,
-                        message: 'Available debug actions',
-                        actions: [
-                            'check-missing - Find users without subscriptions',
-                            'fix-missing - Assign subscriptions to users who are missing them',
-                            'check-user - Check current user\'s subscription',
-                            'assign-subscription - Assign subscription to current user (if missing)'
-                        ]
-                    });
-            }
-
-        } catch (error: any) {
-            console.error('Error in debug subscriptions:', error);
-
-            if (error instanceof BadRequestError) {
-                throw error;
-            }
-
-            throw new InternalServerError(
-                error.message || 'Debug operation failed'
-            );
-        }
-    };
 }
 
 export const subscriptionController = new SubscriptionController();

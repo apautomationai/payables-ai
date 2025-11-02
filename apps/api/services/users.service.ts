@@ -74,8 +74,7 @@ export class UserServices {
       try {
         await RegistrationService.assignSubscriptionToUser(createdUser.id);
       } catch (subscriptionError: any) {
-        // Log the error but don't fail the registration
-        console.error(`Subscription assignment failed for user ${createdUser.id}:`, subscriptionError);
+        // Silently handle subscription assignment errors to not break registration
         // Note: In production, you might want to add this to a retry queue
       }
 
@@ -287,8 +286,7 @@ export class UserServices {
       try {
         await RegistrationService.assignSubscriptionToUser(newUser.id);
       } catch (subscriptionError: any) {
-        // Log the error but don't fail the registration
-        console.error(`Subscription assignment failed for Google user ${newUser.id}:`, subscriptionError);
+        // Silently handle subscription assignment errors to not break registration
         // Note: In production, you might want to add this to a retry queue
       }
 

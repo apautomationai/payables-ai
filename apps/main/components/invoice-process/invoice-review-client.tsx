@@ -148,52 +148,70 @@ export default function InvoiceReviewClient({
       console.log('Current page:', invoiceCurrentPage);
 
       // Fetch latest invoices from API (always fetch page 1 to get newest invoices)
-      const response = await client.get<{ data: { invoices: InvoiceListItem[], pagination: { totalPages: number } } }>(
+      const response = await client.get<{
+        data?: { invoices: InvoiceListItem[], pagination: { totalPages: number } };
+        invoices?: InvoiceListItem[];
+        pagination?: { totalPages: number };
+      }>(
         `api/v1/invoice/invoices?page=1&limit=20`
       );
 
       console.log('API Response:', response);
 
-      if (response.data?.data) {
-        const { invoices: newInvoices } = response.data.data;
-        console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
-        console.log('New invoices:', newInvoices);
+      console.log('Checking response structure:', response.data);
+      console.log('response.data?.data exists:', !!response.data?.data);
+      console.log('response.data?.invoices exists:', !!response.data?.invoices);
 
-        // Update the invoices list with fresh data
-        console.log('About to update invoices list from', invoicesList.length, 'to', newInvoices.length);
+      let newInvoices: InvoiceListItem[] = [];
 
-        // Force a new array reference to ensure React detects the change
-        setInvoicesList(prevList => {
-          console.log('State update: Previous list length:', prevList.length);
-          console.log('State update: New list length:', newInvoices.length);
-          return [...newInvoices];
-        });
-        console.log('Updated invoices list state');
+      if (response.data?.data?.invoices) {
+        newInvoices = response.data.data.invoices;
+        console.log('Using nested structure: response.data.data.invoices');
+      } else if (response.data?.invoices) {
+        newInvoices = response.data.invoices;
+        console.log('Using direct structure: response.data.invoices');
+      } else {
+        console.error('Unknown response structure:', response.data);
+        return;
+      }
 
-        // Force a re-render by toggling loading state and incrementing refresh count
-        setRefreshCount(prev => prev + 1);
-        setIsDetailsLoading(true);
-        setTimeout(() => setIsDetailsLoading(false), 10);
+      console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
+      console.log('New invoices:', newInvoices);
 
-        // If there are new invoices and no invoice is currently selected, select the first one
-        if (newInvoices.length > 0 && !selectedInvoiceId) {
-          const firstInvoice = newInvoices[0];
-          if (firstInvoice) {
-            setSelectedInvoiceId(firstInvoice.id);
+      // Update the invoices list with fresh data
+      console.log('About to update invoices list from', invoicesList.length, 'to', newInvoices.length);
 
-            // Fetch details for the first invoice
-            try {
-              const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
-              const newDetails = detailsResponse.data;
+      // Force a new array reference to ensure React detects the change
+      setInvoicesList(prevList => {
+        console.log('State update: Previous list length:', prevList.length);
+        console.log('State update: New list length:', newInvoices.length);
+        return [...newInvoices];
+      });
+      console.log('Updated invoices list state');
 
-              setInvoiceDetails(newDetails);
-              setInvoiceDetailsCache(prev => ({
-                ...prev,
-                [newDetails.id]: newDetails
-              }));
-            } catch (detailsError) {
-              console.error('Error fetching invoice details:', detailsError);
-            }
+      // Force a re-render by toggling loading state and incrementing refresh count
+      setRefreshCount(prev => prev + 1);
+      setIsDetailsLoading(true);
+      setTimeout(() => setIsDetailsLoading(false), 10);
+
+      // If there are new invoices and no invoice is currently selected, select the first one
+      if (newInvoices.length > 0 && !selectedInvoiceId) {
+        const firstInvoice = newInvoices[0];
+        if (firstInvoice) {
+          setSelectedInvoiceId(firstInvoice.id);
+
+          // Fetch details for the first invoice
+          try {
+            const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
+            const newDetails = detailsResponse.data;
+
+            setInvoiceDetails(newDetails);
+            setInvoiceDetailsCache(prev => ({
+              ...prev,
+              [newDetails.id]: newDetails
+            }));
+          } catch (detailsError) {
+            console.error('Error fetching invoice details:', detailsError);
           }
         }
       }

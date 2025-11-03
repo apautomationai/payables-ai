@@ -68,6 +68,7 @@ export default function InvoiceReviewClient({
   const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>(invoices);
 
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -159,11 +160,20 @@ export default function InvoiceReviewClient({
         console.log('New invoices:', newInvoices);
 
         // Update the invoices list with fresh data
-        setInvoicesList(newInvoices);
+        console.log('About to update invoices list from', invoicesList.length, 'to', newInvoices.length);
+
+        // Force a new array reference to ensure React detects the change
+        setInvoicesList(prevList => {
+          console.log('State update: Previous list length:', prevList.length);
+          console.log('State update: New list length:', newInvoices.length);
+          return [...newInvoices];
+        });
         console.log('Updated invoices list state');
 
-        // Force a re-render by updating a dummy state
-        setIsDetailsLoading(false);
+        // Force a re-render by toggling loading state and incrementing refresh count
+        setRefreshCount(prev => prev + 1);
+        setIsDetailsLoading(true);
+        setTimeout(() => setIsDetailsLoading(false), 10);
 
         // If there are new invoices and no invoice is currently selected, select the first one
         if (newInvoices.length > 0 && !selectedInvoiceId) {
@@ -206,8 +216,9 @@ export default function InvoiceReviewClient({
       (window as any).debugRefreshInvoices = refreshInvoiceData;
       (window as any).debugInvoicesList = invoicesList;
       (window as any).debugActiveTab = activeTabState;
+      (window as any).debugRefreshCount = refreshCount;
     }
-  }, [refreshInvoiceData, invoicesList, activeTabState]);
+  }, [refreshInvoiceData, invoicesList, activeTabState, refreshCount]);
 
   // Set up real-time WebSocket connection
   const { joinInvoiceList, leaveInvoiceList } = useRealtimeInvoices({
@@ -223,6 +234,9 @@ export default function InvoiceReviewClient({
       console.log('🔥 NEW INVOICE CREATED HANDLER CALLED:', invoiceId);
       console.log('Current active tab:', activeTabState);
       console.log('Current invoices list length before refresh:', invoicesList.length);
+
+      // Show debugging info
+      console.log('🚨 INVOICE CREATED - TRIGGERING REFRESH');
 
       // New invoice created - refresh invoices list and also attachments (since attachment was processed)
       refreshInvoiceData();
@@ -578,6 +592,7 @@ export default function InvoiceReviewClient({
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-3">
                 <InvoicesList
+                  key={`invoices-${invoicesList.length}-${refreshCount}`}
                   invoices={invoicesList}
                   selectedInvoiceId={selectedInvoiceId}
                   onSelectInvoice={handleSelectInvoice}

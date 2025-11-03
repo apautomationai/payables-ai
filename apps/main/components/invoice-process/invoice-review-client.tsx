@@ -144,17 +144,83 @@ export default function InvoiceReviewClient({
     try {
       console.log('Invoice Review Client: Refreshing invoice data from API');
 
-      // Refresh the page to get latest data
-      // You could also implement a more sophisticated refresh by calling the API directly
-      router.refresh();
+      // Fetch latest invoices from API
+      const response = await client.get<{ data: { invoices: InvoiceListItem[], pagination: { totalPages: number } } }>(
+        `api/v1/invoice/invoices?page=${invoiceCurrentPage}&limit=20`
+      );
+
+      if (response.data) {
+        const { invoices: newInvoices } = response.data;
+        console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
+
+        // Update the invoices list with fresh data
+        setInvoicesList(newInvoices);
+
+        // If there are new invoices and no invoice is currently selected, select the first one
+        if (newInvoices.length > 0 && !selectedInvoiceId) {
+          const firstInvoice = newInvoices[0];
+          setSelectedInvoiceId(firstInvoice.id);
+
+          // Fetch details for the first invoice
+          try {
+            const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
+            const newDetails = detailsResponse.data;
+
+            setInvoiceDetails(newDetails);
+            setInvoiceDetailsCache(prev => ({
+              ...prev,
+              [newDetails.id]: newDetails
+            }));
+          } catch (detailsError) {
+            console.error('Error fetching invoice details:', detailsError);
+          }
+        }
+      }
     } catch (error) {
       console.error('Invoice Review Client: Error refreshing data:', error);
+      // Fallback to page refresh if API call fails
+      router.refresh();
     }
+  }, [router, invoiceCurrentPage, selectedInvoiceId]);
+
+  // Function to refresh attachments (requires full page refresh since attachments are props)
+  const refreshAttachments = useCallback(() => {
+    console.log('Invoice Review Client: Refreshing attachments (full page refresh)');
+    router.refresh();
   }, [router]);
 
   // Set up real-time WebSocket connection
   const { joinInvoiceList, leaveInvoiceList } = useRealtimeInvoices({
-    onRefreshNeeded: refreshInvoiceData,
+    onRefreshNeeded: () => {
+      // Use appropriate refresh based on active tab
+      if (activeTabState === 'invoices') {
+        refreshInvoiceData();
+      } else {
+        refreshAttachments();
+      }
+    },
+    onInvoiceCreated: (invoiceId) => {
+      console.log('New invoice created, refreshing data:', invoiceId);
+      // New invoice created - refresh invoices list and also attachments (since attachment was processed)
+      refreshInvoiceData();
+      if (activeTabState === 'attachments') {
+        // If we're viewing attachments, also refresh them since one was processed
+        setTimeout(() => refreshAttachments(), 500);
+      }
+    },
+    onInvoiceUpdated: (invoiceId) => {
+      console.log('Invoice updated, refreshing list:', invoiceId);
+      refreshInvoiceData();
+    },
+    onInvoiceStatusUpdated: (invoiceId, status) => {
+      console.log('Invoice status updated:', invoiceId, status);
+      // Update the specific invoice status in the list without full refresh
+      updateInvoiceStatusInList(invoiceId, status as InvoiceStatus);
+    },
+    onInvoiceDeleted: (invoiceId) => {
+      console.log('Invoice deleted, refreshing list:', invoiceId);
+      refreshInvoiceData();
+    },
     enableToasts: true,
     autoConnect: true,
   });

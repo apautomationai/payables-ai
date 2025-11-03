@@ -45,7 +45,9 @@ export const useRealtimeInvoices = ({
 
     // WebSocket notification handler
     const handleNotification = useCallback((data: any) => {
-        console.log('WebSocket notification received:', data);
+        console.log('🔔 WebSocket notification received:', data);
+        console.log('🔔 Notification type:', data.type);
+        console.log('🔔 Invoice ID:', data.invoiceId);
 
         if (enableToasts) {
             let message = '';
@@ -79,20 +81,25 @@ export const useRealtimeInvoices = ({
         // Call specific handlers based on notification type
         switch (data.type) {
             case 'INVOICE_CREATED':
+                console.log('🔔 Calling onInvoiceCreated handler');
                 handlersRef.current.onInvoiceCreated?.(data.invoiceId);
                 break;
             case 'INVOICE_UPDATED':
+                console.log('🔔 Calling onInvoiceUpdated handler');
                 handlersRef.current.onInvoiceUpdated?.(data.invoiceId);
                 break;
             case 'INVOICE_STATUS_UPDATED':
+                console.log('🔔 Calling onInvoiceStatusUpdated handler');
                 handlersRef.current.onInvoiceStatusUpdated?.(data.invoiceId, data.status);
                 break;
             case 'INVOICE_DELETED':
+                console.log('🔔 Calling onInvoiceDeleted handler');
                 handlersRef.current.onInvoiceDeleted?.(data.invoiceId);
                 break;
         }
 
         // Always trigger general refresh as fallback
+        console.log('🔔 Calling onRefreshNeeded fallback handler');
         handlersRef.current.onRefreshNeeded?.();
     }, [enableToasts]);
 

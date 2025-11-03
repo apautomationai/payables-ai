@@ -143,18 +143,27 @@ export default function InvoiceReviewClient({
   const refreshInvoiceData = useCallback(async () => {
     try {
       console.log('Invoice Review Client: Refreshing invoice data from API');
+      console.log('Current invoices list length:', invoicesList.length);
+      console.log('Current page:', invoiceCurrentPage);
 
-      // Fetch latest invoices from API
+      // Fetch latest invoices from API (always fetch page 1 to get newest invoices)
       const response = await client.get<{ data: { invoices: InvoiceListItem[], pagination: { totalPages: number } } }>(
-        `api/v1/invoice/invoices?page=${invoiceCurrentPage}&limit=20`
+        `api/v1/invoice/invoices?page=1&limit=20`
       );
+
+      console.log('API Response:', response);
 
       if (response.data?.data) {
         const { invoices: newInvoices } = response.data.data;
         console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
+        console.log('New invoices:', newInvoices);
 
         // Update the invoices list with fresh data
         setInvoicesList(newInvoices);
+        console.log('Updated invoices list state');
+
+        // Force a re-render by updating a dummy state
+        setIsDetailsLoading(false);
 
         // If there are new invoices and no invoice is currently selected, select the first one
         if (newInvoices.length > 0 && !selectedInvoiceId) {
@@ -191,6 +200,15 @@ export default function InvoiceReviewClient({
     router.refresh();
   }, [router]);
 
+  // Expose refresh function to window for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugRefreshInvoices = refreshInvoiceData;
+      (window as any).debugInvoicesList = invoicesList;
+      (window as any).debugActiveTab = activeTabState;
+    }
+  }, [refreshInvoiceData, invoicesList, activeTabState]);
+
   // Set up real-time WebSocket connection
   const { joinInvoiceList, leaveInvoiceList } = useRealtimeInvoices({
     onRefreshNeeded: () => {
@@ -202,9 +220,13 @@ export default function InvoiceReviewClient({
       }
     },
     onInvoiceCreated: (invoiceId) => {
-      console.log('New invoice created, refreshing data:', invoiceId);
+      console.log('🔥 NEW INVOICE CREATED HANDLER CALLED:', invoiceId);
+      console.log('Current active tab:', activeTabState);
+      console.log('Current invoices list length before refresh:', invoicesList.length);
+
       // New invoice created - refresh invoices list and also attachments (since attachment was processed)
       refreshInvoiceData();
+
       if (activeTabState === 'attachments') {
         // If we're viewing attachments, also refresh them since one was processed
         setTimeout(() => refreshAttachments(), 500);
@@ -229,11 +251,18 @@ export default function InvoiceReviewClient({
 
   // Join invoice list room when component mounts, leave when unmounts
   useEffect(() => {
+    console.log('🔌 WebSocket room management - Active tab:', activeTabState);
+
     if (activeTabState === 'invoices') {
+      console.log('📋 Joining invoice list room');
       joinInvoiceList();
+    } else {
+      console.log('📋 Leaving invoice list room (not on invoices tab)');
+      leaveInvoiceList();
     }
 
     return () => {
+      console.log('🔌 Cleanup: Leaving invoice list room');
       leaveInvoiceList();
     };
   }, [activeTabState, joinInvoiceList, leaveInvoiceList]);

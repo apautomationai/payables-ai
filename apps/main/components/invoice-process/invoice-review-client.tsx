@@ -149,8 +149,8 @@ export default function InvoiceReviewClient({
         `api/v1/invoice/invoices?page=${invoiceCurrentPage}&limit=20`
       );
 
-      if (response.data) {
-        const { invoices: newInvoices } = response.data;
+      if (response.data?.data) {
+        const { invoices: newInvoices } = response.data.data;
         console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
 
         // Update the invoices list with fresh data
@@ -159,20 +159,22 @@ export default function InvoiceReviewClient({
         // If there are new invoices and no invoice is currently selected, select the first one
         if (newInvoices.length > 0 && !selectedInvoiceId) {
           const firstInvoice = newInvoices[0];
-          setSelectedInvoiceId(firstInvoice.id);
+          if (firstInvoice) {
+            setSelectedInvoiceId(firstInvoice.id);
 
-          // Fetch details for the first invoice
-          try {
-            const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
-            const newDetails = detailsResponse.data;
+            // Fetch details for the first invoice
+            try {
+              const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
+              const newDetails = detailsResponse.data;
 
-            setInvoiceDetails(newDetails);
-            setInvoiceDetailsCache(prev => ({
-              ...prev,
-              [newDetails.id]: newDetails
-            }));
-          } catch (detailsError) {
-            console.error('Error fetching invoice details:', detailsError);
+              setInvoiceDetails(newDetails);
+              setInvoiceDetailsCache(prev => ({
+                ...prev,
+                [newDetails.id]: newDetails
+              }));
+            } catch (detailsError) {
+              console.error('Error fetching invoice details:', detailsError);
+            }
           }
         }
       }

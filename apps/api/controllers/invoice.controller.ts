@@ -314,7 +314,8 @@ class InvoiceController {
 
       // Emit WebSocket event for status update
       const wsService = getWebSocketService();
-      wsService.emitInvoiceStatusUpdated(userId, parseInt(id), status, updatedInvoice);
+      // wsService.emitInvoiceStatusUpdated(userId, parseInt(id), status, updatedInvoice);
+      wsService.emitInvoiceStatusUpdated(userId, parseInt(id), status);
 
       return res.status(200).json({
         success: true,

@@ -6,26 +6,42 @@ import { toast } from 'sonner';
 
 interface UseRealtimeInvoicesProps {
     onRefreshNeeded?: () => void;
+    onInvoiceCreated?: (invoiceId: number) => void;
+    onInvoiceUpdated?: (invoiceId: number) => void;
+    onInvoiceStatusUpdated?: (invoiceId: number, status: string) => void;
+    onInvoiceDeleted?: (invoiceId: number) => void;
     enableToasts?: boolean;
     autoConnect?: boolean;
 }
 
 export const useRealtimeInvoices = ({
     onRefreshNeeded,
+    onInvoiceCreated,
+    onInvoiceUpdated,
+    onInvoiceStatusUpdated,
+    onInvoiceDeleted,
     enableToasts = true,
     autoConnect = true,
 }: UseRealtimeInvoicesProps = {}) => {
     const isConnectedRef = useRef(false);
     const handlersRef = useRef({
         onRefreshNeeded,
+        onInvoiceCreated,
+        onInvoiceUpdated,
+        onInvoiceStatusUpdated,
+        onInvoiceDeleted,
     });
 
     // Update handlers ref when props change
     useEffect(() => {
         handlersRef.current = {
             onRefreshNeeded,
+            onInvoiceCreated,
+            onInvoiceUpdated,
+            onInvoiceStatusUpdated,
+            onInvoiceDeleted,
         };
-    }, [onRefreshNeeded]);
+    }, [onRefreshNeeded, onInvoiceCreated, onInvoiceUpdated, onInvoiceStatusUpdated, onInvoiceDeleted]);
 
     // WebSocket notification handler
     const handleNotification = useCallback((data: any) => {
@@ -58,7 +74,23 @@ export const useRealtimeInvoices = ({
             }
         }
 
-        // Trigger refresh instead of trying to sync data
+        // Call specific handlers based on notification type
+        switch (data.type) {
+            case 'INVOICE_CREATED':
+                handlersRef.current.onInvoiceCreated?.(data.invoiceId);
+                break;
+            case 'INVOICE_UPDATED':
+                handlersRef.current.onInvoiceUpdated?.(data.invoiceId);
+                break;
+            case 'INVOICE_STATUS_UPDATED':
+                handlersRef.current.onInvoiceStatusUpdated?.(data.invoiceId, data.status);
+                break;
+            case 'INVOICE_DELETED':
+                handlersRef.current.onInvoiceDeleted?.(data.invoiceId);
+                break;
+        }
+
+        // Always trigger general refresh as fallback
         handlersRef.current.onRefreshNeeded?.();
     }, [enableToasts]);
 

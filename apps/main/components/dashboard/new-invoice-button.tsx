@@ -4,9 +4,9 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import client from "@/lib/axios-client";
 import axios from "axios";
-import { Button } from "@workspace/ui/components/button";
+import { Button, ButtonProps } from "@workspace/ui/components/button";
 
-export default function NewInvoiceButton() {
+export default function NewInvoiceButton({children, ...props}: ButtonProps & {children?: React.ReactNode}) {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const router = useRouter();
@@ -78,13 +78,12 @@ export default function NewInvoiceButton() {
                 onChange={onFileChange}
                 disabled={isUploading}
             />
-            <Button size="sm" className="cursor-pointer" onClick={handleButtonClick} disabled={isUploading}>
+            <Button size="sm" className="cursor-pointer" onClick={handleButtonClick} disabled={isUploading} {...props}>
                 {isUploading ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 ) : (
-                    <Plus className="h-4 w-4 mr-2" />
+                    children ||<><Plus className="h-4 w-4 mr-2" /> <span>New Invoice</span></>
                 )}
-                New Invoice
             </Button>
         </div>
     )

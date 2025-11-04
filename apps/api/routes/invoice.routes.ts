@@ -5,6 +5,9 @@ import { Router } from "express";
 
 const router = Router();
 
+// Get dashboard metrics
+router.get("/dashboard", authenticate, requireSubscriptionAccess, invoiceController.getDashboardMetrics);
+
 // Create a new invoice
 router.post("/invoices", authenticate, requireSubscriptionAccess, invoiceController.insertInvoice);
 

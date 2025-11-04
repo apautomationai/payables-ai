@@ -1,4 +1,4 @@
-import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar, boolean, text, numeric, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar, boolean, text, numeric, pgEnum, jsonb } from "drizzle-orm/pg-core"
 
 export const provider = pgEnum("provider", ['local', 'gmail', 'outlook'])
 export const status = pgEnum("status", ['pending', 'approved', 'rejected', 'failed', 'not_connected'])
@@ -70,6 +70,7 @@ export const integrations = pgTable("integrations", {
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 	startReading: timestamp("start_reading", { mode: 'string' }),
 	lastRead: timestamp("last_read", { mode: 'string' }).defaultNow(),
+	metadata: jsonb().default({}), // JSONB field for integration-specific data
 });
 
 export const invoices = pgTable("invoices", {
@@ -78,18 +79,22 @@ export const invoices = pgTable("invoices", {
 	attachmentId: integer("attachment_id").notNull(),
 	invoiceNumber: varchar("invoice_number", { length: 50 }),
 	vendorName: varchar("vendor_name", { length: 255 }),
+	vendorAddress: text("vendor_address"),
+	vendorPhone: varchar("vendor_phone", { length: 50 }),
+	vendorEmail: varchar("vendor_email", { length: 255 }),
 	customerName: varchar("customer_name", { length: 255 }),
 	invoiceDate: timestamp("invoice_date", { mode: 'string' }),
 	dueDate: timestamp("due_date", { mode: 'string' }),
 	totalAmount: numeric("total_amount"),
+	currency: varchar({ length: 10 }),
+	totalTax: numeric("total_tax"),
 	description: text(),
 	fileUrl: text("file_url"),
 	fileKey: text("file_key"),
+	s3JsonKey: text("s3_json_key"),
 	status: status().default('pending').notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-	s3JsonKey: text("s3_json_key"),
-	currency: varchar({ length: 10 }),
 });
 
 export const attachments = pgTable("attachments", {
@@ -119,17 +124,4 @@ export const lineItems = pgTable("line_items", {
 	amount: numeric(),
 });
 
-export const quickbooksIntegrations = pgTable("quickbooks_integrations", {
-	id: serial().primaryKey().notNull(),
-	userId: integer("user_id").notNull(),
-	companyId: varchar("company_id", { length: 255 }).notNull(),
-	accessToken: text("access_token").notNull(),
-	refreshToken: text("refresh_token").notNull(),
-	tokenExpiresAt: timestamp("token_expires_at", { mode: 'string' }).notNull(),
-	realmId: varchar("realm_id", { length: 255 }).notNull(),
-	companyName: varchar("company_name", { length: 255 }),
-	isActive: boolean("is_active").default(true).notNull(),
-	lastSyncAt: timestamp("last_sync_at", { mode: 'string' }),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
-});
+

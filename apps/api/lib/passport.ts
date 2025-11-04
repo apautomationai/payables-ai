@@ -7,6 +7,7 @@ import { eq, or } from 'drizzle-orm';
 import db from './db';
 import { usersModel } from '@/models/users.model';
 import { verifyPassword, hashPassword } from './utils/hash';
+import { RegistrationService } from '@/services/registration.service';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) throw new Error('JWT_SECRET not set');
@@ -136,6 +137,14 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_AUTH_REDIRECT_URI) {
               isBanned: false,
             })
             .returning();
+
+          // Assign subscription to user (with error handling to not break registration)
+          try {
+            await RegistrationService.assignSubscriptionToUser(newUser.id);
+          } catch (subscriptionError: any) {
+            // Silently handle subscription assignment errors to not break authentication
+            // Note: In production, you might want to add this to a retry queue
+          }
 
           return done(null, { id: newUser.id, email: newUser.email });
         } catch (err) {

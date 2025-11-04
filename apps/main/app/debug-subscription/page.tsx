@@ -59,7 +59,10 @@ export default function DebugSubscriptionPage() {
 
         if (subscriptionData.tier === 'free') return true;
         if (subscriptionData.status === 'active') return true;
-        if (subscriptionData.status === 'trialing' && subscriptionData.trialEnd) {
+        if (subscriptionData.status === 'trialing') {
+            if (!subscriptionData.trialEnd) {
+                return true;
+            }
             return new Date() < new Date(subscriptionData.trialEnd);
         }
 

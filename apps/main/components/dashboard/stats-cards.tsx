@@ -1,32 +1,52 @@
-
-
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import { DollarSign, FileText, Clock, CheckCircle, XCircle } from "lucide-react";
-import { InvoiceListItem } from "@/lib/types";
+import { DashboardMetrics } from "@/lib/types";
 
 interface StatsCardsProps {
-  invoices: InvoiceListItem[];
+  metrics: DashboardMetrics;
 }
 
-export default function StatsCards({ invoices }: StatsCardsProps) {
-  const safeInvoices = Array.isArray(invoices) ? invoices : [];
-
-  const invoicesThisMonth = safeInvoices.filter(inv => {
-    if (!inv.createdAt) return false;
-    const invoiceDate = new Date(inv.createdAt);
-    const today = new Date();
-    return invoiceDate.getMonth() === today.getMonth() &&
-           invoiceDate.getFullYear() === today.getFullYear();
-  }).length;
-
-  const pendingReviewCount = safeInvoices.filter(inv => inv.status === 'pending').length;
+export default function StatsCards({ metrics }: StatsCardsProps) {
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(amount);
+  };
 
   const stats = [
-    { title: "Total Outstanding", value: "$0.00", description: "Pending invoices value", icon: DollarSign },
-    { title: "Invoices This Month", value: invoicesThisMonth.toString(), description: "Total processed", icon: FileText },
-    { title: "Pending Review", value: pendingReviewCount.toString(), description: "Awaiting approval", icon: Clock },
-    { title: "Approved Today", value: "0", description: "Successfully processed", icon: CheckCircle },
-    { title: "Rejected Invoices", value: "0", description: "Requires attention", icon: XCircle },
+    {
+      title: "Total Outstanding",
+      value: formatCurrency(metrics.totalOutstanding),
+      description: "Pending invoices value",
+      icon: DollarSign,
+    },
+    {
+      title: "Invoices This Month",
+      value: metrics.invoicesThisMonth.toString(),
+      description: "Total processed",
+      icon: FileText,
+    },
+    {
+      title: "Pending Review",
+      value: metrics.pendingThisMonth.toString(),
+      description: "Awaiting approval",
+      icon: Clock,
+    },
+    {
+      title: "Approved This Month",
+      value: metrics.approvedThisMonth.toString(),
+      description: "Successfully processed",
+      icon: CheckCircle,
+    },
+    {
+      title: "Rejected Invoices",
+      value: metrics.rejectedThisMonth.toString(),
+      description: "Requires attention",
+      icon: XCircle,
+    },
   ];
 
   return (
@@ -39,9 +59,7 @@ export default function StatsCards({ invoices }: StatsCardsProps) {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stat.value}</div>
-            <p className="text-xs text-muted-foreground">
-              {stat.description}
-            </p>
+            <p className="text-xs text-muted-foreground">{stat.description}</p>
           </CardContent>
         </Card>
       ))}

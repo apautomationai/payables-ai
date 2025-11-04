@@ -2,7 +2,7 @@ import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
-import { count, desc, eq, getTableColumns, and } from "drizzle-orm";
+import { count, desc, eq, getTableColumns, and, sql, gte, lt } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -50,10 +50,15 @@ export class InvoiceServices {
           // Check if data is different from existing invoice
           const hasChanges =
             existingInvoice.vendorName !== invoiceData.vendorName ||
+            existingInvoice.vendorAddress !== invoiceData.vendorAddress ||
+            existingInvoice.vendorPhone !== invoiceData.vendorPhone ||
+            existingInvoice.vendorEmail !== invoiceData.vendorEmail ||
             existingInvoice.customerName !== invoiceData.customerName ||
             existingInvoice.invoiceDate?.getTime() !== invoiceData.invoiceDate?.getTime() ||
             existingInvoice.dueDate?.getTime() !== invoiceData.dueDate?.getTime() ||
             existingInvoice.totalAmount !== invoiceData.totalAmount ||
+            existingInvoice.currency !== invoiceData.currency ||
+            existingInvoice.totalTax !== invoiceData.totalTax ||
             existingInvoice.description !== invoiceData.description ||
             existingInvoice.fileKey !== invoiceData.fileKey ||
             existingInvoice.fileUrl !== generateS3PublicUrl(invoiceData.fileKey!) ||
@@ -65,10 +70,15 @@ export class InvoiceServices {
               .update(invoiceModel)
               .set({
                 vendorName: invoiceData.vendorName,
+                vendorAddress: invoiceData.vendorAddress,
+                vendorPhone: invoiceData.vendorPhone,
+                vendorEmail: invoiceData.vendorEmail,
                 customerName: invoiceData.customerName,
                 invoiceDate: invoiceData.invoiceDate,
                 dueDate: invoiceData.dueDate,
                 totalAmount: invoiceData.totalAmount,
+                currency: invoiceData.currency,
+                totalTax: invoiceData.totalTax,
                 description: invoiceData.description,
                 fileKey: invoiceData.fileKey,
                 fileUrl: invoiceData.fileKey ? generateS3PublicUrl(invoiceData.fileKey) : existingInvoice.fileUrl,
@@ -229,7 +239,7 @@ export class InvoiceServices {
         const dommatrix = await import("dommatrix");
         // The package exports a DOMMatrix constructor
         (globalThis as any).DOMMatrix =
-        // @ts-ignore
+          // @ts-ignore
           dommatrix.DOMMatrix || dommatrix.default;
       } catch (err) {
         // If polyfill install is missing, rethrow a helpful error.
@@ -549,6 +559,108 @@ export class InvoiceServices {
       return updatedInvoice;
     } catch (error) {
       console.error("Error updating invoice status:", error);
+      throw error;
+    }
+  }
+
+  async getDashboardMetrics(userId: number) {
+    try {
+      // Calculate current month boundaries
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+      // Fetch last 10 invoices with full details including attachment URL
+      const recentInvoices = await db
+        .select({
+          ...getTableColumns(invoiceModel),
+          sourcePdfUrl: attachmentsModel.fileUrl,
+        })
+        .from(invoiceModel)
+        .leftJoin(
+          attachmentsModel,
+          eq(invoiceModel.attachmentId, attachmentsModel.id),
+        )
+        .where(eq(invoiceModel.userId, userId))
+        .orderBy(desc(invoiceModel.createdAt))
+        .limit(10);
+
+      // Count invoices created this month
+      const [invoicesThisMonthResult] = await db
+        .select({ count: count() })
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            gte(invoiceModel.createdAt, startOfMonth),
+            lt(invoiceModel.createdAt, startOfNextMonth)
+          )
+        );
+
+      // Count pending invoices this month
+      const [pendingThisMonthResult] = await db
+        .select({ count: count() })
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.status, "pending"),
+            gte(invoiceModel.createdAt, startOfMonth),
+            lt(invoiceModel.createdAt, startOfNextMonth)
+          )
+        );
+
+      // Count approved invoices this month
+      const [approvedThisMonthResult] = await db
+        .select({ count: count() })
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.status, "approved"),
+            gte(invoiceModel.createdAt, startOfMonth),
+            lt(invoiceModel.createdAt, startOfNextMonth)
+          )
+        );
+
+      // Count rejected invoices this month
+      const [rejectedThisMonthResult] = await db
+        .select({ count: count() })
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.status, "rejected"),
+            gte(invoiceModel.createdAt, startOfMonth),
+            lt(invoiceModel.createdAt, startOfNextMonth)
+          )
+        );
+
+      // Calculate total outstanding (sum of totalAmount for ALL pending invoices)
+      const [totalOutstandingResult] = await db
+        .select({
+          total: sql<string>`COALESCE(SUM(${invoiceModel.totalAmount}::numeric), 0)`,
+        })
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.status, "pending")
+          )
+        );
+
+      return {
+        recentInvoices,
+        metrics: {
+          invoicesThisMonth: invoicesThisMonthResult.count,
+          pendingThisMonth: pendingThisMonthResult.count,
+          approvedThisMonth: approvedThisMonthResult.count,
+          rejectedThisMonth: rejectedThisMonthResult.count,
+          totalOutstanding: parseFloat(totalOutstandingResult.total || "0"),
+        },
+      };
+    } catch (error) {
+      console.error("Error fetching dashboard metrics:", error);
       throw error;
     }
   }

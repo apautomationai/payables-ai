@@ -121,7 +121,8 @@ class IntegrationsService {
         .where(
           and(
             eq(integrationsModel.userId, userId),
-            eq(integrationsModel.name, name)
+            eq(integrationsModel.name, name),
+            eq(integrationsModel.status, "success")
           )
         );
       return integration;

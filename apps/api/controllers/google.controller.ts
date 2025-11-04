@@ -157,6 +157,52 @@ export class GoogleController {
     }
   };
 
+  syncMyEmails = async (req: Request, res: Response) => {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      if (!userId) {
+        throw new BadRequestError("Need a valid userId");
+      }
+
+      const integration = await integrationsService.checkIntegration(
+        userId,
+        "gmail"
+      );
+      if (!integration || integration.status !== "success") {
+        throw new BadRequestError("Gmail integration not found or not connected");
+      }
+
+      const tokens = {
+        access_token: integration.accessToken,
+        refresh_token: integration.refreshToken,
+        token_type: integration.tokenType,
+        expiry_date: integration.expiryDate,
+      };
+      if (!tokens.access_token) {
+        throw new BadRequestError("Need valid tokens");
+      }
+
+      let lastRead = integration.lastRead?.toISOString();
+      if (!lastRead) {
+        lastRead = integration.startReading?.toISOString();
+      }
+      const attachments = await googleServices.getEmailsWithAttachments(
+        tokens,
+        integration.userId,
+        integration.id,
+        lastRead
+      );
+
+      return res.status(200).json({
+        message: "Emails synced successfully",
+        data: attachments || [],
+      });
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to sync emails");
+    }
+  };
+
   // //@ts-ignore
   // readEmails = async (req: Request, res: Response) => {
   //   try {

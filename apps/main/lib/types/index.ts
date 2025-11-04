@@ -56,11 +56,15 @@ export interface InvoiceDetails {
   attachmentId: number;
   invoiceNumber: string;
   vendorName: string | null;
+  vendorAddress: string | null;
+  vendorPhone: string | null;
+  vendorEmail: string | null;
   customerName: string | null;
   invoiceDate: string | null;
   dueDate: string | null;
   totalAmount: string | null;
   currency: string | null;
+  totalTax: string | null;
   lineItems: string | null;
   costCode: string | null;
   quantity: string | null;
@@ -73,6 +77,18 @@ export interface InvoiceDetails {
   sourcePdfUrl: string | null;
 }
 
+export interface DashboardMetrics {
+  invoicesThisMonth: number;
+  pendingThisMonth: number;
+  approvedThisMonth: number;
+  rejectedThisMonth: number;
+  totalOutstanding: number;
+}
+
+export interface DashboardData {
+  recentInvoices: InvoiceDetails[];
+  metrics: DashboardMetrics;
+}
 
 export interface LineItem {
   description: string;

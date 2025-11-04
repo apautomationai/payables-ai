@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useRef } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { client } from "@/lib/axios-client";
@@ -12,6 +12,7 @@ import InvoiceDetailsForm from "./invoice-details-form";
 import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
 import type { Attachment, InvoiceDetails, InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
+import { useRealtimeInvoices } from "@/hooks/use-realtime-invoices";
 
 // API Response type for single invoice/attachment actions
 interface InvoiceApiResponse {
@@ -64,7 +65,10 @@ export default function InvoiceReviewClient({
 
   const [invoiceDetailsCache, setInvoiceDetailsCache] = useState<Record<number, InvoiceDetails>>(initialInvoiceCache);
 
+  const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>(invoices);
+
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+  const [refreshCount, setRefreshCount] = useState(0);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -73,6 +77,227 @@ export default function InvoiceReviewClient({
       setSelectedFields(Object.keys(invoiceDetails));
     }
   }, [invoiceDetails]);
+
+  // Function to update invoice status in the list
+  const updateInvoiceStatusInList = (invoiceId: number, newStatus: InvoiceStatus) => {
+    setInvoicesList(prevList =>
+      prevList.map(invoice =>
+        invoice.id === invoiceId
+          ? { ...invoice, status: newStatus }
+          : invoice
+      )
+    );
+  };
+
+  // Function to add new invoice to the list
+  const addInvoiceToList = (newInvoice: InvoiceDetails) => {
+    console.log('Invoice Review Client: Adding new invoice to list:', newInvoice);
+
+    const invoiceListItem: InvoiceListItem = {
+      id: newInvoice.id,
+      invoiceNumber: newInvoice.invoiceNumber,
+      vendorName: newInvoice.vendorName,
+      totalAmount: newInvoice.totalAmount,
+      status: newInvoice.status,
+      createdAt: newInvoice.createdAt,
+    };
+
+    console.log('Invoice Review Client: Created list item:', invoiceListItem);
+
+    setInvoicesList(prevList => {
+      console.log('Invoice Review Client: Previous list length:', prevList.length);
+      const newList = [invoiceListItem, ...prevList];
+      console.log('Invoice Review Client: New list length:', newList.length);
+      return newList;
+    });
+  };
+
+  // Function to update existing invoice in the list
+  const updateInvoiceInList = (updatedInvoice: InvoiceDetails) => {
+    const invoiceListItem: InvoiceListItem = {
+      id: updatedInvoice.id,
+      invoiceNumber: updatedInvoice.invoiceNumber,
+      vendorName: updatedInvoice.vendorName,
+      totalAmount: updatedInvoice.totalAmount,
+      status: updatedInvoice.status,
+      createdAt: updatedInvoice.createdAt,
+    };
+
+    setInvoicesList(prevList =>
+      prevList.map(invoice =>
+        invoice.id === updatedInvoice.id ? invoiceListItem : invoice
+      )
+    );
+
+    // Update invoice details if it's currently selected
+    if (selectedInvoiceId === updatedInvoice.id) {
+      setInvoiceDetails(updatedInvoice);
+      setOriginalInvoiceDetails(updatedInvoice);
+      setInvoiceDetailsCache(prevCache => ({
+        ...prevCache,
+        [updatedInvoice.id]: updatedInvoice
+      }));
+    }
+  };
+
+  // Function to refresh invoice data from API
+  const refreshInvoiceData = useCallback(async () => {
+    try {
+      console.log('Invoice Review Client: Refreshing invoice data from API');
+      console.log('Current invoices list length:', invoicesList.length);
+      console.log('Current page:', invoiceCurrentPage);
+
+      // Fetch latest invoices from API (always fetch page 1 to get newest invoices)
+      const response = await client.get<{
+        data?: { invoices: InvoiceListItem[], pagination: { totalPages: number } };
+        invoices?: InvoiceListItem[];
+        pagination?: { totalPages: number };
+      }>(
+        `api/v1/invoice/invoices?page=1&limit=20`
+      );
+
+      console.log('API Response:', response);
+
+      console.log('Checking response structure:', response.data);
+      console.log('response.data?.data exists:', !!response.data?.data);
+      console.log('response.data?.invoices exists:', !!response.data?.invoices);
+
+      let newInvoices: InvoiceListItem[] = [];
+
+      if (response.data?.data?.invoices) {
+        newInvoices = response.data.data.invoices;
+        console.log('Using nested structure: response.data.data.invoices');
+      } else if (response.data?.invoices) {
+        newInvoices = response.data.invoices;
+        console.log('Using direct structure: response.data.invoices');
+      } else {
+        console.error('Unknown response structure:', response.data);
+        return;
+      }
+
+      console.log('Invoice Review Client: Fetched', newInvoices.length, 'invoices from API');
+      console.log('New invoices:', newInvoices);
+
+      // Update the invoices list with fresh data
+      console.log('About to update invoices list from', invoicesList.length, 'to', newInvoices.length);
+
+      // Force a new array reference to ensure React detects the change
+      setInvoicesList(prevList => {
+        console.log('State update: Previous list length:', prevList.length);
+        console.log('State update: New list length:', newInvoices.length);
+        return [...newInvoices];
+      });
+      console.log('Updated invoices list state');
+
+      // Force a re-render by toggling loading state and incrementing refresh count
+      setRefreshCount(prev => prev + 1);
+      setIsDetailsLoading(true);
+      setTimeout(() => setIsDetailsLoading(false), 10);
+
+      // If there are new invoices and no invoice is currently selected, select the first one
+      if (newInvoices.length > 0 && !selectedInvoiceId) {
+        const firstInvoice = newInvoices[0];
+        if (firstInvoice) {
+          setSelectedInvoiceId(firstInvoice.id);
+
+          // Fetch details for the first invoice
+          try {
+            const detailsResponse = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${firstInvoice.id}`);
+            const newDetails = detailsResponse.data;
+
+            setInvoiceDetails(newDetails);
+            setInvoiceDetailsCache(prev => ({
+              ...prev,
+              [newDetails.id]: newDetails
+            }));
+          } catch (detailsError) {
+            console.error('Error fetching invoice details:', detailsError);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Invoice Review Client: Error refreshing data:', error);
+      // Fallback to page refresh if API call fails
+      router.refresh();
+    }
+  }, [router, invoiceCurrentPage, selectedInvoiceId]);
+
+  // Function to refresh attachments (requires full page refresh since attachments are props)
+  const refreshAttachments = useCallback(() => {
+    console.log('Invoice Review Client: Refreshing attachments (full page refresh)');
+    router.refresh();
+  }, [router]);
+
+  // Expose refresh function to window for debugging
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      (window as any).debugRefreshInvoices = refreshInvoiceData;
+      (window as any).debugInvoicesList = invoicesList;
+      (window as any).debugActiveTab = activeTabState;
+      (window as any).debugRefreshCount = refreshCount;
+    }
+  }, [refreshInvoiceData, invoicesList, activeTabState, refreshCount]);
+
+  // Set up real-time WebSocket connection
+  const { joinInvoiceList, leaveInvoiceList } = useRealtimeInvoices({
+    onRefreshNeeded: () => {
+      // Use appropriate refresh based on active tab
+      if (activeTabState === 'invoices') {
+        refreshInvoiceData();
+      } else {
+        refreshAttachments();
+      }
+    },
+    onInvoiceCreated: (invoiceId) => {
+      console.log('🔥 NEW INVOICE CREATED HANDLER CALLED:', invoiceId);
+      console.log('Current active tab:', activeTabState);
+      console.log('Current invoices list length before refresh:', invoicesList.length);
+
+      // Show debugging info
+      console.log('🚨 INVOICE CREATED - TRIGGERING REFRESH');
+
+      // New invoice created - refresh invoices list and also attachments (since attachment was processed)
+      refreshInvoiceData();
+
+      if (activeTabState === 'attachments') {
+        // If we're viewing attachments, also refresh them since one was processed
+        setTimeout(() => refreshAttachments(), 500);
+      }
+    },
+    onInvoiceUpdated: (invoiceId) => {
+      console.log('Invoice updated, refreshing list:', invoiceId);
+      refreshInvoiceData();
+    },
+    onInvoiceStatusUpdated: (invoiceId, status) => {
+      console.log('Invoice status updated:', invoiceId, status);
+      // Update the specific invoice status in the list without full refresh
+      updateInvoiceStatusInList(invoiceId, status as InvoiceStatus);
+    },
+    onInvoiceDeleted: (invoiceId) => {
+      console.log('Invoice deleted, refreshing list:', invoiceId);
+      refreshInvoiceData();
+    },
+    enableToasts: true,
+    autoConnect: true,
+  });
+
+  // Join invoice list room when component mounts, leave when unmounts
+  useEffect(() => {
+    console.log('🔌 WebSocket room management - Active tab:', activeTabState);
+
+    if (activeTabState === 'invoices') {
+      console.log('📋 Joining invoice list room');
+      joinInvoiceList();
+    } else {
+      console.log('📋 Leaving invoice list room (not on invoices tab)');
+      leaveInvoiceList();
+    }
+
+    return () => {
+      console.log('🔌 Cleanup: Leaving invoice list room');
+      leaveInvoiceList();
+    };
+  }, [activeTabState, joinInvoiceList, leaveInvoiceList]);
 
   const selectedAttachment = useMemo(
     () => attachments.find((att) => att.id === selectedAttachmentId) || null,
@@ -143,9 +368,18 @@ export default function InvoiceReviewClient({
   const handleSaveChanges = async () => {
     if (!invoiceDetails) return;
     try {
+      // If invoice was approved or rejected, reset status to pending when editing
+      const dataToSave = {
+        ...invoiceDetails,
+        ...(invoiceDetails.status === 'approved' || invoiceDetails.status === 'rejected'
+          ? { status: 'pending' }
+          : {}
+        )
+      };
+
       const response = await client.patch(
         `/api/v1/invoice/${invoiceDetails.id}`,
-        invoiceDetails
+        dataToSave
       );
 
       // Access the data property from the response
@@ -158,7 +392,18 @@ export default function InvoiceReviewClient({
         [updatedData?.id]: updatedData
       }));
 
-      toast.success("Changes saved successfully");
+      // Update the invoice status in the list for real-time UI update
+      if (updatedData?.status) {
+        updateInvoiceStatusInList(updatedData.id, updatedData.status);
+      }
+
+      // Show appropriate success message
+      const statusChanged = invoiceDetails.status !== updatedData?.status;
+      const message = statusChanged
+        ? "Changes saved successfully. Invoice status reset to pending for review."
+        : "Changes saved successfully";
+
+      toast.success(message);
       setIsEditing(false);
       router.refresh();
     } catch (err) {
@@ -183,6 +428,9 @@ export default function InvoiceReviewClient({
         ...prevCache,
         [updatedData.id]: updatedData
       }));
+
+      // Update the invoice status in the list for real-time UI update
+      updateInvoiceStatusInList(updatedData.id, "approved");
 
       toast.success("Invoice has been approved");
       router.refresh();
@@ -209,6 +457,9 @@ export default function InvoiceReviewClient({
         ...prevCache,
         [updatedData.id]: updatedData
       }));
+
+      // Update the invoice status in the list for real-time UI update
+      updateInvoiceStatusInList(updatedData.id, "rejected");
 
       toast.success("Invoice has been rejected");
       router.refresh();
@@ -359,7 +610,8 @@ export default function InvoiceReviewClient({
             <div className="grid h-full grid-cols-1 gap-4 md:grid-cols-12">
               <div className="md:col-span-3">
                 <InvoicesList
-                  invoices={invoices}
+                  key={`invoices-${invoicesList.length}-${refreshCount}`}
+                  invoices={invoicesList}
                   selectedInvoiceId={selectedInvoiceId}
                   onSelectInvoice={handleSelectInvoice}
                   currentPage={invoiceCurrentPage}
@@ -395,6 +647,10 @@ export default function InvoiceReviewClient({
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
                       onApprovalSuccess={() => {
+                        // Update the invoice status in the list for real-time UI update
+                        if (invoiceDetails) {
+                          updateInvoiceStatusInList(invoiceDetails.id, "approved");
+                        }
                         setSelectedInvoiceId(null);
                         router.refresh();
                       }}
@@ -405,6 +661,10 @@ export default function InvoiceReviewClient({
                           ...prevCache,
                           [updatedDetails.id]: updatedDetails
                         }));
+                        // Update the invoice status in the list for real-time UI update
+                        if (updatedDetails.status) {
+                          updateInvoiceStatusInList(updatedDetails.id, updatedDetails.status);
+                        }
                       }}
                     />
                   </div>

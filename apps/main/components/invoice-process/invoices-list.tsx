@@ -10,6 +10,9 @@ import {
   PaginationPrevious,
 } from "@workspace/ui/components/pagination";
 import { cn } from "@workspace/ui/lib/utils";
+import { useRouter } from "next/navigation";
+// import { Button } from "@workspace/ui/components/button";
+// import { RefreshCcw } from "lucide-react";
 
 const StatusBadge = ({ status }: { status: InvoiceStatus | null }) => {
   if (!status) return null;
@@ -66,6 +69,8 @@ export default function InvoicesList({
   onPageChange,
 }: InvoicesListProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const filteredInvoices = useMemo(() => {
     if (!searchQuery) return invoices;
@@ -77,10 +82,32 @@ export default function InvoicesList({
     );
   }, [invoices, searchQuery]);
 
+  // const handleRefresh = async () => {
+  //   setIsRefreshing(true);
+  //   try {
+  //     await router.refresh();
+  //   } catch (error) {
+  //     console.error(error);
+  //   } finally {
+  //     setIsRefreshing(false);
+  //   }
+  // }
+
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="p-4 border-b">
+        <div className="flex justify-between items-center mb-2">
         <h2 className="text-lg font-semibold">Invoices</h2>
+        {/* <Button variant={'link'} size={'sm'} className="cursor-pointer" onClick={handleRefresh} disabled={isRefreshing}>
+          {isRefreshing ? <>
+                <RefreshCcw className="w-4 h-4 mr-2 animate-spin " /> <span className="text-sm">Refreshing...</span>
+              </>
+              : <>
+                <RefreshCcw className="w-4 h-4 mr-2" /> <span className="text-sm">Refresh</span>
+              </>
+            }
+        </Button> */}
+        </div>
         <div className="relative mt-2">
           <svg
             className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground"

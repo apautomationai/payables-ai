@@ -63,7 +63,7 @@ async function InvoiceReviewContent({
   searchParams: any;
 }) {
 
-  const {page, tab} = await searchParams;
+  const { page, tab } = await searchParams;
 
   const currentPage = Number(page);
 

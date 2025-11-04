@@ -1,5 +1,6 @@
 import { BadRequestError } from "@/helpers/errors";
 import { invoiceServices } from "@/services/invoice.services";
+import { getWebSocketService } from "@/services/websocket.service";
 import { Request, Response } from "express";
 
 class InvoiceController {
@@ -86,6 +87,25 @@ class InvoiceController {
     }
   }
 
+  async getDashboardMetrics(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      const dashboardData = await invoiceServices.getDashboardMetrics(userId);
+
+      return res.json({
+        success: true,
+        data: dashboardData,
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async getInvoice(req: Request, res: Response) {
     try {
       // UPDATED: Parse the 'id' from URL parameter into a number
@@ -132,6 +152,12 @@ class InvoiceController {
         invoiceId,
         invoiceInfo
       );
+
+      // Emit WebSocket event for invoice update
+      //@ts-ignore
+      const userId = req.user.id;
+      const wsService = getWebSocketService();
+      wsService.emitInvoiceUpdated(userId, response);
 
       return res.json({
         success: true,
@@ -285,6 +311,11 @@ class InvoiceController {
       }
 
       const updatedInvoice = await invoiceServices.updateInvoiceStatus(parseInt(id), status);
+
+      // Emit WebSocket event for status update
+      const wsService = getWebSocketService();
+      // wsService.emitInvoiceStatusUpdated(userId, parseInt(id), status, updatedInvoice);
+      wsService.emitInvoiceStatusUpdated(userId, parseInt(id), status);
 
       return res.status(200).json({
         success: true,

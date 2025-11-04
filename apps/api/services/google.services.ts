@@ -55,7 +55,7 @@ export class GoogleServices {
     tokens: any,
     userId: number,
     integrationId: number,
-    lastRead: string
+    lastRead?: string | null | undefined
   ) => {
     if (!lastRead) {
       return

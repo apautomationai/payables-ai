@@ -6,8 +6,8 @@ export const SUBSCRIPTION_CONFIG = {
     } as const,
 
     TIER_LIMITS: {
-        FREE_MAX: 1,
-        PROMOTIONAL_MAX: 3
+        FREE_MAX: 10,
+        PROMOTIONAL_MAX: 20
     } as const,
 
     PRICING: {
@@ -16,7 +16,7 @@ export const SUBSCRIPTION_CONFIG = {
     } as const,
 
     TRIALS: {
-        PROMOTIONAL_DAYS: 90,  // 3 months
+        PROMOTIONAL_DAYS: 30,  // 30 days
         STANDARD_DAYS: 30      // 30 days
     } as const,
 

@@ -39,11 +39,18 @@ export function Hero() {
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-yellow-900/10 via-transparent to-orange-900/10 opacity-60" />
         
-        {/* Diamond plate texture overlay */}
-        <div className="absolute inset-0 opacity-[0.02]" style={{
-          backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                           repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-          backgroundSize: '10px 10px'
+        {/* Diamond plate texture overlay - ROUGHER */}
+        <div className="absolute inset-0 opacity-[0.08]" style={{
+          backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                           repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+          backgroundSize: '40px 40px'
+        }} />
+        
+        {/* Additional rough texture layer */}
+        <div className="absolute inset-0 opacity-[0.05]" style={{
+          backgroundImage: `radial-gradient(circle at 20% 50%, transparent 20%, rgba(253, 176, 34, 0.1) 21%, rgba(253, 176, 34, 0.1) 22%, transparent 23%),
+                           radial-gradient(circle at 80% 80%, transparent 20%, rgba(245, 158, 11, 0.1) 21%, rgba(245, 158, 11, 0.1) 22%, transparent 23%)`,
+          backgroundSize: '200px 200px, 150px 150px'
         }} />
 
         {/* Professional floating elements */}
@@ -103,7 +110,7 @@ export function Hero() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="mt-8 text-xl leading-8 text-gray-300 max-w-3xl mx-auto font-medium"
           >
-            Sledge automates invoices, releases, and approvals — built tough for contractors, subs, and crews that move fast.
+            Sledge automates invoices, releases, and approvals built tough for contractors, subs, and crews that move fast.
           </motion.p>
 
           <motion.div
@@ -190,14 +197,26 @@ export function Hero() {
               <AnimatedChart />
             </div>
 
-            <div className="relative rounded-lg bg-gray-800/50 backdrop-blur-sm border-4 border-yellow-600/30 shadow-2xl shadow-yellow-500/20 p-4 sm:p-3">
-              {/* Corner screws/rivets */}
-              <div className="absolute -top-2 -left-2 w-4 h-4 bg-gray-700 rounded-full border-2 border-gray-600 z-20"></div>
-              <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-700 rounded-full border-2 border-gray-600 z-20"></div>
-              <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gray-700 rounded-full border-2 border-gray-600 z-20"></div>
-              <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-gray-700 rounded-full border-2 border-gray-600 z-20"></div>
+            <div className="relative rounded-none bg-gray-900/90 backdrop-blur-none border-8 border-yellow-600/60 shadow-[0_0_30px_rgba(253,176,34,0.4),inset_0_0_20px_rgba(0,0,0,0.5)] p-4 sm:p-3">
+              {/* Corner screws/rivets - LARGER AND ROUGHER */}
+              <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.8),0_2px_4px_rgba(0,0,0,0.9)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.8),0_2px_4px_rgba(0,0,0,0.9)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.8),0_2px_4px_rgba(0,0,0,0.9)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.8),0_2px_4px_rgba(0,0,0,0.9)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+              </div>
               
-              <div className="aspect-video rounded-lg bg-gradient-to-br from-gray-900 to-gray-800 flex items-center justify-center sm:p-8 border-2 border-gray-700">
+              {/* Weld marks / scratches */}
+              <div className="absolute top-2 left-1/4 w-16 h-1 bg-yellow-600/30 blur-sm"></div>
+              <div className="absolute bottom-2 right-1/4 w-12 h-1 bg-yellow-600/30 blur-sm"></div>
+              
+              <div className="aspect-video rounded-none bg-gradient-to-br from-gray-950 to-black flex items-center justify-center sm:p-8 border-4 border-gray-600 shadow-[inset_0_0_30px_rgba(0,0,0,0.8)]">
                 {/* Floating orbs inside the demo area */}
                 <div className="absolute top-4 left-4">
                   <PulsingOrb color="#FDB022" size={30} />

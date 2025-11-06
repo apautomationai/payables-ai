@@ -39,11 +39,11 @@ const navigation = {
 export function Footer() {
   return (
     <footer className="bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-300 relative overflow-hidden border-t-4 border-yellow-600/30">
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
       
       {/* Animated Background Elements */}
@@ -218,7 +218,7 @@ export function Footer() {
       </div>
 
       {/* Animated Wave at Bottom */}
-      <ProfessionalWave />
+      {/* <ProfessionalWave /> */}
     </footer>
   );
 }

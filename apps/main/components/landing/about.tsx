@@ -37,11 +37,11 @@ export function About() {
       id="about"
       className="py-24 sm:py-32 bg-gradient-to-b from-gray-800 via-gray-900 to-black relative overflow-hidden"
     >
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
       
       {/* Background decorative elements */}
@@ -120,7 +120,7 @@ export function About() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Mission Card */}
-            <Card className="p-6 border-4 border-yellow-600/40 bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-300">
+            <Card className="p-6 border-8 border-yellow-600/60 bg-gradient-to-br from-gray-900 to-black hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 rounded-none">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-yellow-500/20 border-2 border-yellow-600/40">
                   <Target className="h-6 w-6 text-yellow-500" />
@@ -140,7 +140,7 @@ export function About() {
             </Card>
 
             {/* Vision Card */}
-            <Card className="p-6 border-4 border-orange-600/40 bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-lg hover:shadow-orange-500/20 transition-all duration-300">
+            <Card className="p-6 border-8 border-orange-600/60 bg-gradient-to-br from-gray-900 to-black hover:shadow-[0_0_40px_rgba(245,158,11,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 rounded-none">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-orange-500/20 border-2 border-orange-600/40">
                   <Eye className="h-6 w-6 text-orange-500" />

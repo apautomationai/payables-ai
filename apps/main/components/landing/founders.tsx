@@ -52,11 +52,11 @@ export function Founders() {
 
   return (
     <section className="py-24 sm:py-32 bg-gradient-to-br from-black via-gray-900 to-gray-800 relative overflow-hidden">
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
       
       {/* Background decorative elements */}
@@ -120,7 +120,7 @@ export function Founders() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-gray-700 hover:border-yellow-600/50 shadow-lg hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 group relative overflow-hidden">
+              <Card className="p-6 h-full bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 group relative overflow-hidden rounded-none">
                 {/* Background gradient on hover */}
                 <div
                   className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}

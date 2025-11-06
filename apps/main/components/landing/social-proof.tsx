@@ -56,11 +56,11 @@ const companies = [
 export function SocialProof() {
   return (
     <section className="py-24 sm:py-32 bg-gradient-to-b from-black via-gray-900 to-gray-800 relative overflow-hidden">
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
       
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
@@ -133,12 +133,24 @@ export function SocialProof() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-8 h-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-gray-700 hover:border-yellow-600/50 hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 relative">
-                {/* Corner screws/rivets */}
-                <div className="absolute -top-2 -left-2 w-3 h-3 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-                <div className="absolute -top-2 -right-2 w-3 h-3 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-                <div className="absolute -bottom-2 -left-2 w-3 h-3 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-                <div className="absolute -bottom-2 -right-2 w-3 h-3 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
+              <Card className="p-8 h-full bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 relative rounded-none">
+                {/* Corner screws/rivets - LARGER AND ROUGHER */}
+                <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                
+                {/* Weld marks */}
+                <div className="absolute top-4 left-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
+                <div className="absolute bottom-4 right-1/4 w-14 h-1 bg-yellow-600/40 blur-[2px]"></div>
                 
                 <Quote className="absolute top-6 right-6 w-8 h-8 text-yellow-500/20" />
 

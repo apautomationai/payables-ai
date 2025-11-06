@@ -110,11 +110,17 @@ export function Pricing() {
 
   return (
     <section id="pricing" className="py-24 sm:py-32 bg-gradient-to-b from-gray-800 via-gray-900 to-black relative overflow-hidden">
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
+      {/* Grunge overlay */}
+      <div className="absolute inset-0 opacity-[0.06]" style={{
+        backgroundImage: `radial-gradient(ellipse at 40% 50%, transparent 30%, rgba(253, 176, 34, 0.15) 31%, transparent 32%)`,
+        backgroundSize: '300px 300px'
       }} />
       
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
@@ -157,17 +163,29 @@ export function Pricing() {
                 viewport={{ once: true }}
               >
                 <Card
-  className={`relative p-8 h-full flex flex-col ${
+  className={`relative p-8 h-full flex flex-col rounded-none ${
     plan.popular
-      ? "border-4 border-yellow-600 shadow-2xl shadow-yellow-500/30 ring-2 ring-yellow-500/50 scale-105"
-      : "border-4 border-gray-700 hover:border-yellow-600/50 hover:shadow-lg hover:shadow-yellow-500/20"
-  } transition-all duration-300 bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden`}
+      ? "border-8 border-yellow-600/80 shadow-[0_0_50px_rgba(253,176,34,0.6),inset_0_0_30px_rgba(0,0,0,0.7)] ring-4 ring-yellow-500/40 scale-105"
+      : "border-8 border-gray-600 hover:border-yellow-600/70 hover:shadow-[0_0_40px_rgba(253,176,34,0.4),inset_0_0_25px_rgba(0,0,0,0.6)]"
+  } transition-all duration-300 bg-gradient-to-br from-gray-900 to-black relative overflow-hidden`}
 >
-  {/* Corner screws/rivets */}
-  <div className="absolute -top-2 -left-2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-  <div className="absolute -top-2 -right-2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-  <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-  <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
+  {/* Corner screws/rivets - LARGER AND ROUGHER */}
+  <div className="absolute -top-3 -left-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+  </div>
+  <div className="absolute -top-3 -right-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+  </div>
+  <div className="absolute -bottom-3 -left-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+  </div>
+  <div className="absolute -bottom-3 -right-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+  </div>
+  
+  {/* Weld marks */}
+  <div className="absolute top-4 left-1/4 w-20 h-1 bg-yellow-600/40 blur-[2px]"></div>
+  <div className="absolute bottom-4 right-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
 
   {/* Animated background for popular plan */}
   {plan.popular && (
@@ -264,12 +282,24 @@ export function Pricing() {
             viewport={{ once: true }}
             className="md:col-span-2 xl:col-span-3"
           >
-            <Card className="relative p-10 border-4 border-yellow-600/50 bg-gradient-to-r from-gray-800 to-gray-900 overflow-hidden shadow-2xl shadow-yellow-500/20">
-              {/* Corner screws/rivets */}
-              <div className="absolute -top-2 -left-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-              <div className="absolute -top-2 -right-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-              <div className="absolute -bottom-2 -left-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
-              <div className="absolute -bottom-2 -right-2 w-5 h-5 bg-gray-600 rounded-full border-2 border-gray-500 z-20"></div>
+            <Card className="relative p-10 border-8 border-yellow-600/70 bg-gradient-to-r from-gray-900 to-black overflow-hidden shadow-[0_0_50px_rgba(253,176,34,0.5),inset_0_0_40px_rgba(0,0,0,0.7)] rounded-none">
+              {/* Corner screws/rivets - LARGER AND ROUGHER */}
+              <div className="absolute -top-4 -left-4 w-8 h-8 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_8px_rgba(0,0,0,0.9),0_4px_8px_rgba(0,0,0,1)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -top-4 -right-4 w-8 h-8 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_8px_rgba(0,0,0,0.9),0_4px_8px_rgba(0,0,0,1)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -bottom-4 -left-4 w-8 h-8 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_8px_rgba(0,0,0,0.9),0_4px_8px_rgba(0,0,0,1)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
+              </div>
+              <div className="absolute -bottom-4 -right-4 w-8 h-8 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_8px_rgba(0,0,0,0.9),0_4px_8px_rgba(0,0,0,1)] z-20">
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-2 h-2 bg-gray-400 rounded-full"></div>
+              </div>
+              
+              {/* Weld marks */}
+              <div className="absolute top-6 left-1/4 w-24 h-1.5 bg-yellow-600/50 blur-[2px]"></div>
+              <div className="absolute bottom-6 right-1/4 w-20 h-1.5 bg-yellow-600/50 blur-[2px]"></div>
               
               {/* Background elements */}
               <div className="absolute top-0 right-0 opacity-10">

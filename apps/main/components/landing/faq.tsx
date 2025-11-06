@@ -57,11 +57,11 @@ const faqs = [
 export function FAQ() {
   return (
     <section className="py-24 sm:py-32 bg-gradient-to-b from-black via-gray-900 to-gray-800 relative overflow-hidden">
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
       
       <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10">
@@ -101,7 +101,7 @@ export function FAQ() {
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-gray-700 hover:border-yellow-600/50 rounded-lg px-6 hover:shadow-xl hover:shadow-yellow-500/20 transition-all duration-300"
+                className="bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 rounded-none px-6 hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300"
               >
                 <AccordionTrigger className="text-left font-semibold text-white hover:text-yellow-400 transition-colors duration-300 uppercase">
                   {faq.question}

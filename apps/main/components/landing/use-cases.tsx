@@ -125,11 +125,11 @@ export function UseCases() {
       <FloatingElements />
       <ProfessionalIcons />
       
-      {/* Diamond plate texture */}
-      <div className="absolute inset-0 opacity-[0.015]" style={{
-        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
-                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
-        backgroundSize: '12px 12px'
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
       }} />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
@@ -168,7 +168,7 @@ export function UseCases() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full border-4 border-gray-700 hover:border-yellow-600/50 shadow-md hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 group relative overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
+              <Card className="p-6 h-full border-8 border-gray-600 hover:border-yellow-600/70 shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 group relative overflow-hidden bg-gradient-to-br from-gray-900 to-black rounded-none">
                 {/* Background gradient on hover */}
                 <div
                   className={`absolute inset-0 ${useCase.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}

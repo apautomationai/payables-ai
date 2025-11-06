@@ -110,10 +110,10 @@ export function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b-2 ${
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b-4 ${
           scrolled 
-            ? "bg-gray-900/95 backdrop-blur-md shadow-lg shadow-yellow-500/10 border-yellow-600/30" 
-            : "bg-gray-900/50 backdrop-blur-sm border-transparent"
+            ? "bg-gray-950/98 backdrop-blur-none shadow-[0_4px_20px_rgba(0,0,0,0.9),0_0_30px_rgba(253,176,34,0.2)] border-yellow-600/50" 
+            : "bg-gray-950/80 backdrop-blur-none border-yellow-600/20"
         }`}
       >
         <nav className="mx-auto max-w-7xl px-6 lg:px-8" aria-label="Global">

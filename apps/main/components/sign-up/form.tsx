@@ -9,14 +9,6 @@ import { AtSign, Lock, Loader2, User, Phone, Building2, Eye, EyeOff } from "luci
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import { signUpAction, SignUpFormState } from "@/app/(auth)/sign-up/actions";
 
 const initialState: SignUpFormState = {
@@ -136,40 +128,23 @@ export default function SignUpForm() {
   }, [state, router]);
 
   return (
-    <div className="relative w-full flex items-center justify-center p-4">
-      <Card className="relative w-full min-w-sm lg:min-w-[430px] bg-gradient-to-br from-gray-900 to-black rounded-none shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] border-8 border-gray-600 overflow-hidden animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
-        {/* Corner screws/rivets */}
-        <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        
-        {/* Weld marks */}
-        <div className="absolute top-4 left-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
-        
-        <CardHeader className="text-center pb-6 relative z-10 px-8 pt-8">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
-              <User className="h-8 w-8 text-gray-900 relative z-10" />
-            </div>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-col items-center gap-1 text-center">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
+            <User className="h-8 w-8 text-gray-900 relative z-10" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
-            Create an Account
-          </CardTitle>
-          <CardDescription className="text-gray-300 text-base mt-2">
-            Get started with Sledge today
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6 relative z-10 px-8">
+        </div>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
+          Create an Account
+        </h1>
+        <p className="text-gray-300 text-sm text-balance">
+          Get started with Sledge today
+        </p>
+      </div>
+
+      <div className="space-y-6">
           <div className="grid grid-cols-2 gap-3">
             <Button 
               variant="outline"
@@ -314,20 +289,17 @@ export default function SignUpForm() {
 
             <SubmitButton />
           </form>
-        </CardContent>
 
-        <CardFooter className="flex-col gap-4 pt-6 border-t-4 border-gray-600 relative z-10 px-8 pb-8">
-          <div className="text-sm text-gray-400 text-center">
+          <div className="text-sm text-gray-400 text-center pt-4 border-t-2 border-gray-600">
             Already have an account?{" "}
             <Link
               href="/sign-in"
-              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300"
+              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300 underline underline-offset-4"
             >
               Sign In
             </Link>
           </div>
-        </CardFooter>
-      </Card>
+        </div>
     </div>
   );
 }

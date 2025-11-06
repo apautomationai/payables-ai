@@ -8,14 +8,6 @@ import { AtSign, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import axios from "axios";
 import { SignInSchema } from "@/lib/validators";
 import { setCookie } from "cookies-next";
@@ -223,41 +215,23 @@ function SignInFormComponent() {
   }, [state]);
 
   return (
-    <div className="relative w-full">
-      {/* Main Card with Metallic Design */}
-      <Card className="relative w-full max-w-md bg-gradient-to-br from-gray-900 to-black rounded-none shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] border-8 border-gray-600 overflow-hidden">
-        {/* Corner screws/rivets */}
-        <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
-          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
-        </div>
-        
-        {/* Weld marks */}
-        <div className="absolute top-4 left-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
-        
-        <CardHeader className="text-center pb-6 relative z-10">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
-              <Lock className="h-8 w-8 text-gray-900 relative z-10" />
-            </div>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-col items-center gap-1 text-center">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
+            <Lock className="h-8 w-8 text-gray-900 relative z-10" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
-            Welcome Back
-          </CardTitle>
-          <CardDescription className="text-gray-300 text-base mt-2">
-            Sign in to your account to continue
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6 relative z-10">
+        </div>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
+          Welcome Back
+        </h1>
+        <p className="text-gray-300 text-sm text-balance">
+          Sign in to your account to continue
+        </p>
+      </div>
+
+      <div className="space-y-6">
           {/* Social Login Buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button 
@@ -363,20 +337,17 @@ function SignInFormComponent() {
 
             <SubmitButton isLoading={isLoading} />
           </form>
-        </CardContent>
 
-        <CardFooter className="flex-col gap-4 pt-6 border-t-4 border-gray-600 relative z-10">
-          <div className="text-sm text-gray-400 text-center">
+          <div className="text-sm text-gray-400 text-center pt-4 border-t-2 border-gray-600">
             Don't have an account?{" "}
             <Link
               href="/sign-up"
-              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300"
+              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300 underline underline-offset-4"
             >
               Create account
             </Link>
           </div>
-        </CardFooter>
-      </Card>
+        </div>
     </div>
   );
 }
@@ -384,10 +355,12 @@ function SignInFormComponent() {
 export default function SignInForm() {
   return (
     <Suspense fallback={
-      <div className="w-full max-w-md bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 rounded-none shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] p-8 animate-pulse relative overflow-hidden">
-        <div className="w-16 h-16 bg-gray-700 rounded-none mx-auto mb-4"></div>
-        <div className="h-8 bg-gray-700 rounded-none mb-2"></div>
-        <div className="h-4 bg-gray-700 rounded-none mb-6"></div>
+      <div className="flex flex-col gap-6 animate-pulse">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <div className="w-16 h-16 bg-gray-700 rounded-none mx-auto mb-4"></div>
+          <div className="h-8 bg-gray-700 rounded-none mb-2 w-48"></div>
+          <div className="h-4 bg-gray-700 rounded-none mb-6 w-64"></div>
+        </div>
         <div className="space-y-4">
           <div className="h-10 bg-gray-700 rounded-none"></div>
           <div className="h-10 bg-gray-700 rounded-none"></div>

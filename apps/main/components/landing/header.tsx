@@ -79,7 +79,7 @@ export function Header() {
     isLoggedIn ? (
       <Button
         asChild
-        className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white font-medium px-6 shadow-lg hover:shadow-xl transition-all duration-300 group"
+        className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-900 font-bold px-6 shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-400/40 transition-all duration-300 group uppercase border-2 border-yellow-600"
       >
         <Link href={"/dashboard"}>
           Go To Dashboard
@@ -91,13 +91,13 @@ export function Header() {
         <Button
           asChild
           variant="ghost"
-          className="text-gray-700 hover:text-blue-600 font-medium dark:hover:bg-gray-50 transition-colors duration-300"
+          className="text-gray-300 hover:text-yellow-400 font-medium hover:bg-gray-800 transition-colors duration-300"
         >
           <Link href={"/sign-in"}>Sign In</Link>
         </Button>
         <Button
           asChild
-          className="bg-gradient-to-r from-blue-600 to-emerald-600 hover:from-blue-700 hover:to-emerald-700 text-white font-medium px-6 shadow-lg hover:shadow-xl transition-all duration-300 group"
+          className="bg-gradient-to-r from-yellow-500 to-amber-500 hover:from-yellow-400 hover:to-amber-400 text-gray-900 font-bold px-6 shadow-lg shadow-yellow-500/30 hover:shadow-xl hover:shadow-yellow-400/40 transition-all duration-300 group uppercase border-2 border-yellow-600"
         >
           <Link href={"/sign-up"}>
             Start Free Trial
@@ -110,8 +110,10 @@ export function Header() {
   return (
     <>
       <header
-        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-          scrolled ? "bg-white/80 backdrop-blur-md shadow-sm" : "bg-transparent"
+        className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 border-b-2 ${
+          scrolled 
+            ? "bg-gray-900/95 backdrop-blur-md shadow-lg shadow-yellow-500/10 border-yellow-600/30" 
+            : "bg-gray-900/50 backdrop-blur-sm border-transparent"
         }`}
       >
         <nav className="mx-auto max-w-7xl px-6 lg:px-8" aria-label="Global">
@@ -126,7 +128,7 @@ export function Header() {
                 />
               </div>
               <div>
-                {/* <span className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                {/* <span className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
                   SLEDGE
                 </span> */}
               </div>
@@ -137,7 +139,7 @@ export function Header() {
                 <a
                   key={item.name}
                   href={item.href}
-                  className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-300"
+                  className="text-gray-300 hover:text-yellow-400 font-medium transition-colors duration-300 uppercase text-sm"
                 >
                   {item.name}
                 </a>
@@ -151,7 +153,7 @@ export function Header() {
             <div className="flex lg:hidden">
               <button
                 type="button"
-                className="inline-flex items-center justify-center rounded-md p-2.5 text-gray-700 z-50 relative"
+                className="inline-flex items-center justify-center rounded-md p-2.5 text-gray-300 hover:text-yellow-400 z-50 relative"
                 onClick={() => setMobileMenuOpen(true)}
                 aria-label="Open menu"
               >
@@ -183,24 +185,24 @@ export function Header() {
               animate={{ x: 0 }}
               exit={{ x: "100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl lg:hidden"
+              className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-gray-900 shadow-2xl shadow-yellow-500/20 border-l-4 border-yellow-600/30 lg:hidden"
             >
               <div className="flex flex-col h-full">
                 {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
+                <div className="flex items-center justify-between p-6 border-b-2 border-yellow-600/30 bg-gray-900">
                   <Link
                     href="/"
                     className="flex items-center gap-3"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <CreditCard className="h-8 w-8 text-blue-600" />
-                    <span className="text-xl font-bold text-gray-900">
-                      Payable.ai
+                    <CreditCard className="h-8 w-8 text-yellow-500" />
+                    <span className="text-xl font-bold text-white uppercase">
+                      SLEDGE
                     </span>
                   </Link>
                   <button
                     type="button"
-                    className="rounded-md p-2 text-gray-700 hover:bg-gray-100 transition-colors"
+                    className="rounded-md p-2 text-gray-300 hover:bg-gray-800 hover:text-yellow-400 transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                     aria-label="Close menu"
                   >
@@ -209,13 +211,13 @@ export function Header() {
                 </div>
 
                 {/* Navigation Links */}
-                <div className="flex-1 overflow-y-auto py-6">
+                <div className="flex-1 overflow-y-auto py-6 bg-gray-900">
                   <div className="px-6 space-y-2">
                     {navigation.map((item) => (
                       <a
                         key={item.name}
                         href={item.href}
-                        className="block rounded-lg px-4 py-3 text-lg font-semibold text-gray-900 hover:bg-gray-50 transition-colors duration-200"
+                        className="block rounded-lg px-4 py-3 text-lg font-semibold text-gray-300 hover:bg-gray-800 hover:text-yellow-400 transition-colors duration-200 border-2 border-transparent hover:border-yellow-600/30 uppercase"
                         onClick={(e) => {
                           e.preventDefault();
                           setMobileMenuOpen(false);
@@ -235,7 +237,7 @@ export function Header() {
                 </div>
 
                 {/* Auth Buttons */}
-                <div className="p-6 border-t border-gray-200 bg-gray-50">
+                <div className="p-6 border-t-2 border-yellow-600/30 bg-gray-800">
                   <div className="space-y-3">
                     <AuthButtons />
                   </div>

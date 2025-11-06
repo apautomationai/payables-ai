@@ -118,12 +118,19 @@ export function UseCases() {
   return (
     <section
       id="use-cases"
-      className="py-24 sm:py-32 bg-gray-50 relative overflow-hidden"
+      className="py-24 sm:py-32 bg-gradient-to-b from-gray-800 via-gray-900 to-black relative overflow-hidden"
     >
       {/* Background elements */}
       <GeometricPattern />
       <FloatingElements />
       <ProfessionalIcons />
+      
+      {/* Diamond plate texture */}
+      <div className="absolute inset-0 opacity-[0.015]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
+        backgroundSize: '12px 12px'
+      }} />
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
         <motion.div
@@ -135,17 +142,17 @@ export function UseCases() {
         >
           <Badge
             variant="outline"
-            className="mb-4 px-3 py-1 text-sm font-medium border-emerald-200 bg-emerald-50/50 text-emerald-700"
+            className="mb-4 px-3 py-1 text-sm font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase"
           >
             Use Cases
           </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl uppercase">
             See how businesses are transforming their <br />
-            <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
               AP Processes
             </span>
           </h2>
-          <p className="mt-6 text-xl leading-8 text-gray-600">
+          <p className="mt-6 text-xl leading-8 text-gray-300">
             Discover how different industries leverage our solution to automate
             accounts payable and achieve remarkable efficiency gains.
           </p>
@@ -161,7 +168,7 @@ export function UseCases() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full border-0 shadow-md hover:shadow-lg transition-shadow duration-300 group relative overflow-hidden dark:bg-white/80 bg-white/80 backdrop-blur-sm dark:border-gray-200 border-gray-200">
+              <Card className="p-6 h-full border-4 border-gray-700 hover:border-yellow-600/50 shadow-md hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 group relative overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
                 {/* Background gradient on hover */}
                 <div
                   className={`absolute inset-0 ${useCase.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
@@ -178,14 +185,14 @@ export function UseCases() {
                       <useCase.icon
                         className={`h-6 w-6 ${useCase.iconColor}`}
                       />
-                    </motion.div>
-                  </div>
-                  <h3 className="text-xl font-semibold text-gray-900 ml-4 mt-1">
-                    {useCase.category}
-                  </h3>
+                  </motion.div>
                 </div>
+                <h3 className="text-xl font-semibold text-white ml-4 mt-1 uppercase">
+                  {useCase.category}
+                </h3>
+              </div>
 
-                <p className="text-gray-600 mb-6">{useCase.description}</p>
+              <p className="text-gray-300 mb-6">{useCase.description}</p>
               </Card>
             </motion.div>
           ))}

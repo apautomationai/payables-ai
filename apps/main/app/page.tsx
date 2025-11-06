@@ -12,7 +12,7 @@ import { Footer } from "@/components/landing/footer";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <main className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800">
       <Header />
       <Hero />
       <Features />

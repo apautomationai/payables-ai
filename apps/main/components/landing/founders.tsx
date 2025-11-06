@@ -51,13 +51,20 @@ export function Founders() {
   ];
 
   return (
-    <section className="py-24 sm:py-32 bg-gradient-to-br from-gray-50 to-blue-50/30 relative overflow-hidden">
+    <section className="py-24 sm:py-32 bg-gradient-to-br from-black via-gray-900 to-gray-800 relative overflow-hidden">
+      {/* Diamond plate texture */}
+      <div className="absolute inset-0 opacity-[0.015]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 1px, transparent 0, transparent 50%)`,
+        backgroundSize: '12px 12px'
+      }} />
+      
       {/* Background decorative elements */}
       <div className="absolute top-20 left-10 opacity-10">
-        <PulsingOrb color="#3B82F6" size={120} />
+        <PulsingOrb color="#FDB022" size={120} />
       </div>
       <div className="absolute bottom-20 right-10 opacity-10">
-        <PulsingOrb color="#10B981" size={100} />
+        <PulsingOrb color="#F59E0B" size={100} />
       </div>
       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-5">
         <AnimatedUsers />
@@ -72,20 +79,20 @@ export function Founders() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 p-1 rounded-2xl inline-block mb-6">
-            <div className="bg-white p-2 rounded-xl">
-              <Users className="h-8 w-8 text-emerald-600" />
+          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 p-1 rounded-2xl inline-block mb-6">
+            <div className="bg-gray-900 p-2 rounded-xl">
+              <Users className="h-8 w-8 text-yellow-500" />
             </div>
           </div>
 
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl mb-6 uppercase">
             Our{" "}
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
               Founders
             </span>
           </h2>
 
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
             SLEDGE was founded by a team of passionate experts with decades of
             combined experience in AI technology, software engineering, and
             industry operations.
@@ -96,7 +103,7 @@ export function Founders() {
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
             viewport={{ once: true }}
-            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-full shadow-lg"
+            className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-gray-900 rounded-lg shadow-lg shadow-yellow-500/50 border-2 border-yellow-600 font-bold uppercase"
           >
             <Handshake className="h-5 w-5 mr-2" />
             <span>Meet the Team Behind Our Success</span>
@@ -113,7 +120,7 @@ export function Founders() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-6 h-full dark:bg-white/80 border-0 shadow-lg hover:shadow-xl transition-shadow duration-300 group relative overflow-hidden">
+              <Card className="p-6 h-full bg-gradient-to-br from-gray-800 to-gray-900 border-4 border-gray-700 hover:border-yellow-600/50 shadow-lg hover:shadow-2xl hover:shadow-yellow-500/20 transition-all duration-300 group relative overflow-hidden">
                 {/* Background gradient on hover */}
                 <div
                   className={`absolute inset-0 ${founder.bgColor} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}
@@ -150,20 +157,20 @@ export function Founders() {
                 </div>
 
                 <div className="text-center">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  <h3 className="text-xl font-bold text-white mb-2 uppercase">
                     {founder.name}
                   </h3>
-                  <p className="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+                  <p className="text-lg font-semibold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent mb-3">
                     {founder.role}
                   </p>
-                  <p className="text-gray-600 mb-6">{founder.description}</p>
+                  <p className="text-gray-300 mb-6">{founder.description}</p>
 
                   <div className="flex justify-center space-x-3">
                     <motion.a
                       href={founder.linkedin}
                       whileHover={{ scale: 1.1, y: -2 }}
                       whileTap={{ scale: 0.95 }}
-                      className="p-2 bg-blue-100 text-blue-600 rounded-full hover:bg-blue-200 transition-colors"
+                      className="p-2 bg-yellow-500/20 text-yellow-500 rounded-full hover:bg-yellow-500/30 border-2 border-yellow-600/40 transition-colors"
                     >
                       <Linkedin className="h-5 w-5" />
                     </motion.a>

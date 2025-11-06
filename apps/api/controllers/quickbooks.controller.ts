@@ -215,6 +215,33 @@ export class QuickBooksController {
     }
   };
 
+  // Get vendors
+  getAccounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      const accounts = await quickbooksService.getAccounts(integration);
+
+      res.json({
+        success: true,
+        data: accounts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Get invoices
   // @ts-ignore
   getInvoices = async (req: Request, res: Response, next: NextFunction) => {

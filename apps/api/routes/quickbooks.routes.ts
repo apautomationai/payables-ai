@@ -12,6 +12,7 @@ router.get("/callback", quickbooksController.callback);
 // Protected routes (require authentication and subscription)
 router.get("/status", authenticate, requireSubscriptionAccess, quickbooksController.getStatus);
 router.get("/company", authenticate, requireSubscriptionAccess, quickbooksController.getCompanyInfo);
+router.get("/accounts", authenticate, requireSubscriptionAccess, quickbooksController.getAccounts);
 router.get("/customers", authenticate, requireSubscriptionAccess, quickbooksController.getCustomers);
 router.get("/vendors", authenticate, requireSubscriptionAccess, quickbooksController.getVendors);
 router.get("/invoices", authenticate, requireSubscriptionAccess, quickbooksController.getInvoices);

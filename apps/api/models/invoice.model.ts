@@ -19,6 +19,11 @@ export const invoiceStatusEnum = pgEnum("invoice_status", [
   "not_connected"
 ]);
 
+export const itemTypeEnum = pgEnum("item_type", [
+  "account",
+  "product"
+]);
+
 export const invoiceModel = pgTable("invoices", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
@@ -55,6 +60,8 @@ export const lineItemsModel = pgTable("line_items", {
   quantity: numeric("quantity"),
   rate: numeric("rate"),
   amount: numeric("amount"),
+  itemType: itemTypeEnum("item_type"),
+  resourceId: integer("resource_id"),
 });
 
 export const lineItemsRelations = relations(lineItemsModel, ({ one }) => ({

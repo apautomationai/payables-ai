@@ -334,7 +334,7 @@ export class QuickBooksService {
   }
 
   // Get accounts from QuickBooks
-  async getAccounts(integration: QuickBooksIntegration) {
+  async getIncomeAccounts(integration: QuickBooksIntegration) {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Income'");
   }
 
@@ -346,6 +346,11 @@ export class QuickBooksService {
   // Get tax accounts for bill creation
   async getTaxAccounts(integration: QuickBooksIntegration) {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Other Current Liability' OR AccountType = 'Expense'");
+  }
+
+  // Get accounts from QuickBooks
+  async getAccounts(integration: QuickBooksIntegration) {
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account");
   }
 
   // Create a bill in QuickBooks
@@ -470,17 +475,17 @@ export class QuickBooksService {
     customerId?: string;
   }, lineItemData?: any) {
     try {
-      const accountsResponse = await this.getAccounts(integration);
-      const accounts = accountsResponse?.QueryResponse?.Account || [];
+      const incomeAccountsResponse = await this.getIncomeAccounts(integration);
+      const incomeAccounts = incomeAccountsResponse?.QueryResponse?.Account || [];
 
-      let incomeAccount = accounts.find((acc: any) =>
+      let incomeAccount = incomeAccounts.find((acc: any) =>
         acc.Name?.toLowerCase().includes('sales') ||
         acc.Name?.toLowerCase().includes('income') ||
         acc.Name?.toLowerCase().includes('service')
       );
 
-      if (!incomeAccount && accounts.length > 0) {
-        incomeAccount = accounts[0];
+      if (!incomeAccount && incomeAccounts.length > 0) {
+        incomeAccount = incomeAccounts[0];
       }
 
       if (!incomeAccount) {

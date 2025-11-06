@@ -563,6 +563,54 @@ export class InvoiceServices {
     }
   }
 
+  async updateLineItem(
+    lineItemId: number,
+    updateData: {
+      itemType?: 'account' | 'product' | null;
+      resourceId?: number | null;
+    }
+  ) {
+    try {
+      // Verify line item exists
+      const [existingLineItem] = await db
+        .select()
+        .from(lineItemsModel)
+        .where(eq(lineItemsModel.id, lineItemId));
+
+      if (!existingLineItem) {
+        throw new NotFoundError("Line item not found");
+      }
+
+      // Prepare update data
+      const updateFields: any = {};
+      
+      if (updateData.itemType !== undefined) {
+        updateFields.itemType = updateData.itemType;
+      }
+      
+      if (updateData.resourceId !== undefined) {
+        updateFields.resourceId = updateData.resourceId;
+      }
+
+      // If itemType is being changed, clear resourceId if it doesn't match
+      if (updateData.itemType !== undefined && updateData.resourceId === undefined) {
+        // If changing type without setting resourceId, clear it
+        updateFields.resourceId = null;
+      }
+
+      const [updatedLineItem] = await db
+        .update(lineItemsModel)
+        .set(updateFields)
+        .where(eq(lineItemsModel.id, lineItemId))
+        .returning();
+
+      return updatedLineItem;
+    } catch (error) {
+      console.error("Error updating line item:", error);
+      throw error;
+    }
+  }
+
   async getDashboardMetrics(userId: number) {
     try {
       // Calculate current month boundaries

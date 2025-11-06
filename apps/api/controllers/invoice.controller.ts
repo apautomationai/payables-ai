@@ -295,6 +295,54 @@ class InvoiceController {
     }
   }
 
+  async updateLineItem(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+      const { itemType, resourceId } = req.body;
+
+      if (!id) {
+        throw new BadRequestError("Line item ID is required");
+      }
+
+      const lineItemId = parseInt(id, 10);
+      if (isNaN(lineItemId)) {
+        throw new BadRequestError("Line item ID must be a valid number");
+      }
+
+      // Validate itemType if provided
+      if (itemType !== undefined && itemType !== null && itemType !== 'account' && itemType !== 'product') {
+        throw new BadRequestError("itemType must be either 'account' or 'product'");
+      }
+
+      const updateData: {
+        itemType?: 'account' | 'product' | null;
+        resourceId?: number | null;
+      } = {};
+
+      if (itemType !== undefined) {
+        updateData.itemType = itemType;
+      }
+      if (resourceId !== undefined) {
+        updateData.resourceId = resourceId ? parseInt(String(resourceId), 10) : null;
+      }
+
+      const updatedLineItem = await invoiceServices.updateLineItem(lineItemId, updateData);
+
+      return res.status(200).json({
+        success: true,
+        data: updatedLineItem,
+      });
+    } catch (error: any) {
+      console.error("Error updating line item:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async updateInvoiceStatus(req: Request, res: Response) {
     try {
       //@ts-ignore

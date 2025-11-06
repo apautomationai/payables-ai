@@ -14,6 +14,7 @@ import { formatLabel, formatDate } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
+import { LineItemEditor } from "./line-item-editor";
 
 const FormField = ({
   fieldKey,
@@ -129,6 +130,14 @@ export default function InvoiceDetailsForm({
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
   const [localInvoiceDetails, setLocalInvoiceDetails] = useState<InvoiceDetails>(invoiceDetails);
+
+  const handleLineItemUpdate = (updatedLineItem: LineItem) => {
+    setLineItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === updatedLineItem.id ? updatedLineItem : item
+      )
+    );
+  };
 
   // Update local state when invoiceDetails prop changes
   useEffect(() => {
@@ -248,27 +257,14 @@ export default function InvoiceDetailsForm({
               </div>
 
               {lineItems.length > 0 ? (
-                <div className="space-y-2">
-                  {lineItems.map((item, index) => (
-                    <div key={index} className="bg-muted/50 rounded-lg p-3 text-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-medium text-foreground">
-                          {item.item_name || `Item ${index + 1}`}
-                        </span>
-                        <span className="text-muted-foreground">
-                          ${parseFloat(item.amount || "0").toFixed(2)}
-                        </span>
-                      </div>
-                      {item.description && (
-                        <p className="text-muted-foreground text-xs mb-1">
-                          {item.description}
-                        </p>
-                      )}
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Qty: {item.quantity || 1}</span>
-                        <span>Rate: ${parseFloat(item.rate || "0").toFixed(2)}</span>
-                      </div>
-                    </div>
+                <div className="space-y-3">
+                  {lineItems.map((item) => (
+                    <LineItemEditor
+                      key={item.id}
+                      lineItem={item}
+                      onUpdate={handleLineItemUpdate}
+                      isEditing={isEditing}
+                    />
                   ))}
                 </div>
               ) : (

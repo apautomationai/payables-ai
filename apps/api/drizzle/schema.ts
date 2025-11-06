@@ -2,6 +2,7 @@ import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar
 
 export const provider = pgEnum("provider", ['local', 'gmail', 'outlook'])
 export const status = pgEnum("status", ['pending', 'approved', 'rejected', 'failed', 'not_connected'])
+export const itemType = pgEnum("item_type", ['account', 'product'])
 
 
 export const registrationCounter = pgTable("registration_counter", {
@@ -122,6 +123,8 @@ export const lineItems = pgTable("line_items", {
 	quantity: numeric(),
 	rate: numeric(),
 	amount: numeric(),
+	itemType: itemType("item_type"),
+	resourceId: integer("resource_id"),
 });
 
 

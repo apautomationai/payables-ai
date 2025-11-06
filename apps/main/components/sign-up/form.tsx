@@ -58,11 +58,10 @@ function SubmitButton() {
   const { pending } = useFormStatus();
   return (
     <Button 
-      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 relative overflow-hidden group"
+      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-gray-900 font-bold py-3 px-4 rounded-none transition-all duration-300 shadow-lg shadow-yellow-500/50 hover:shadow-yellow-400/60 border-2 border-yellow-600 uppercase relative overflow-hidden group"
       type="submit" 
       disabled={pending}
     >
-      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
       {pending ? (
         <div className="flex items-center justify-center relative z-10">
           <Loader2 className="animate-spin h-5 w-5 mr-2" />
@@ -101,7 +100,7 @@ function PasswordInput({
           type={showPassword ? "text" : "password"}
           placeholder={placeholder}
           required
-          className="pl-10 pr-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+          className="pl-10 pr-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
         />
         <button
           type="button"
@@ -111,7 +110,6 @@ function PasswordInput({
         >
           {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
         </button>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
       </div>
       {errors && (
         <p className="text-sm text-red-400 mt-1">{errors[0]}</p>
@@ -138,24 +136,32 @@ export default function SignUpForm() {
   }, [state, router]);
 
   return (
-    <div className="relative max-h-screen lg:max-h-[800px] flex items-center justify-center p-4">
-      <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl opacity-75 blur-xl animate-pulse-slow"></div>
-      <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl opacity-50 blur-lg animate-rotate"></div>
-      
-      <Card className="relative w-full min-w-sm lg:min-w-[430px] lg:max-h-[850px] bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl overflow-hidden animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 animate-shine"></div>
+    <div className="relative w-full flex items-center justify-center p-4">
+      <Card className="relative w-full min-w-sm lg:min-w-[430px] bg-gradient-to-br from-gray-900 to-black rounded-none shadow-[0_0_30px_rgba(0,0,0,0.8),inset_0_0_20px_rgba(0,0,0,0.5)] border-8 border-gray-600 overflow-hidden animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+        {/* Corner screws/rivets */}
+        <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
+        <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
+        <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
+        <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+        </div>
         
-        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
-        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-purple-500/20 to-transparent rounded-full blur-2xl"></div>
+        {/* Weld marks */}
+        <div className="absolute top-4 left-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
         
         <CardHeader className="text-center pb-6 relative z-10 px-8 pt-8">
           <div className="mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-3 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 animate-shine"></div>
-              <User className="h-8 w-8 text-white relative z-10" />
+            <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
+              <User className="h-8 w-8 text-gray-900 relative z-10" />
             </div>
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
             Create an Account
           </CardTitle>
           <CardDescription className="text-gray-300 text-base mt-2">
@@ -168,18 +174,16 @@ export default function SignUpForm() {
             <Button 
               variant="outline"
               disabled
-              className="h-11 cursor-not-allowed bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
+              className="h-11 cursor-not-allowed bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
               <GoogleIcon className="mr-2 h-4 w-4 relative z-10" /> 
               <span className="relative z-10">Google</span>
             </Button>
             <Button 
               variant="outline" 
               disabled
-              className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
+              className="h-11 bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
               <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" /> 
               <span className="relative z-10">Microsoft</span>
             </Button>
@@ -187,10 +191,10 @@ export default function SignUpForm() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600" />
+              <div className="w-full border-t-2 border-gray-600" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-gray-900 px-3 text-sm text-gray-400">
+              <span className="bg-gradient-to-br from-gray-900 to-black px-3 text-sm text-gray-400">
                 Or sign up with email
               </span>
             </div>
@@ -209,9 +213,8 @@ export default function SignUpForm() {
                     name="firstName"
                     placeholder="John"
                     required
-                    className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
                 </div>
                 {state.errors?.firstName && (
                   <p className="text-sm text-red-400 mt-1">{state.errors.firstName[0]}</p>
@@ -229,9 +232,8 @@ export default function SignUpForm() {
                     name="lastName"
                     placeholder="Doe"
                     required
-                    className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
                 </div>
                 {state.errors?.lastName && (
                   <p className="text-sm text-red-400 mt-1">{state.errors.lastName[0]}</p>
@@ -250,9 +252,8 @@ export default function SignUpForm() {
                     id="phone"
                     name="phone"
                     placeholder="+1234567890"
-                    className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
                 </div>
                 {state.errors?.phone && (
                   <p className="text-sm text-red-400 mt-1">{state.errors.phone[0]}</p>
@@ -269,9 +270,8 @@ export default function SignUpForm() {
                     id="businessName"
                     name="businessName"
                     placeholder="Business Name"
-                    className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
                 </div>
                 {state.errors?.businessName && (
                   <p className="text-sm text-red-400 mt-1">{state.errors.businessName[0]}</p>
@@ -291,9 +291,8 @@ export default function SignUpForm() {
                   type="email"
                   required
                   placeholder="you@example.com"
-                  className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                  className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
               </div>
               {state.errors?.email && (
                 <p className="text-sm text-red-400 mt-1">{state.errors.email[0]}</p>
@@ -308,8 +307,7 @@ export default function SignUpForm() {
             />
 
             {state.errors?._form && (
-              <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10"></div>
+              <div className="p-3 bg-red-900/20 border-4 border-red-800 rounded-none relative overflow-hidden">
                 <p className="text-sm text-red-400 text-center relative z-10">{state.errors._form[0]}</p>
               </div>
             )}
@@ -318,54 +316,18 @@ export default function SignUpForm() {
           </form>
         </CardContent>
 
-        <CardFooter className="flex-col gap-4 pt-6 border-t border-gray-700 relative z-10 px-8 pb-8">
+        <CardFooter className="flex-col gap-4 pt-6 border-t-4 border-gray-600 relative z-10 px-8 pb-8">
           <div className="text-sm text-gray-400 text-center">
             Already have an account?{" "}
             <Link
               href="/sign-in"
-              className="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300"
+              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300"
             >
               Sign In
             </Link>
           </div>
         </CardFooter>
       </Card>
-
-      <style jsx>{`
-        @keyframes shine {
-          0% {
-            transform: translateX(-100%) skewX(-12deg);
-          }
-          100% {
-            transform: translateX(200%) skewX(-12deg);
-          }
-        }
-        @keyframes rotate {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 0.75;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        .animate-shine {
-          animation: shine 3s ease-in-out infinite;
-        }
-        .animate-rotate {
-          animation: rotate 6s linear infinite;
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 4s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

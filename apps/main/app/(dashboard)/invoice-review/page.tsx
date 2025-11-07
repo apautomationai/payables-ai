@@ -110,7 +110,7 @@ async function InvoiceReviewContent({
       initialSelectedInvoice={initialSelectedInvoice}
       initialInvoiceDetails={initialInvoiceDetails}
       initialInvoiceCache={initialInvoiceCache}
-      activeTab={tab}
+      activeTab={tab || "attachments"}
     />
   );
 }

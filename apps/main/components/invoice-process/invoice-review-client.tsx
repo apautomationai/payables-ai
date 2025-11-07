@@ -51,7 +51,7 @@ export default function InvoiceReviewClient({
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
-  const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "invoices");
+  const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "attachments");
 
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments?.length > 0 ? attachments[0]!.id : null
@@ -539,7 +539,7 @@ export default function InvoiceReviewClient({
     const sliderRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-      const activeTabIndex = activeTabState === 'invoices' ? 0 : 1;
+      const activeTabIndex = activeTabState === 'attachments' ? 0 : 1;
       const activeTabNode = tabsRef.current[activeTabIndex];
       const sliderNode = sliderRef.current;
 
@@ -555,7 +555,7 @@ export default function InvoiceReviewClient({
           ref={sliderRef}
           className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
         />
-        {['invoices', 'attachments'].map((tab, index) => (
+        {['attachments', 'invoices'].map((tab, index) => (
           <button
             key={tab}
             ref={(el) => { tabsRef.current[index] = el; }}

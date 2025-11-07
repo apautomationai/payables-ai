@@ -78,17 +78,16 @@ export class QuickBooksController {
         console.warn("Could not fetch company info:", error);
       }
 
-      // Redirect to frontend settings page with success
-      // const frontendUrl = process.env.OAUTH_REDIRECT_URI;
-      // res.redirect(`${frontendUrl}?quickbooks=success`);
-      res.status(200).json({
-        message: "OAuth successful",
-        access_token: tokenData.accessToken,
-        refresh_token: tokenData.refreshToken,
-        expiry_date: tokenData.expiresIn,
-      });
-    } catch (error) {
-      next(error);
+      // Redirect to frontend integrations page with success
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/integrations?message=QuickBooks connected successfully&type=success`;
+      res.redirect(redirectUrl);
+    } catch (error: any) {
+      // Redirect to frontend integrations page with error
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const errorMessage = error.message || "Failed to connect QuickBooks";
+      const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+      res.redirect(redirectUrl);
     }
   };
 

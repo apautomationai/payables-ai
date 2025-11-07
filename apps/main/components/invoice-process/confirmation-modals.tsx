@@ -278,6 +278,9 @@ export default function ConfirmationModals({
       toast.error("Approval Failed", {
         description: errorMessage
       });
+
+      // Close the dialog so user can try again
+      setIsDialogOpen(false);
     }
 
     setIsApproving(false);

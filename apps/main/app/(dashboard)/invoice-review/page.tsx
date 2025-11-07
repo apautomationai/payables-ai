@@ -63,12 +63,13 @@ async function InvoiceReviewContent({
   searchParams: any;
 }) {
 
-  const { page, tab } = await searchParams;
+  const { page, invoicePage, tab } = await searchParams;
 
-  const currentPage = Number(page);
+  const attachmentsPage = Number(page) || 1;
+  const invoicesPage = Number(invoicePage) || 1;
 
-  const attachmentsResult = await getAttachments(currentPage);
-  const invoicesResult = await getInvoices(currentPage);
+  const attachmentsResult = await getAttachments(attachmentsPage);
+  const invoicesResult = await getInvoices(invoicesPage);
 
   // UPDATED: Provide default empty values if the API call fails, instead of showing an error.
   const { invoices, pagination: invoicesPagination } = invoicesResult.data || {
@@ -102,10 +103,10 @@ async function InvoiceReviewContent({
   return (
     <InvoiceReviewClient
       attachments={attachments}
-      currentPage={currentPage}
+      currentPage={attachmentsPage}
       totalPages={attachmentsPagination.totalPages}
       invoices={invoices}
-      invoiceCurrentPage={currentPage}
+      invoiceCurrentPage={invoicesPage}
       invoiceTotalPages={invoicesPagination.totalPages}
       initialSelectedInvoice={initialSelectedInvoice}
       initialInvoiceDetails={initialInvoiceDetails}

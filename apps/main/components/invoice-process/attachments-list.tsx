@@ -52,6 +52,7 @@ export default function AttachmentsList({
   isUploading,
   currentPage,
   totalPages,
+  onPageChange,
 }: {
   attachments: any[] | null;
   selectedAttachment: Attachment | null;
@@ -60,6 +61,7 @@ export default function AttachmentsList({
   isUploading: boolean;
   currentPage: number;
   totalPages: number;
+  onPageChange: (page: number) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
@@ -207,10 +209,10 @@ export default function AttachmentsList({
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                href={`/invoice-review?page=${currentPage - 1}`}
+                onClick={() => onPageChange(currentPage - 1)}
                 aria-disabled={!hasPreviousPage}
                 className={
-                  !hasPreviousPage ? "pointer-events-none opacity-50" : ""
+                  !hasPreviousPage ? "pointer-events-none opacity-50" : "cursor-pointer"
                 }
               />
             </PaginationItem>
@@ -221,10 +223,10 @@ export default function AttachmentsList({
             </PaginationItem>
             <PaginationItem>
               <PaginationNext
-                href={`/invoice-review?page=${currentPage + 1}`}
+                onClick={() => onPageChange(currentPage + 1)}
                 aria-disabled={!hasNextPage}
                 className={
-                  !hasNextPage ? "pointer-events-none opacity-50" : ""
+                  !hasNextPage ? "pointer-events-none opacity-50" : "cursor-pointer"
                 }
               />
             </PaginationItem>

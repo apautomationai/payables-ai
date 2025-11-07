@@ -68,6 +68,47 @@ export default function InvoiceReviewClient({
   const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>(invoices);
 
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+
+  // Sync invoices list with prop changes (for pagination)
+  useEffect(() => {
+    setInvoicesList(invoices);
+
+    // Update selected invoice when invoices change (for pagination)
+    if (invoices?.length > 0) {
+      // If current selection is not in the new list, select the first item
+      const currentInvoiceExists = invoices.some(inv => inv.id === selectedInvoiceId);
+      if (!currentInvoiceExists) {
+        const firstInvoice = invoices[0];
+        if (firstInvoice) {
+          setSelectedInvoiceId(firstInvoice.id);
+
+          // Load details for the first invoice if available in cache
+          const cachedDetails = initialInvoiceCache[firstInvoice.id];
+          if (cachedDetails) {
+            setInvoiceDetails(cachedDetails);
+            setOriginalInvoiceDetails(cachedDetails);
+          }
+        }
+      }
+    } else {
+      setSelectedInvoiceId(null);
+      setInvoiceDetails(null);
+      setOriginalInvoiceDetails(null);
+    }
+  }, [invoices, selectedInvoiceId, initialInvoiceCache]);
+
+  // Update selected attachment when attachments change (for pagination)
+  useEffect(() => {
+    if (attachments?.length > 0) {
+      // If current selection is not in the new list, select the first item
+      const currentAttachmentExists = attachments.some(att => att.id === selectedAttachmentId);
+      if (!currentAttachmentExists && attachments[0]) {
+        setSelectedAttachmentId(attachments[0].id);
+      }
+    } else {
+      setSelectedAttachmentId(null);
+    }
+  }, [attachments, selectedAttachmentId]);
   const [refreshCount, setRefreshCount] = useState(0);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
@@ -350,8 +391,32 @@ export default function InvoiceReviewClient({
     }
   };
 
+  const handleTabChange = (newTab: "attachments" | "invoices") => {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('tab', newTab);
+    // Preserve current page numbers
+    router.push(`/invoice-review?${searchParams.toString()}`);
+    setActiveTabState(newTab);
+  };
+
+  const handleAttachmentPageChange = (page: number) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('page', page.toString());
+    // Preserve the current tab
+    if (activeTabState) {
+      searchParams.set('tab', activeTabState);
+    }
+    router.push(`/invoice-review?${searchParams.toString()}`);
+  };
+
   const handleInvoicePageChange = (page: number) => {
-    router.push(`/invoice-review?page=${page}`);
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('invoicePage', page.toString());
+    // Preserve the current tab
+    if (activeTabState) {
+      searchParams.set('tab', activeTabState);
+    }
+    router.push(`/invoice-review?${searchParams.toString()}`);
   };
 
   const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -559,7 +624,7 @@ export default function InvoiceReviewClient({
           <button
             key={tab}
             ref={(el) => { tabsRef.current[index] = el; }}
-            onClick={() => setActiveTabState(tab as "invoices" | "attachments")}
+            onClick={() => handleTabChange(tab as "invoices" | "attachments")}
             className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${activeTabState === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
           >
@@ -588,6 +653,7 @@ export default function InvoiceReviewClient({
                   onFileUpload={handleFileUpload}
                   currentPage={currentPage}
                   totalPages={totalPages}
+                  onPageChange={handleAttachmentPageChange}
                   isUploading={isUploading}
                 />
               </div>

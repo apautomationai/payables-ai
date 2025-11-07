@@ -34,7 +34,7 @@ export class QuickBooksController {
   callback = async (
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> => {
     try {
       const { code, realmId, state, error } = req.query;

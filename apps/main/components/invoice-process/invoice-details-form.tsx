@@ -130,6 +130,7 @@ export default function InvoiceDetailsForm({
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
   const [localInvoiceDetails, setLocalInvoiceDetails] = useState<InvoiceDetails>(invoiceDetails);
+  const [isQuickBooksConnected, setIsQuickBooksConnected] = useState<boolean | null>(null);
 
   const handleLineItemUpdate = (updatedLineItem: LineItem) => {
     setLineItems((prevItems) =>
@@ -139,10 +140,44 @@ export default function InvoiceDetailsForm({
     );
   };
 
+  // QuickBooks integration check function (same as in confirmation modals)
+  const checkQuickBooksIntegration = async (): Promise<boolean> => {
+    try {
+      const response: any = await client.get('/api/v1/quickbooks/status');
+      return response?.data?.connected === true;
+    } catch (error) {
+      console.error('Error checking QuickBooks integration:', error);
+      return false;
+    }
+  };
+
   // Update local state when invoiceDetails prop changes
   useEffect(() => {
     setLocalInvoiceDetails(invoiceDetails);
   }, [invoiceDetails]);
+
+  // Check QuickBooks connection status once for all line items
+  useEffect(() => {
+    const checkConnection = async () => {
+      try {
+        const isConnected = await checkQuickBooksIntegration();
+        setIsQuickBooksConnected(isConnected);
+      } catch (error) {
+        console.error("Error checking QuickBooks connection:", error);
+        setIsQuickBooksConnected(false);
+      }
+    };
+
+    checkConnection();
+
+    // Refresh connection status when user returns to the page (e.g., from integrations page)
+    const handleFocus = () => {
+      checkConnection();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   // Fetch line items when invoice details change
   useEffect(() => {
@@ -264,6 +299,7 @@ export default function InvoiceDetailsForm({
                       lineItem={item}
                       onUpdate={handleLineItemUpdate}
                       isEditing={isEditing}
+                      isQuickBooksConnected={isQuickBooksConnected}
                     />
                   ))}
                 </div>

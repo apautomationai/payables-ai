@@ -318,14 +318,14 @@ class InvoiceController {
 
       const updateData: {
         itemType?: 'account' | 'product' | null;
-        resourceId?: number | null;
+        resourceId?: string | null;
       } = {};
 
       if (itemType !== undefined) {
         updateData.itemType = itemType;
       }
       if (resourceId !== undefined) {
-        updateData.resourceId = resourceId ? parseInt(String(resourceId), 10) : null;
+        updateData.resourceId = resourceId ? String(resourceId) : null;
       }
 
       const updatedLineItem = await invoiceServices.updateLineItem(lineItemId, updateData);

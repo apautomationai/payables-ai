@@ -59,26 +59,26 @@ interface QuickBooksItemsResponse {
 export async function fetchQuickBooksAccounts(): Promise<QuickBooksAccount[]> {
   try {
     const response = await client.get<QuickBooksAccountsResponse>("/api/v1/quickbooks/accounts");
-    
+
     // Handle nested response structure: { success: true, data: { QueryResponse: { Account: [...] } } }
-    if (response?.success && response?.data?.QueryResponse?.Account) {
-      return response.data.QueryResponse.Account;
+    if (response.data?.success && response.data?.data?.QueryResponse?.Account) {
+      return response.data.data.QueryResponse.Account;
     }
-    
+
     // Handle direct QueryResponse structure: { QueryResponse: { Account: [...] } }
-    if (response?.QueryResponse?.Account) {
-      return response.QueryResponse.Account;
+    if ((response.data as any)?.QueryResponse?.Account) {
+      return (response.data as any).QueryResponse.Account;
     }
-    
+
     // Fallback: try direct array access
-    if (Array.isArray(response?.data)) {
+    if (Array.isArray(response.data?.data)) {
+      return response.data.data as QuickBooksAccount[];
+    }
+
+    if (Array.isArray(response.data)) {
       return response.data as QuickBooksAccount[];
     }
-    
-    if (Array.isArray(response)) {
-      return response as QuickBooksAccount[];
-    }
-    
+
     return [];
   } catch (error) {
     console.error("Error fetching QuickBooks accounts:", error);
@@ -92,26 +92,26 @@ export async function fetchQuickBooksAccounts(): Promise<QuickBooksAccount[]> {
 export async function fetchQuickBooksItems(): Promise<QuickBooksItem[]> {
   try {
     const response = await client.get<QuickBooksItemsResponse>("/api/v1/quickbooks/line-items");
-    
+
     // Handle nested response structure: { success: true, data: { QueryResponse: { Item: [...] } } }
-    if (response?.success && response?.data?.QueryResponse?.Item) {
-      return response.data.QueryResponse.Item;
+    if (response.data?.success && response.data?.data?.QueryResponse?.Item) {
+      return response.data.data.QueryResponse.Item;
     }
-    
+
     // Handle direct QueryResponse structure: { QueryResponse: { Item: [...] } }
-    if (response?.QueryResponse?.Item) {
-      return response.QueryResponse.Item;
+    if ((response.data as any)?.QueryResponse?.Item) {
+      return (response.data as any).QueryResponse.Item;
     }
-    
+
     // Fallback: try direct array access
-    if (Array.isArray(response?.data)) {
+    if (Array.isArray(response.data?.data)) {
+      return response.data.data as QuickBooksItem[];
+    }
+
+    if (Array.isArray(response.data)) {
       return response.data as QuickBooksItem[];
     }
-    
-    if (Array.isArray(response)) {
-      return response as QuickBooksItem[];
-    }
-    
+
     return [];
   } catch (error) {
     console.error("Error fetching QuickBooks items:", error);
@@ -126,7 +126,7 @@ export async function updateLineItem(
   lineItemId: number,
   updateData: {
     itemType?: 'account' | 'product' | null;
-    resourceId?: number | null;
+    resourceId?: string | null;
   }
 ): Promise<any> {
   try {

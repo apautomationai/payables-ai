@@ -567,7 +567,7 @@ export class InvoiceServices {
     lineItemId: number,
     updateData: {
       itemType?: 'account' | 'product' | null;
-      resourceId?: number | null;
+      resourceId?: string | null;
     }
   ) {
     try {
@@ -583,11 +583,11 @@ export class InvoiceServices {
 
       // Prepare update data
       const updateFields: any = {};
-      
+
       if (updateData.itemType !== undefined) {
         updateFields.itemType = updateData.itemType;
       }
-      
+
       if (updateData.resourceId !== undefined) {
         updateFields.resourceId = updateData.resourceId;
       }

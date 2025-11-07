@@ -48,13 +48,16 @@ export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksIte
   }, [items, searchValue, getDisplayName]);
 
   const handleSelect = (item: T) => {
-    console.log("handleSelect called with:", item);
+    console.log("🔥 handleSelect called with:", item);
+
+    // Call the onSelect handler
     onSelect(item.Id, item);
-    // Use setTimeout to ensure the callback completes before closing
+
+    // Close the popover after a short delay to ensure the selection is processed
     setTimeout(() => {
       setOpen(false);
       setSearchValue("");
-    }, 0);
+    }, 100);
   };
 
   const handleOpenChange = (newOpen: boolean) => {
@@ -66,7 +69,7 @@ export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksIte
     }
   };
 
-  console.log("filteredItems", filteredItems[0]);
+
 
   return (
     <Popover open={open} onOpenChange={handleOpenChange}>
@@ -99,7 +102,6 @@ export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksIte
             onValueChange={setSearchValue}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                // @ts-ignore
                 if (filteredItems[0]) {
                   handleSelect(filteredItems[0]);
                 }
@@ -116,14 +118,35 @@ export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksIte
                   key={item.Id}
                   value={getDisplayName(item)}
                   className="cursor-pointer"
+                  onSelect={(value) => {
+                    // This is called by the Command component
+                    console.log("📋 onSelect triggered with value:", value);
+                    const selectedItem = filteredItems.find(item => getDisplayName(item) === value);
+                    if (selectedItem) {
+                      console.log("📋 Found selectedItem:", selectedItem);
+                      handleSelect(selectedItem);
+                    } else {
+                      console.log("❌ No selectedItem found for value:", value);
+                    }
+                  }}
                 >
-                  <Check
-                    className={cn(
-                      "mr-2 h-4 w-4",
-                      value === item.Id ? "opacity-100" : "opacity-0"
-                    )}
-                  />
-                  <span className="truncate">{getDisplayName(item) + ' - ' + item.Id}</span>
+                  <div
+                    className="flex items-center w-full"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log("🖱️ div onClick triggered for:", item);
+                      handleSelect(item);
+                    }}
+                  >
+                    <Check
+                      className={cn(
+                        "mr-2 h-4 w-4",
+                        value === item.Id ? "opacity-100" : "opacity-0"
+                      )}
+                    />
+                    <span className="truncate">{getDisplayName(item)}</span>
+                  </div>
                 </CommandItem>
               ))}
             </CommandGroup>

@@ -61,7 +61,7 @@ export const lineItemsModel = pgTable("line_items", {
   rate: numeric("rate"),
   amount: numeric("amount"),
   itemType: itemTypeEnum("item_type"),
-  resourceId: integer("resource_id"),
+  resourceId: varchar("resource_id", { length: 50 }),
 });
 
 export const lineItemsRelations = relations(lineItemsModel, ({ one }) => ({

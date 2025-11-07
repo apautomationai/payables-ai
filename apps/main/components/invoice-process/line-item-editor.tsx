@@ -1,23 +1,36 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Label } from "@workspace/ui/components/label";
-import { LineItemAutocomplete } from "./line-item-autocomplete";
+import { Button } from "@workspace/ui/components/button";
+import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
 import { fetchQuickBooksAccounts, fetchQuickBooksItems, updateLineItem } from "@/lib/services/quickbooks.service";
 import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
 import type { LineItem } from "@/lib/types/invoice";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@workspace/ui/components/dialog";
 
 interface LineItemEditorProps {
   lineItem: LineItem;
   onUpdate?: (updatedLineItem: LineItem) => void;
   isEditing?: boolean;
+  isQuickBooksConnected?: boolean | null;
 }
 
-export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineItemEditorProps) {
+export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickBooksConnected = null }: LineItemEditorProps) {
+  const router = useRouter();
   const [itemType, setItemType] = useState<'account' | 'product' | null>(lineItem.itemType || null);
   const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
   const [items, setItems] = useState<QuickBooksItem[]>([]);
@@ -27,25 +40,63 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
   const [selectedResourceId, setSelectedResourceId] = useState<string | null>(
     lineItem.resourceId ? String(lineItem.resourceId) : null
   );
+  const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
+
+  console.log("🔧 LineItemEditor mounted with:", {
+    itemType: lineItem.itemType,
+    resourceId: lineItem.resourceId,
+    selectedResourceId,
+    isQuickBooksConnected
+  });
 
   // Load accounts when component mounts or when itemType changes to 'account'
   useEffect(() => {
     if (itemType === 'account' && accounts.length === 0 && !isLoadingAccounts) {
-      loadAccounts();
+      if (isQuickBooksConnected) {
+        loadAccounts();
+      } else if (isQuickBooksConnected === false) {
+        console.log("💰 Skipping accounts load - QuickBooks not connected");
+      }
     }
-  }, [itemType]);
+  }, [itemType, accounts.length, isLoadingAccounts, isQuickBooksConnected]);
 
   // Load items when component mounts or when itemType changes to 'product'
   useEffect(() => {
     if (itemType === 'product' && items.length === 0 && !isLoadingItems) {
-      loadItems();
+      if (isQuickBooksConnected) {
+        loadItems();
+      } else if (isQuickBooksConnected === false) {
+        console.log("🛍️ Skipping products load - QuickBooks not connected");
+      }
     }
-  }, [itemType]);
+  }, [itemType, items.length, isLoadingItems, isQuickBooksConnected]);
+
+  // Initial load effect - ensure data is loaded on component mount if itemType is already set
+  useEffect(() => {
+    console.log("🚀 Initial load effect - itemType:", itemType, "isQuickBooksConnected:", isQuickBooksConnected);
+    if (itemType === 'account' && accounts.length === 0 && !isLoadingAccounts) {
+      if (isQuickBooksConnected) {
+        console.log("🚀 Loading accounts on mount");
+        loadAccounts();
+      } else if (isQuickBooksConnected === false) {
+        console.log("🚀 Skipping accounts load on mount - QuickBooks not connected");
+      }
+    } else if (itemType === 'product' && items.length === 0 && !isLoadingItems) {
+      if (isQuickBooksConnected) {
+        console.log("🚀 Loading products on mount");
+        loadItems();
+      } else if (isQuickBooksConnected === false) {
+        console.log("🚀 Skipping products load on mount - QuickBooks not connected");
+      }
+    }
+  }, [isQuickBooksConnected]); // Run when connection status changes
 
   const loadAccounts = async () => {
+    console.log("💰 Loading accounts...");
     setIsLoadingAccounts(true);
     try {
       const fetchedAccounts = await fetchQuickBooksAccounts();
+      console.log("💰 Loaded accounts:", fetchedAccounts.length, "accounts");
       setAccounts(fetchedAccounts);
     } catch (error) {
       console.error("Error loading accounts:", error);
@@ -56,9 +107,11 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
   };
 
   const loadItems = async () => {
+    console.log("🛍️ Loading products/services...");
     setIsLoadingItems(true);
     try {
       const fetchedItems = await fetchQuickBooksItems();
+      console.log("🛍️ Loaded products/services:", fetchedItems.length, "items");
       setItems(fetchedItems);
     } catch (error) {
       console.error("Error loading items:", error);
@@ -69,29 +122,35 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
   };
 
   const handleItemTypeChange = async (newType: 'account' | 'product' | null) => {
+    // Check if QuickBooks is connected before allowing type selection
+    if (newType && !isQuickBooksConnected) {
+      setIsQuickBooksErrorOpen(true);
+      return;
+    }
+
     setItemType(newType);
-    
+
     // Save the itemType change immediately
     if (isEditing) {
       setIsSaving(true);
       try {
         const updateData: {
           itemType?: 'account' | 'product' | null;
-          resourceId?: number | null;
+          resourceId?: string | null;
         } = {
           itemType: newType,
           resourceId: null, // Clear resourceId when changing type
         };
 
         const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-        
+
         // Update local state
         setSelectedResourceId(null);
-        
+
         if (onUpdate) {
           onUpdate(updatedLineItem.data);
         }
-        
+
         toast.success("Line item type updated");
       } catch (error) {
         console.error("Error updating line item type:", error);
@@ -104,23 +163,23 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
     }
   };
 
-  const handleAccountSelect = async (accountId: string, account: QuickBooksAccount) => {
+  const handleAccountSelect = async (accountId: string, _account: QuickBooksAccount) => {
     setSelectedResourceId(accountId);
-    
+
     if (isEditing) {
       setIsSaving(true);
       try {
         const updateData = {
           itemType: 'account' as const,
-          resourceId: parseInt(accountId, 10),
+          resourceId: accountId, // Keep as string instead of converting to int
         };
 
         const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-        
+
         if (onUpdate) {
           onUpdate(updatedLineItem.data);
         }
-        
+
         toast.success("Account selected");
       } catch (error) {
         console.error("Error updating line item account:", error);
@@ -132,23 +191,23 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
     }
   };
 
-  const handleProductSelect = async (productId: string, product: QuickBooksItem) => {
+  const handleProductSelect = async (productId: string, _product: QuickBooksItem) => {
     setSelectedResourceId(productId);
-    
+
     if (isEditing) {
       setIsSaving(true);
       try {
         const updateData = {
           itemType: 'product' as const,
-          resourceId: parseInt(productId, 10),
+          resourceId: productId, // Keep as string instead of converting to int
         };
 
         const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-        
+
         if (onUpdate) {
           onUpdate(updatedLineItem.data);
         }
-        
+
         toast.success("Product/Service selected");
       } catch (error) {
         console.error("Error updating line item product:", error);
@@ -189,7 +248,7 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
           ${parseFloat(lineItem.amount || "0").toFixed(2)}
         </span>
       </div>
-      
+
       <div className="flex justify-between text-xs text-muted-foreground mb-3">
         <span>Qty: {lineItem.quantity || 1}</span>
         <span>Rate: ${parseFloat(lineItem.rate || "0").toFixed(2)}</span>
@@ -200,19 +259,33 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
         <Label htmlFor={`item-type-${lineItem.id}`} className="text-xs">
           Item Type
         </Label>
-        <Select
-          value={itemType || undefined}
-          onValueChange={(value) => handleItemTypeChange(value as 'account' | 'product' | null)}
-          disabled={!isEditing || isSaving}
-        >
-          <SelectTrigger id={`item-type-${lineItem.id}`} className="h-9">
-            <SelectValue placeholder="Select type..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="account">Account</SelectItem>
-            <SelectItem value="product">Product/Service</SelectItem>
-          </SelectContent>
-        </Select>
+        {isQuickBooksConnected === false ? (
+          <div
+            className="h-9 px-3 py-2 border border-input bg-background rounded-md text-sm text-muted-foreground cursor-pointer hover:bg-accent flex items-center"
+            onClick={() => setIsQuickBooksErrorOpen(true)}
+          >
+            Connect QuickBooks to categorize items
+          </div>
+        ) : isQuickBooksConnected === null ? (
+          <div className="h-9 px-3 py-2 border border-input bg-background rounded-md text-sm text-muted-foreground flex items-center">
+            <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+            Checking connection...
+          </div>
+        ) : (
+          <Select
+            value={itemType || undefined}
+            onValueChange={(value) => handleItemTypeChange(value as 'account' | 'product' | null)}
+            disabled={!isEditing || isSaving || isQuickBooksConnected === null}
+          >
+            <SelectTrigger id={`item-type-${lineItem.id}`} className="h-9">
+              <SelectValue placeholder={isQuickBooksConnected === null ? "Checking connection..." : "Select type..."} />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="account">Account</SelectItem>
+              <SelectItem value="product">Product/Service</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Autocomplete Field */}
@@ -251,6 +324,53 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false }: LineIt
           <span>Saving...</span>
         </div>
       )}
+
+      {/* QuickBooks Integration Error Dialog (same as in confirmation modals) */}
+      <Dialog open={isQuickBooksErrorOpen} onOpenChange={setIsQuickBooksErrorOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>QuickBooks Integration Required</DialogTitle>
+            <DialogDescription>
+              To categorize line items with accounts and products/services, you need to connect your QuickBooks account first.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <div className="flex items-start">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-yellow-800">
+                    Integration Not Connected
+                  </h3>
+                  <div className="mt-2 text-sm text-yellow-700">
+                    <p>
+                      Please connect your QuickBooks account in the integrations page to enable line item categorization.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">Cancel</Button>
+            </DialogClose>
+            <Button
+              onClick={() => {
+                setIsQuickBooksErrorOpen(false);
+                router.push('/integrations');
+              }}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Go to Integrations
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

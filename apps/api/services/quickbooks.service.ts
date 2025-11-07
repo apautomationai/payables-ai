@@ -334,7 +334,7 @@ export class QuickBooksService {
   }
 
   // Get accounts from QuickBooks
-  async getAccounts(integration: QuickBooksIntegration) {
+  async getIncomeAccounts(integration: QuickBooksIntegration) {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Income'");
   }
 
@@ -348,13 +348,80 @@ export class QuickBooksService {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Other Current Liability' OR AccountType = 'Expense'");
   }
 
+  // Get accounts from QuickBooks (excluding Accounts Payable and other invalid types for bills)
+  async getAccounts(integration: QuickBooksIntegration) {
+    try {
+      const response = await this.makeApiCall(integration, "query?query=SELECT * FROM Account");
+
+      // Filter out account types that cannot be used in bill line items
+      if (response?.QueryResponse?.Account) {
+        const validAccounts = response.QueryResponse.Account.filter((account: any) => {
+          // Exclude Accounts Payable and other liability accounts that can't be used in bills
+          const invalidAccountTypes = [
+            'Accounts Payable',
+            'AccountsPayable',
+            'Accounts Receivable',
+            'AccountsReceivable'
+          ];
+
+          const invalidSubTypes = [
+            'AccountsPayable',
+            'AccountsReceivable'
+          ];
+
+          // Check AccountType and AccountSubType
+          const isInvalidType = invalidAccountTypes.includes(account.AccountType);
+          const isInvalidSubType = invalidSubTypes.includes(account.AccountSubType);
+
+          // Also check account name for common payable account names
+          const accountName = (account.Name || '').toLowerCase();
+          const isPayableByName = accountName.includes('accounts payable') ||
+            accountName.includes('payable') ||
+            accountName.includes('accounts receivable') ||
+            accountName.includes('receivable');
+
+          console.log(`🏦 Account "${account.Name}":`, {
+            AccountType: account.AccountType,
+            AccountSubType: account.AccountSubType,
+            isInvalidType,
+            isInvalidSubType,
+            isPayableByName,
+            excluded: isInvalidType || isInvalidSubType || isPayableByName
+          });
+
+          return !isInvalidType && !isInvalidSubType && !isPayableByName;
+        });
+
+        console.log(`🏦 Filtered accounts: ${response.QueryResponse.Account.length} -> ${validAccounts.length}`);
+
+        return {
+          ...response,
+          QueryResponse: {
+            ...response.QueryResponse,
+            Account: validAccounts
+          }
+        };
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Error getting accounts:", error);
+      throw error;
+    }
+  }
+
   // Create a bill in QuickBooks
   async createBill(integration: QuickBooksIntegration, billData: {
     vendorId: string;
     lineItems: Array<{
-      amount: number;
+      id: number;
+      item_name: string;
       description?: string;
-      itemId?: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+      itemType: 'account' | 'product';
+      resourceId: string;
     }>;
     totalAmount: number;
     totalTax?: number;
@@ -364,22 +431,78 @@ export class QuickBooksService {
     discountDescription?: string;
   }) {
     try {
-      // Get expense accounts
+      // Get a default expense account for fallback scenarios
       const accountsResponse = await this.getExpenseAccounts(integration);
       const accounts = accountsResponse?.QueryResponse?.Account || [];
 
-      let expenseAccount = accounts.find((acc: any) =>
+      let defaultExpenseAccount = accounts.find((acc: any) =>
         acc.Name?.toLowerCase().includes('expense') ||
         acc.Name?.toLowerCase().includes('cost')
       );
 
-      if (!expenseAccount && accounts.length > 0) {
-        expenseAccount = accounts[0];
+      if (!defaultExpenseAccount && accounts.length > 0) {
+        defaultExpenseAccount = accounts[0];
       }
 
-      if (!expenseAccount) {
-        throw new Error("No expense account found in QuickBooks");
+      if (!defaultExpenseAccount) {
+        throw new Error("No expense account found in QuickBooks for fallback");
       }
+
+      console.log(`🏦 Using default expense account for fallback: ${defaultExpenseAccount.Name} (${defaultExpenseAccount.Id})`);
+
+      // Create line items array based on itemType and resourceId from database
+      const lineItems = billData.lineItems.map((item, index) => {
+        console.log(`🧾 Processing line item "${item.item_name}":`, {
+          itemType: item.itemType,
+          resourceId: item.resourceId,
+          amount: item.amount,
+          quantity: item.quantity
+        });
+
+        const baseItem = {
+          Amount: parseFloat(item.amount.toString()),
+          Id: (index + 1).toString(),
+        };
+
+        if (item.itemType === 'account') {
+          // Validate that this is not an Accounts Payable account
+          // Note: This is a basic check - the main filtering should happen in getAccounts
+          if (item.resourceId && (item.resourceId.includes('payable') || item.resourceId.includes('receivable'))) {
+            throw new Error(`Cannot use Accounts Payable or Accounts Receivable account for line item "${item.item_name}". Please select an expense account instead.`);
+          }
+
+          // Account-based expense line
+          const accountLine = {
+            ...baseItem,
+            DetailType: "AccountBasedExpenseLineDetail",
+            AccountBasedExpenseLineDetail: {
+              AccountRef: {
+                value: item.resourceId
+              }
+            },
+            ...(item.description && { Description: item.description })
+          };
+          console.log(`💰 Created account-based line:`, accountLine);
+          return accountLine;
+        } else if (item.itemType === 'product') {
+          // Item-based expense line
+          const productLine = {
+            ...baseItem,
+            DetailType: "ItemBasedExpenseLineDetail",
+            ItemBasedExpenseLineDetail: {
+              ItemRef: {
+                value: item.resourceId
+              },
+              Qty: parseFloat(item.quantity.toString()) || 1
+            },
+            ...(item.description && { Description: item.description })
+          };
+          console.log(`🛍️ Created item-based line:`, productLine);
+          return productLine;
+        } else {
+          throw new Error(`Invalid itemType: ${item.itemType} for line item ${item.item_name}`);
+        }
+      });
 
       // Get tax accounts if tax amount is provided
       let taxAccount = null;
@@ -395,24 +518,11 @@ export class QuickBooksService {
           acc.AccountType === 'Other Current Liability'
         );
 
-        // If no specific tax account found, use expense account
+        // If no specific tax account found, use default expense account
         if (!taxAccount) {
-          taxAccount = expenseAccount;
+          taxAccount = defaultExpenseAccount;
         }
       }
-
-      // Create line items array
-      const lineItems = billData.lineItems.map((item, index) => ({
-        DetailType: "AccountBasedExpenseLineDetail",
-        Amount: item.amount,
-        Id: (index + 1).toString(), // Sequential ID for bill line items
-        AccountBasedExpenseLineDetail: {
-          AccountRef: {
-            value: expenseAccount.Id
-          }
-        },
-        ...(item.description && { Description: item.description })
-      }));
 
       // Add tax line item if tax amount is provided
       if (billData.totalTax && billData.totalTax > 0 && taxAccount) {
@@ -437,7 +547,7 @@ export class QuickBooksService {
           Id: (lineItems.length + 1).toString(),
           AccountBasedExpenseLineDetail: {
             AccountRef: {
-              value: expenseAccount.Id
+              value: defaultExpenseAccount.Id
             }
           },
           Description: billData.discountDescription || "Discount"
@@ -454,7 +564,103 @@ export class QuickBooksService {
         ...(billData.invoiceDate && { TxnDate: billData.invoiceDate })
       };
 
-      return this.makeApiCall(integration, "bill", "POST", payload);
+      // Try to create the bill with item-based lines first
+      try {
+        console.log(`📋 Attempting to create bill with ${lineItems.length} line items`);
+        return await this.makeApiCall(integration, "bill", "POST", payload);
+      } catch (apiError: any) {
+        // Check if the error is related to items not having purchase accounts
+        const errorMessage = apiError?.message || '';
+        const isItemAccountError = errorMessage.includes('no account associated with the item') ||
+          errorMessage.includes('marked for purchase') ||
+          errorMessage.includes('has an account associated with it');
+
+        if (isItemAccountError) {
+          console.log(`⚠️ Item-based bill creation failed, falling back to account-based lines`);
+
+          // Rebuild line items using account-based approach for products
+          const fallbackLineItems = billData.lineItems.map((item, index) => {
+            const baseItem = {
+              Amount: parseFloat(item.amount.toString()),
+              Id: (index + 1).toString(),
+            };
+
+            if (item.itemType === 'account') {
+              // Keep account-based lines as they are
+              return {
+                ...baseItem,
+                DetailType: "AccountBasedExpenseLineDetail",
+                AccountBasedExpenseLineDetail: {
+                  AccountRef: {
+                    value: item.resourceId
+                  }
+                },
+                ...(item.description && { Description: item.description })
+              };
+            } else if (item.itemType === 'product') {
+              // Convert product lines to account-based using default expense account
+              console.log(`🔄 Converting product "${item.item_name}" to account-based line using default expense account`);
+              return {
+                ...baseItem,
+                DetailType: "AccountBasedExpenseLineDetail",
+                AccountBasedExpenseLineDetail: {
+                  AccountRef: {
+                    value: defaultExpenseAccount.Id
+                  }
+                },
+                Description: `${item.item_name}${item.description ? ` - ${item.description}` : ''}`
+              };
+            } else {
+              throw new Error(`Invalid itemType: ${item.itemType} for line item ${item.item_name}`);
+            }
+          });
+
+          // Add tax and discount items to fallback lines
+          if (billData.totalTax && billData.totalTax > 0 && taxAccount) {
+            fallbackLineItems.push({
+              DetailType: "AccountBasedExpenseLineDetail",
+              Amount: billData.totalTax,
+              Id: (fallbackLineItems.length + 1).toString(),
+              AccountBasedExpenseLineDetail: {
+                AccountRef: {
+                  value: taxAccount.Id
+                }
+              },
+              Description: "Tax"
+            });
+          }
+
+          if (billData.discountAmount && billData.discountAmount > 0) {
+            fallbackLineItems.push({
+              DetailType: "AccountBasedExpenseLineDetail",
+              Amount: -Math.abs(billData.discountAmount),
+              Id: (fallbackLineItems.length + 1).toString(),
+              AccountBasedExpenseLineDetail: {
+                AccountRef: {
+                  value: defaultExpenseAccount.Id
+                }
+              },
+              Description: billData.discountDescription || "Discount"
+            });
+          }
+
+          // Create fallback payload
+          const fallbackPayload = {
+            Line: fallbackLineItems,
+            VendorRef: {
+              value: billData.vendorId
+            },
+            ...(billData.dueDate && { DueDate: billData.dueDate }),
+            ...(billData.invoiceDate && { TxnDate: billData.invoiceDate })
+          };
+
+          console.log(`🔄 Retrying bill creation with account-based fallback`);
+          return await this.makeApiCall(integration, "bill", "POST", fallbackPayload);
+        } else {
+          // Re-throw other errors
+          throw apiError;
+        }
+      }
     } catch (error) {
       console.error("Error creating QuickBooks bill:", error);
       throw error;
@@ -470,17 +676,17 @@ export class QuickBooksService {
     customerId?: string;
   }, lineItemData?: any) {
     try {
-      const accountsResponse = await this.getAccounts(integration);
-      const accounts = accountsResponse?.QueryResponse?.Account || [];
+      const incomeAccountsResponse = await this.getIncomeAccounts(integration);
+      const incomeAccounts = incomeAccountsResponse?.QueryResponse?.Account || [];
 
-      let incomeAccount = accounts.find((acc: any) =>
+      let incomeAccount = incomeAccounts.find((acc: any) =>
         acc.Name?.toLowerCase().includes('sales') ||
         acc.Name?.toLowerCase().includes('income') ||
         acc.Name?.toLowerCase().includes('service')
       );
 
-      if (!incomeAccount && accounts.length > 0) {
-        incomeAccount = accounts[0];
+      if (!incomeAccount && incomeAccounts.length > 0) {
+        incomeAccount = incomeAccounts[0];
       }
 
       if (!incomeAccount) {

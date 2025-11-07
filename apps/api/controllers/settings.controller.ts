@@ -142,6 +142,8 @@ class SettingsController {
       return res.send(result);
     }
   }
+
+
 }
 
 export const settingsController = new SettingsController();

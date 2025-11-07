@@ -78,17 +78,16 @@ export class QuickBooksController {
         console.warn("Could not fetch company info:", error);
       }
 
-      // Redirect to frontend settings page with success
-      // const frontendUrl = process.env.OAUTH_REDIRECT_URI;
-      // res.redirect(`${frontendUrl}?quickbooks=success`);
-      res.status(200).json({
-        message: "OAuth successful",
-        access_token: tokenData.accessToken,
-        refresh_token: tokenData.refreshToken,
-        expiry_date: tokenData.expiresIn,
-      });
-    } catch (error) {
-      next(error);
+      // Redirect to frontend integrations page with success
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/integrations?message=QuickBooks connected successfully&type=success`;
+      res.redirect(redirectUrl);
+    } catch (error: any) {
+      // Redirect to frontend integrations page with error
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const errorMessage = error.message || "Failed to connect QuickBooks";
+      const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+      res.redirect(redirectUrl);
     }
   };
 
@@ -209,6 +208,33 @@ export class QuickBooksController {
       res.json({
         success: true,
         data: vendors,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Get vendors
+  getAccounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      const accounts = await quickbooksService.getAccounts(integration);
+
+      res.json({
+        success: true,
+        data: accounts,
       });
     } catch (error) {
       next(error);

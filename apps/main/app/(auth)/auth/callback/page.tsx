@@ -52,15 +52,13 @@ function AuthCallbackComponent() {
   }, [searchParams, router]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      <div className="w-full max-w-md p-8 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl">
-        <div className="flex flex-col items-center justify-center space-y-4">
-          <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
-          <h2 className="text-xl font-semibold text-white">Completing authentication...</h2>
-          <p className="text-sm text-gray-400 text-center">
-            Please wait while we sign you in.
-          </p>
-        </div>
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col items-center gap-1 text-center">
+        <Loader2 className="h-12 w-12 text-yellow-500 animate-spin mb-4" />
+        <h2 className="text-xl font-semibold text-white uppercase">Completing authentication...</h2>
+        <p className="text-sm text-gray-400 text-balance">
+          Please wait while we sign you in.
+        </p>
       </div>
     </div>
   );
@@ -70,12 +68,11 @@ export default function AuthCallback() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-          <div className="w-full max-w-md p-8 bg-gray-900 border border-gray-700 rounded-2xl shadow-2xl">
-            <div className="flex flex-col items-center justify-center space-y-4">
-              <Loader2 className="h-12 w-12 text-blue-500 animate-spin" />
-              <h2 className="text-xl font-semibold text-white">Loading...</h2>
-            </div>
+        <div className="flex flex-col gap-6 animate-pulse">
+          <div className="flex flex-col items-center gap-1 text-center">
+            <div className="h-12 w-12 bg-gray-700 rounded-none mb-4"></div>
+            <div className="h-6 bg-gray-700 rounded-none w-64 mb-2"></div>
+            <div className="h-4 bg-gray-700 rounded-none w-48"></div>
           </div>
         </div>
       }

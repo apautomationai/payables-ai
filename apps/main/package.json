@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@radix-ui/react-label": "^2.1.7",
+    "@radix-ui/react-separator": "^1.1.7",
+    "@radix-ui/react-slot": "^1.2.3",
     "@workspace/ui": "workspace:*",
     "axios": "^1.12.2",
     "cmdk": "^1.1.1",

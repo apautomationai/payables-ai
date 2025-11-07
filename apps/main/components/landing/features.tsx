@@ -79,9 +79,23 @@ const features = [
 
 export function Features() {
   return (
-    <section id="features" className="py-24 sm:py-32 relative overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-b from-white to-gray-50" />
+    <section id="features" className="py-24 sm:py-32 relative overflow-hidden bg-gradient-to-b from-black via-gray-900 to-gray-800">
+      <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/5 to-orange-900/5" />
       <GeometricPattern />
+      
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
+      {/* Grunge overlay */}
+      <div className="absolute inset-0 opacity-[0.06]" style={{
+        backgroundImage: `radial-gradient(ellipse at 30% 40%, transparent 30%, rgba(253, 176, 34, 0.15) 31%, transparent 32%),
+                         radial-gradient(ellipse at 70% 60%, transparent 30%, rgba(245, 158, 11, 0.15) 31%, transparent 32%)`,
+        backgroundSize: '300px 300px, 250px 250px'
+      }} />
       
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <motion.div
@@ -91,14 +105,14 @@ export function Features() {
           viewport={{ once: true }}
           className="mx-auto max-w-2xl text-center mb-16"
         >
-          <Badge variant="outline" className="mb-4 px-3 py-1 text-sm font-medium border-emerald-200 bg-emerald-50/50 text-emerald-700">
+          <Badge variant="outline" className="mb-4 px-3 py-1 text-sm font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase">
             Features
           </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl mb-6 uppercase">
             Powerful Features for Modern AP Teams
           </h2>
-          <p className="mt-6 text-xl leading-8 text-gray-600">
-            Everything you need to streamline your accounts payable process
+          <p className="mt-6 text-xl leading-8 text-gray-300">
+            Everything you need to automate pay apps, releases, and invoices — built with construction in mind
           </p>
         </motion.div>
 
@@ -111,8 +125,26 @@ export function Features() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="relative p-8 h-full md:h-[450px] dark:bg-white bg-white/80 backdrop-blur-sm border-gray-200 dark:border-gray-200 hover:shadow-xl transition-all duration-300 group dark:hover:border-blue-200 hover:border-blue-200">
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-emerald-600 rounded-t-lg transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
+              <Card className="relative p-8 h-full md:h-[450px] bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 group rounded-none">
+                {/* Corner screws/rivets - LARGER AND ROUGHER */}
+                <div className="absolute -top-3 -left-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -top-3 -right-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -left-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -right-3 w-7 h-7 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_6px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-gray-400 rounded-full"></div>
+                </div>
+                
+                {/* Weld marks */}
+                <div className="absolute top-4 left-1/4 w-20 h-1 bg-yellow-600/40 blur-[2px]"></div>
+                <div className="absolute bottom-4 right-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
+                
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-yellow-500 via-yellow-600 to-orange-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300 shadow-[0_2px_8px_rgba(253,176,34,0.6)]" />
                 
                 {/* Animated Vector Background */}
                 <div className="absolute -top-12 -right-8 opacity-10 group-hover:opacity-20 transition-opacity duration-300">
@@ -121,34 +153,34 @@ export function Features() {
                 
                 {/* Pulsing orb in corner */}
                 <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-30 transition-opacity duration-300">
-                  <PulsingOrb color="#3B82F6" size={20} />
+                  <PulsingOrb color="#FDB022" size={20} />
                 </div>
                 
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="relative p-3 rounded-xl bg-gradient-to-br from-blue-50 to-emerald-50 group-hover:from-blue-100 group-hover:to-emerald-100 transition-all duration-300 overflow-hidden">
+                  <div className="relative p-3 rounded-lg bg-gradient-to-br from-yellow-900/30 to-orange-900/30 border-2 border-yellow-600/40 group-hover:border-yellow-500 transition-all duration-300 overflow-hidden">
                     {/* Mini animated icon in the icon container */}
                     <div className="absolute inset-0 opacity-20 scale-75">
                       <feature.animatedIcon />
                     </div>
-                    <feature.icon className="w-6 h-6 text-blue-600" />
+                    <feature.icon className="w-6 h-6 text-yellow-500" />
                   </div>
-                  <Badge variant="secondary" className="text-xs font-medium dark:hover:bg-gray-100 bg-emerald-100 text-emerald-700 border-emerald-200">
+                  <Badge variant="secondary" className="text-xs font-medium uppercase bg-yellow-500/20 text-yellow-400 border-yellow-600">
                     {feature.highlight}
                   </Badge>
                 </div>
 
-                <h3 className="text-xl font-semibold text-gray-900 mb-3 group-hover:text-blue-900 transition-colors duration-300">
+                <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-yellow-400 transition-colors duration-300 uppercase">
                   {feature.title}
                 </h3>
                 
-                <p className="text-gray-600 mb-6 leading-relaxed">
+                <p className="text-gray-300 mb-6 leading-relaxed">
                   {feature.description}
                 </p>
 
                 <ul className="space-y-2 mb-6">
                   {feature.benefits.map((benefit) => (
-                    <li key={benefit} className="flex items-center gap-2 text-sm text-gray-600">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                    <li key={benefit} className="flex items-center gap-2 text-sm text-gray-400">
+                      <CheckCircle className="w-4 h-4 text-yellow-500 flex-shrink-0" />
                       {benefit}
                     </li>
                   ))}

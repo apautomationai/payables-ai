@@ -8,14 +8,6 @@ import { AtSign, Lock, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@workspace/ui/components/card";
 import axios from "axios";
 import { SignInSchema } from "@/lib/validators";
 import { setCookie } from "cookies-next";
@@ -64,7 +56,7 @@ const MicrosoftIcon = (props: React.SVGProps<SVGSVGElement>) => (
 function SubmitButton({ isLoading }: { isLoading: boolean }) {
   return (
     <Button 
-      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+      className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-gray-900 font-bold py-3 px-4 rounded-none transition-all duration-300 shadow-lg shadow-yellow-500/50 hover:shadow-yellow-400/60 border-2 border-yellow-600 uppercase"
       type="submit" 
       disabled={isLoading}
     >
@@ -223,66 +215,51 @@ function SignInFormComponent() {
   }, [state]);
 
   return (
-    <div className="relative">
-      {/* Animated Gradient Background Effect */}
-      <div className="absolute -inset-4 bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 rounded-2xl opacity-75 blur-xl animate-pulse-slow"></div>
-      <div className="absolute -inset-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-2xl opacity-50 blur-lg animate-rotate"></div>
-      
-      {/* Main Card with Gradient Border */}
-      <Card className="relative w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl overflow-hidden">
-        {/* Animated Gradient Shine Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent transform -skew-x-12 animate-shine"></div>
-        
-        {/* Subtle Corner Accents */}
-        <div className="absolute top-0 left-0 w-32 h-32 bg-gradient-to-br from-blue-500/20 to-transparent rounded-full blur-2xl"></div>
-        <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-purple-500/20 to-transparent rounded-full blur-2xl"></div>
-        
-        <CardHeader className="text-center pb-6 relative z-10">
-          <div className="mb-4">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mx-auto mb-3 relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 animate-shine"></div>
-              <Lock className="h-8 w-8 text-white relative z-10" />
-            </div>
+    <div className="flex flex-col gap-6">
+      {/* Header */}
+      <div className="flex flex-col items-center gap-1 text-center">
+        <div className="mb-4">
+          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-none flex items-center justify-center shadow-[0_0_30px_rgba(253,176,34,0.5),inset_0_0_20px_rgba(0,0,0,0.5)] border-4 border-yellow-600/60 mx-auto mb-3 relative">
+            <Lock className="h-8 w-8 text-gray-900 relative z-10" />
           </div>
-          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            Welcome Back
-          </CardTitle>
-          <CardDescription className="text-gray-300 text-base mt-2">
-            Sign in to your account to continue
-          </CardDescription>
-        </CardHeader>
-        
-        <CardContent className="space-y-6 relative z-10">
+        </div>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent uppercase">
+          Welcome Back
+        </h1>
+        <p className="text-gray-300 text-sm text-balance">
+          Sign in to your account to continue
+        </p>
+      </div>
+
+      <div className="space-y-6">
           {/* Social Login Buttons */}
           <div className="grid grid-cols-2 gap-3">
             <Button 
               type="button"
               variant="outline" 
               onClick={handleGoogleSignIn}
-              className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
+              className="h-11 bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
               <GoogleIcon className="mr-2 h-4 w-4 relative z-10" /> 
               <span className="relative z-10">Google</span>
             </Button>
             <Button 
               variant="outline" 
               disabled
-              className="h-11 bg-gray-800 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-xl transition-all duration-300 relative overflow-hidden group"
+              className="h-11 bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/5 to-white/0 transform -skew-x-12 group-hover:animate-shine"></div>
               <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" /> 
               <span className="relative z-10">Microsoft</span>
             </Button>
           </div>
 
-          {/* Divider with Gradient */}
+          {/* Divider */}
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-600" />
+              <div className="w-full border-t-2 border-gray-600" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-gray-900 px-3 text-sm text-gray-400">
+              <span className="bg-gradient-to-br from-gray-900 to-black px-3 text-sm text-gray-400">
                 Or continue with email
               </span>
             </div>
@@ -301,10 +278,9 @@ function SignInFormComponent() {
                   name="email"
                   type="email"
                   placeholder="you@example.com"
-                  className="pl-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                  className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   required
                 />
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
               </div>
               {state.errors?.email && (
                 <p className="text-sm text-red-400 mt-1">{state.errors.email[0]}</p>
@@ -318,7 +294,7 @@ function SignInFormComponent() {
                 </Label>
                 <Link
                   href="/forget-password"
-                  className="text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300"
+                  className="text-sm font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300"
                 >
                   Forgot Password?
                 </Link>
@@ -330,7 +306,7 @@ function SignInFormComponent() {
                   name="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
-                  className="pl-10 pr-10 h-11 bg-gray-800 border-gray-600 text-white placeholder-gray-400 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 relative z-10"
+                  className="pl-10 pr-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                   required
                   minLength={6}
                 />
@@ -347,7 +323,6 @@ function SignInFormComponent() {
                     <Eye className="h-4 w-4" />
                   )}
                 </Button>
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-xl opacity-0 hover:opacity-100 transition-opacity duration-300 z-0"></div>
               </div>
               {state.errors?.password && (
                 <p className="text-sm text-red-400 mt-1">{state.errors.password[0]}</p>
@@ -355,64 +330,24 @@ function SignInFormComponent() {
             </div>
 
             {state.errors?._form && (
-              <div className="p-3 bg-red-900/20 border border-red-800 rounded-lg relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 to-pink-500/10"></div>
+              <div className="p-3 bg-red-900/20 border-4 border-red-800 rounded-none relative overflow-hidden">
                 <p className="text-sm text-red-400 text-center relative z-10">{state.errors._form[0]}</p>
               </div>
             )}
 
             <SubmitButton isLoading={isLoading} />
           </form>
-        </CardContent>
 
-        <CardFooter className="flex-col gap-4 pt-6 border-t border-gray-700 relative z-10">
-          <div className="text-sm text-gray-400 text-center">
+          <div className="text-sm text-gray-400 text-center pt-4 border-t-2 border-gray-600">
             Don't have an account?{" "}
             <Link
               href="/sign-up"
-              className="font-medium text-blue-400 hover:text-blue-300 transition-colors duration-300"
+              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300 underline underline-offset-4"
             >
               Create account
             </Link>
           </div>
-        </CardFooter>
-      </Card>
-
-      <style jsx>{`
-        @keyframes shine {
-          0% {
-            transform: translateX(-100%) skewX(-12deg);
-          }
-          100% {
-            transform: translateX(200%) skewX(-12deg);
-          }
-        }
-        @keyframes rotate {
-          0% {
-            transform: rotate(0deg);
-          }
-          100% {
-            transform: rotate(360deg);
-          }
-        }
-        @keyframes pulse-slow {
-          0%, 100% {
-            opacity: 0.75;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-        .animate-shine {
-          animation: shine 3s ease-in-out infinite;
-        }
-        .animate-rotate {
-          animation: rotate 6s linear infinite;
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 4s ease-in-out infinite;
-        }
-      `}</style>
+        </div>
     </div>
   );
 }
@@ -420,15 +355,16 @@ function SignInFormComponent() {
 export default function SignInForm() {
   return (
     <Suspense fallback={
-      <div className="w-full max-w-md bg-gray-900 border border-gray-700 shadow-2xl rounded-2xl p-8 animate-pulse relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent transform -skew-x-12 animate-shine"></div>
-        <div className="w-16 h-16 bg-gray-700 rounded-2xl mx-auto mb-4"></div>
-        <div className="h-8 bg-gray-700 rounded-lg mb-2"></div>
-        <div className="h-4 bg-gray-700 rounded-lg mb-6"></div>
+      <div className="flex flex-col gap-6 animate-pulse">
+        <div className="flex flex-col items-center gap-1 text-center">
+          <div className="w-16 h-16 bg-gray-700 rounded-none mx-auto mb-4"></div>
+          <div className="h-8 bg-gray-700 rounded-none mb-2 w-48"></div>
+          <div className="h-4 bg-gray-700 rounded-none mb-6 w-64"></div>
+        </div>
         <div className="space-y-4">
-          <div className="h-10 bg-gray-700 rounded-xl"></div>
-          <div className="h-10 bg-gray-700 rounded-xl"></div>
-          <div className="h-12 bg-gray-700 rounded-xl"></div>
+          <div className="h-10 bg-gray-700 rounded-none"></div>
+          <div className="h-10 bg-gray-700 rounded-none"></div>
+          <div className="h-12 bg-gray-700 rounded-none"></div>
         </div>
       </div>
     }>

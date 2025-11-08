@@ -233,19 +233,30 @@ export default function ConfirmationModals({
         // Extract tax amount if available
         const totalTaxAmount = parseFloat(invoiceDetails?.totalTax ?? "0") || 0;
 
-        await client.post("/api/v1/quickbooks/create-bill", {
-          vendorId: vendorId,
-          lineItems: lineItems, // Pass the line items directly from database with itemType and resourceId
-          totalAmount: totalAmountFromPopup,
-          ...(totalTaxAmount > 0 && { totalTax: totalTaxAmount }),
-          dueDate: invoiceDetails.dueDate,
-          invoiceDate: invoiceDetails.invoiceDate,
-          // Add discount if there's a positive difference (line items > total)
-          ...(discountAmount > 0 && {
-            discountAmount: discountAmount,
-            discountDescription: "Invoice Discount"
-          })
-        });
+        try {
+          await client.post("/api/v1/quickbooks/create-bill", {
+            vendorId: vendorId,
+            lineItems: lineItems, // Pass the line items directly from database with itemType and resourceId
+            totalAmount: totalAmountFromPopup,
+            ...(totalTaxAmount > 0 && { totalTax: totalTaxAmount }),
+            dueDate: invoiceDetails.dueDate,
+            invoiceDate: invoiceDetails.invoiceDate,
+            // Add discount if there's a positive difference (line items > total)
+            ...(discountAmount > 0 && {
+              discountAmount: discountAmount,
+              discountDescription: "Invoice Discount"
+            })
+          });
+
+        } catch (error) {
+          toast.error("Approval Failed", {
+            description: "Unable to approve. Please try again",
+            duration: 5000,
+          });
+          setIsDialogOpen(false);
+          return;
+        }
+
 
         // Step 6: Update invoice status to approved
         const statusUpdateResponse: any = await client.patch(`/api/v1/invoice/${invoiceId}/status`, {
@@ -271,12 +282,31 @@ export default function ConfirmationModals({
         throw new Error("No line items found for this invoice");
       }
     } catch (error: any) {
-      console.error("Error in approval process:", error.response?.data || error.message);
+      console.error("Error in approval process:", error);
+      console.error("Error response:", error.response);
+      console.error("Error data:", error.response?.data);
+
+      // Extract error message from various possible formats
+      let errorMessage = "Failed to process invoice approval";
+
+      if (error.response?.data?.error) {
+        // Format: { error: "message" }
+        errorMessage = error.response.data.error;
+      } else if (error.response?.data?.message) {
+        // Format: { message: "message" }
+        errorMessage = error.response.data.message;
+      } else if (typeof error.response?.data === 'string') {
+        // Format: "error message"
+        errorMessage = error.response.data;
+      } else if (error.message) {
+        // Format: Error object with message
+        errorMessage = error.message;
+      }
 
       // Show error toast with specific message
-      const errorMessage = error.response?.data?.error || error.message || "Failed to process invoice approval";
       toast.error("Approval Failed", {
-        description: errorMessage
+        description: errorMessage,
+        duration: 5000,
       });
 
       // Close the dialog so user can try again

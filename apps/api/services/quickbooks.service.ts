@@ -324,8 +324,10 @@ export class QuickBooksService {
   }
 
   // Get line items (Items that can be used in invoices/bills)
+  // Note: Including all types (Service, Non-Inventory, Inventory) to avoid date restrictions
+  // Inventory items have date restrictions that can cause bill creation to fail
   async getLineItems(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "query?query=SELECT * FROM Item WHERE Active = true");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Item WHERE Active = true AND Type = 'Inventory'");
   }
 
   // Get specific invoice line items by invoice ID

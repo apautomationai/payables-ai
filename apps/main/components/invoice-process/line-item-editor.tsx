@@ -42,6 +42,8 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
   );
   const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
 
+  console.log(items)
+
   console.log("🔧 LineItemEditor mounted with:", {
     itemType: lineItem.itemType,
     resourceId: lineItem.resourceId,

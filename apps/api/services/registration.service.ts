@@ -61,17 +61,62 @@ export class RegistrationService {
      * Assign subscription to user during registration
      * Requirements: 1.1
      */
-    static async assignSubscriptionToUser(userId: number): Promise<void> {
+    static async assignSubscriptionToUser(userId: number, useExistingOrder?: number): Promise<void> {
         try {
-            // Get next registration order
-            const registrationOrder = await this.getNextRegistrationOrder();
+            // Get next registration order (or use provided one for recovery)
+            const registrationOrder = useExistingOrder ?? await this.getNextRegistrationOrder();
+
+            console.log(`📝 Assigning subscription to user ${userId} with registration order ${registrationOrder}`);
 
             // Create subscription with tier assignment
-            await SubscriptionService.createSubscription(userId, registrationOrder);
+            const subscription = await SubscriptionService.createSubscription(userId, registrationOrder);
+
+            console.log(`✅ Successfully created subscription for user ${userId}:`, {
+                subscriptionId: subscription.id,
+                tier: subscription.tier,
+                status: subscription.status,
+                registrationOrder: subscription.registrationOrder
+            });
+
+            return subscription;
         } catch (error: any) {
-            // Log error but don't break user registration
-            console.error(`Failed to assign subscription to user ${userId}:`, error);
+            // Log detailed error information
+            console.error(`❌ Failed to assign subscription to user ${userId}:`, {
+                error: error.message,
+                stack: error.stack,
+                code: error.code
+            });
             throw new InternalServerError(`Subscription assignment failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Assign subscription to existing user (recovery/migration)
+     * Uses the user's position in the database as registration order
+     */
+    static async assignSubscriptionToExistingUser(userId: number): Promise<void> {
+        try {
+            // Count how many users were created before this user
+            const { usersModel } = await import('../models/users.model');
+
+            const [result] = await db
+                .select({ count: sql<number>`count(*)::int` })
+                .from(usersModel)
+                .where(sql`${usersModel.id} <= ${userId}`);
+
+            const registrationOrder = result.count;
+
+            console.log(`🔄 Recovering subscription for existing user ${userId} with calculated order ${registrationOrder}`);
+
+            // Use the calculated order to create subscription
+            await this.assignSubscriptionToUser(userId, registrationOrder);
+        } catch (error: any) {
+            console.error(`❌ Failed to recover subscription for user ${userId}:`, {
+                error: error.message,
+                stack: error.stack,
+                code: error.code
+            });
+            throw new InternalServerError(`Subscription recovery failed: ${error.message}`);
         }
     }
 

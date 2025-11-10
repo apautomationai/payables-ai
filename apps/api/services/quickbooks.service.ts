@@ -1028,18 +1028,25 @@ export class QuickBooksService {
   async disconnectIntegration(userId: number): Promise<void> {
     try {
       // Update integrations table
-      await db
-        .update(integrationsModel)
-        .set({
-          status: "disconnected",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(integrationsModel.userId, userId),
-            eq(integrationsModel.name, "quickbooks")
-          )
-        );
+      // await db
+      //   .update(integrationsModel)
+      //   .set({
+      //     status: "disconnected",
+      //     updatedAt: new Date(),
+      //   })
+      //   .where(
+      //     and(
+      //       eq(integrationsModel.userId, userId),
+      //       eq(integrationsModel.name, "quickbooks")
+      //     )
+      //   );
+
+      await db.delete(integrationsModel).where(
+        and(
+          eq(integrationsModel.userId, userId),
+          eq(integrationsModel.name, "quickbooks")
+        )
+      );
     } catch (error: any) {
       console.error("Error disconnecting QuickBooks integration:", error);
       throw new InternalServerError(

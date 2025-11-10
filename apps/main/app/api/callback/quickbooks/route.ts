@@ -17,6 +17,7 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function handleRequest(request: NextRequest, method: string) {
+  console.log("hit callback frontend", request.url, method);
   try {
     // Get the backend API URL
     const backendUrl = process.env.NEXT_PUBLIC_API_URL;

@@ -38,7 +38,6 @@ export class QuickBooksController {
   ): Promise<void> => {
     try {
       const { code, realmId, state, error } = req.query;
-
       if (error) {
         throw new BadRequestError(`QuickBooks authorization error: ${error}`);
       }
@@ -64,19 +63,24 @@ export class QuickBooksController {
         realmId as string,
       );
 
-      // Save integration to database
-      const integration = await quickbooksService.saveIntegration(
+      await quickbooksService.saveIntegration(
         userId,
         tokenData,
       );
 
-      // Get company info for display
-      try {
-        const companyInfo = await quickbooksService.getCompanyInfo(integration);
-        console.log("Connected to QuickBooks company:", companyInfo);
-      } catch (error) {
-        console.warn("Could not fetch company info:", error);
-      }
+      // // Save integration to database
+      // const integration = await quickbooksService.saveIntegration(
+      //   userId,
+      //   tokenData,
+      // );
+
+      // // Get company info for display
+      // try {
+      //   const companyInfo = await quickbooksService.getCompanyInfo(integration);
+      //   console.log("Connected to QuickBooks company:", companyInfo);
+      // } catch (error) {
+      //   console.warn("Could not fetch company info:", error);
+      // }
 
       // Redirect to frontend integrations page with success
       const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';

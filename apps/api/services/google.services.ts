@@ -51,6 +51,110 @@ export class GoogleServices {
     return oAuth2Client;
   };
 
+  private normalizeExpiryDate = (
+    expiry: number | string | Date | null | undefined
+  ): number | null => {
+    if (!expiry) return null;
+    if (typeof expiry === "number") return expiry;
+    const date = new Date(expiry);
+    const time = date.getTime();
+    return Number.isNaN(time) ? null : time;
+  };
+
+  private async ensureValidAccessToken(
+    tokens: any,
+    integrationId: number,
+    metadata: {
+      tokenRefreshed: boolean;
+      errors: {
+        stage: string;
+        messageId?: string;
+        filename?: string | null;
+        error: string;
+        stack?: string;
+      }[];
+      failures: number;
+    }
+  ): Promise<{
+    success: boolean;
+    client?: OAuth2Client;
+    message?: string;
+  }> {
+    const auth = this.getOAuthClient(tokens);
+    const expiryMs = this.normalizeExpiryDate(tokens.expiry_date);
+    const needsRefresh =
+      !tokens.access_token ||
+      !expiryMs ||
+      expiryMs <= Date.now() + 60 * 1000;
+
+    if (!needsRefresh) {
+      return { success: true, client: auth };
+    }
+
+    if (!tokens.refresh_token) {
+      metadata.failures++;
+      metadata.errors.push({
+        stage: "tokenRefresh",
+        error: "Missing refresh token; cannot refresh access token",
+      });
+      return {
+        success: false,
+        message: "Gmail access token expired and refresh token is unavailable",
+      };
+    }
+
+    try {
+      const accessTokenResponse = await auth.getAccessToken();
+      const responseData: any =
+        typeof accessTokenResponse === "object"
+          ? accessTokenResponse?.res?.data || {}
+          : {};
+      const accessToken =
+        typeof accessTokenResponse === "string"
+          ? accessTokenResponse
+          : accessTokenResponse?.token || responseData.access_token;
+      if (!accessToken) {
+        throw new Error("No access token received from refresh");
+      }
+
+      let expiryDateMs =
+        this.normalizeExpiryDate(auth.credentials.expiry_date) ||
+        (typeof responseData.expires_in === "number"
+          ? Date.now() + responseData.expires_in * 1000
+          : null);
+
+      tokens.access_token = accessToken;
+      tokens.expiry_date = expiryDateMs;
+      auth.setCredentials({
+        ...auth.credentials,
+        access_token: accessToken,
+        expiry_date: expiryDateMs || undefined,
+      });
+      metadata.tokenRefreshed = true;
+
+      await integrationsService.updateIntegration(integrationId, {
+        accessToken,
+        expiryDate: expiryDateMs ? new Date(expiryDateMs) : null,
+      });
+
+      return { success: true, client: auth };
+    } catch (error: any) {
+      metadata.failures++;
+      metadata.errors.push({
+        stage: "tokenRefresh",
+        error:
+          error?.message || "Failed to refresh Gmail integration access token",
+        stack:
+          process.env.NODE_ENV === "development" ? error?.stack : undefined,
+      });
+      return {
+        success: false,
+        message:
+          error?.message || "Failed to refresh Gmail integration access token",
+      };
+    }
+  }
+
   getEmailsWithAttachments = async (
     tokens: any,
     userId: number,
@@ -81,6 +185,7 @@ export class GoogleServices {
       duplicatesSkipped: 0,
       failures: 0,
       lastProcessedMessageId: null as string | null,
+      tokenRefreshed: false,
       errors: [] as {
         stage: string;
         messageId?: string;
@@ -91,8 +196,23 @@ export class GoogleServices {
     };
     const results: any[] = [];
     try {
-      const auth = this.getOAuthClient(tokens);
-      const gmail = google.gmail({ version: "v1", auth });
+      const authResult = await this.ensureValidAccessToken(
+        tokens,
+        integrationId,
+        metadata
+      );
+      if (!authResult.success || !authResult.client) {
+        return {
+          success: false,
+          message:
+            authResult.message ||
+            "Unable to authenticate with Gmail for this integration",
+          data: [],
+          metadata,
+        };
+      }
+
+      const gmail = google.gmail({ version: "v1", auth: authResult.client });
       const afterTimestamp = Math.floor(startDate.getTime() / 1000);
 
       const query = `invoice has:attachment label:INBOX after:${afterTimestamp}`;

@@ -123,6 +123,7 @@ export class GoogleController {
       totalEmails: 0,
       totalSuccess: 0,
       totalFailed: 0,
+      tokenRefreshes: 0,
     };
     try {
       const integration: any = await integrationsService.getGmailIntegration();
@@ -141,6 +142,7 @@ export class GoogleController {
           message: "",
           emailsSynced: 0,
           data: [],
+          metadata: null,
           error: null,
           meta: {
             lastRead: integration.lastRead || null,
@@ -170,18 +172,30 @@ export class GoogleController {
           );
 
           const emails = attachments.data || [];
+          const attachmentMetadata: any = attachments.metadata || {};
           result.data = emails;
-          result.emailsSynced = emails.length;
+          result.metadata = attachmentMetadata;
+          result.emailsSynced =
+            typeof attachmentMetadata.storedAttachments === "number"
+              ? attachmentMetadata.storedAttachments
+              : emails.length;
           result.message =
             attachments.message ||
             (attachments.success
               ? "Emails synced successfully"
               : "Unable to sync emails");
           result.success = Boolean(attachments.success);
-
+          result.error =
+            Array.isArray(attachmentMetadata.errors) &&
+            attachmentMetadata.errors.length > 0
+              ? attachmentMetadata.errors
+              : null;
+          if (attachmentMetadata.tokenRefreshed) {
+            metadata.tokenRefreshes++;
+          }
           if (attachments.success) {
             metadata.totalSuccess++;
-            metadata.totalEmails += emails.length;
+            metadata.totalEmails += result.emailsSynced;
           } else {
             metadata.totalFailed++;
           }

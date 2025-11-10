@@ -124,6 +124,7 @@ export class GoogleController {
       totalSuccess: 0,
       totalFailed: 0,
       tokenRefreshes: 0,
+      totalPaused: 0,
     };
     try {
       const integration: any = await integrationsService.getGmailIntegration();
@@ -179,6 +180,7 @@ export class GoogleController {
             typeof attachmentMetadata.storedAttachments === "number"
               ? attachmentMetadata.storedAttachments
               : emails.length;
+          result.errorMessage = attachmentMetadata.errorMessage || null;
           result.message =
             attachments.message ||
             (attachments.success
@@ -192,6 +194,9 @@ export class GoogleController {
               : null;
           if (attachmentMetadata.tokenRefreshed) {
             metadata.tokenRefreshes++;
+          }
+          if (attachmentMetadata.integrationStatus === "paused") {
+            metadata.totalPaused++;
           }
           if (attachments.success) {
             metadata.totalSuccess++;

@@ -15,6 +15,7 @@ export interface Integration {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  errorMessage?: string | null;
 }
 
 export interface BackendIntegrationData {
@@ -23,5 +24,9 @@ export interface BackendIntegrationData {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  metadata?: {
+    lastErrorMessage?: string | null;
+    [key: string]: any;
+  };
 }
 

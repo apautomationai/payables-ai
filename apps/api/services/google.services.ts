@@ -51,6 +51,122 @@ export class GoogleServices {
     return oAuth2Client;
   };
 
+  private extractErrorMessage = (
+    error: any,
+    fallback = "An unknown error occurred"
+  ): string => {
+    const responseData: any = error?.response?.data || {};
+    const googleErrors: any[] =
+      error?.errors || error?.response?.data?.error?.errors || [];
+    const googleMessage =
+      googleErrors.length > 0 && googleErrors[0]?.message
+        ? googleErrors[0].message
+        : null;
+    return (
+      responseData.error_description ||
+      responseData.error ||
+      googleMessage ||
+      error?.message ||
+      String(error) ||
+      fallback
+    );
+  };
+
+  private isAuthOrAccessError = (error: any): boolean => {
+    if (!error) return false;
+    const message = this.extractErrorMessage(error, "")
+      .toString()
+      .toLowerCase();
+    const status =
+      error?.response?.status ??
+      error?.status ??
+      (typeof error?.code === "number" ? error.code : undefined);
+    const errorCode =
+      (error?.response?.data?.error || error?.code || "")
+        .toString()
+        .toLowerCase();
+
+    if (message.includes("invalid_grant")) return true;
+    if (message.includes("invalid_token")) return true;
+    if (message.includes("unauthorized")) return true;
+    if (message.includes("auth") && message.includes("fail")) return true;
+    if (errorCode.includes("invalid_grant") || errorCode.includes("invalid_token"))
+      return true;
+    if (status === 401 || status === 403) return true;
+    return false;
+  };
+
+  private async pauseIntegrationWithError(
+    integrationId: number,
+    message: string,
+    metadata: {
+      tokenRefreshed: boolean;
+      failures: number;
+      errorMessage: string | null;
+      integrationStatus: string | null;
+      errors: {
+        stage: string;
+        messageId?: string;
+        filename?: string | null;
+        error: string;
+        stack?: string;
+      }[];
+    }
+  ) {
+    if (metadata.integrationStatus === "paused") {
+      metadata.errorMessage = metadata.errorMessage || message;
+      return;
+    }
+
+    metadata.integrationStatus = "paused";
+    metadata.errorMessage = message;
+
+    try {
+      await integrationsService.updateIntegration(integrationId, {
+        status: "paused",
+        metadata: {
+          lastErrorMessage: message,
+          lastErrorAt: new Date().toISOString(),
+        },
+      });
+    } catch (updateError: any) {
+      metadata.errors.push({
+        stage: "pauseIntegration",
+        error:
+          updateError?.message || "Failed to update integration status to paused",
+        stack:
+          process.env.NODE_ENV === "development" ? updateError?.stack : undefined,
+      });
+      metadata.failures++;
+    }
+  }
+
+  private async handleAuthOrAccessError(
+    error: any,
+    integrationId: number,
+    metadata: {
+      tokenRefreshed: boolean;
+      failures: number;
+      errorMessage: string | null;
+      integrationStatus: string | null;
+      errors: {
+        stage: string;
+        messageId?: string;
+        filename?: string | null;
+        error: string;
+        stack?: string;
+      }[];
+    },
+    fallbackMessage: string
+  ): Promise<boolean> {
+    if (!this.isAuthOrAccessError(error)) {
+      return false;
+    }
+    const message = this.extractErrorMessage(error, fallbackMessage);
+    await this.pauseIntegrationWithError(integrationId, message, metadata);
+    return true;
+  }
+
   private normalizeExpiryDate = (
     expiry: number | string | Date | null | undefined
   ): number | null => {
@@ -74,6 +190,8 @@ export class GoogleServices {
         stack?: string;
       }[];
       failures: number;
+      errorMessage: string | null;
+      integrationStatus: string | null;
     }
   ): Promise<{
     success: boolean;
@@ -97,6 +215,11 @@ export class GoogleServices {
         stage: "tokenRefresh",
         error: "Missing refresh token; cannot refresh access token",
       });
+      await this.pauseIntegrationWithError(
+        integrationId,
+        "Gmail access token expired and refresh token is unavailable",
+        metadata
+      );
       return {
         success: false,
         message: "Gmail access token expired and refresh token is unavailable",
@@ -135,6 +258,10 @@ export class GoogleServices {
       await integrationsService.updateIntegration(integrationId, {
         accessToken,
         expiryDate: expiryDateMs ? new Date(expiryDateMs) : null,
+        metadata: {
+          lastErrorMessage: null,
+          lastErrorAt: new Date().toISOString(),
+        },
       });
 
       return { success: true, client: auth };
@@ -147,6 +274,12 @@ export class GoogleServices {
         stack:
           process.env.NODE_ENV === "development" ? error?.stack : undefined,
       });
+      await this.handleAuthOrAccessError(
+        error,
+        integrationId,
+        metadata,
+        error?.message || "Failed to refresh Gmail integration access token"
+      );
       return {
         success: false,
         message:
@@ -186,6 +319,8 @@ export class GoogleServices {
       failures: 0,
       lastProcessedMessageId: null as string | null,
       tokenRefreshed: false,
+      errorMessage: null as string | null,
+      integrationStatus: null as string | null,
       errors: [] as {
         stage: string;
         messageId?: string;
@@ -310,13 +445,32 @@ export class GoogleServices {
                 stage: "attachment",
                 messageId: msg.id || undefined,
                 filename: part.filename || null,
-                error:
-                  partError?.message || "Failed to process attachment",
+                error: this.extractErrorMessage(
+                  partError,
+                  "Failed to process attachment"
+                ),
                 stack:
                   process.env.NODE_ENV === "development"
                     ? partError?.stack
                     : undefined,
               });
+              if (
+                await this.handleAuthOrAccessError(
+                  partError,
+                  integrationId,
+                  metadata,
+                  "Failed to process attachment"
+                )
+              ) {
+                return {
+                  success: false,
+                  message:
+                    metadata.errorMessage ||
+                    "Integration paused due to authentication error",
+                  data: results,
+                  metadata,
+                };
+              }
             }
           }
 
@@ -342,26 +496,47 @@ export class GoogleServices {
           metadata.errors.push({
             stage: "message",
             messageId: msg.id || undefined,
-            error: messageError?.message || "Failed to fetch message",
+            error: this.extractErrorMessage(
+              messageError,
+              "Failed to fetch message"
+            ),
             stack:
               process.env.NODE_ENV === "development"
                 ? messageError?.stack
                 : undefined,
           });
+          if (
+            await this.handleAuthOrAccessError(
+              messageError,
+              integrationId,
+              metadata,
+              "Failed to fetch message"
+            )
+          ) {
+            return {
+              success: false,
+              message:
+                metadata.errorMessage ||
+                "Integration paused due to authentication error",
+              data: results,
+              metadata,
+            };
+          }
           continue;
         }
       }
 
-      const hasErrors = metadata.errors.length > 0;
+      const hasErrors = metadata.errors.length > 0 || !!metadata.errorMessage;
       const hasSuccess = metadata.storedAttachments > 0;
       const message =
-        hasSuccess && hasErrors
+        metadata.errorMessage ||
+        (hasSuccess && hasErrors
           ? "Attachments synced with partial errors"
           : hasSuccess
           ? "Emails synced successfully"
           : hasErrors
           ? "Unable to sync emails"
-          : "No new emails found";
+          : "No new emails found");
 
       return {
         success: hasSuccess || (!hasSuccess && !hasErrors && metadata.duplicatesSkipped > 0),
@@ -373,13 +548,23 @@ export class GoogleServices {
       metadata.failures++;
       metadata.errors.push({
         stage: "listMessages",
-        error: error?.message || "Failed to list messages",
+        error: this.extractErrorMessage(error, "Failed to list messages"),
         stack:
           process.env.NODE_ENV === "development" ? error?.stack : undefined,
       });
+      await this.handleAuthOrAccessError(
+        error,
+        integrationId,
+        metadata,
+        "Failed to list messages"
+      );
       return {
         success: false,
-        message: error instanceof Error ? error.message : "An unknown error occurred",
+        message: metadata.errorMessage
+          ? metadata.errorMessage
+          : error instanceof Error
+          ? error.message
+          : "An unknown error occurred",
         data: [],
         metadata,
       };

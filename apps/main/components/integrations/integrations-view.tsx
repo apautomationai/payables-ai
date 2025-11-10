@@ -28,6 +28,10 @@ interface IntegrationData {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  metadata?: {
+    lastErrorMessage?: string | null;
+    [key: string]: any;
+  };
 }
 
 interface IntegrationsViewProps {
@@ -106,6 +110,10 @@ export default function IntegrationsView({
           startReading?: string | null;
           createdAt?: string | null;
           lastRead?: string | null;
+          metadata?: {
+            lastErrorMessage?: string | null;
+            [key: string]: any;
+          };
         }>}
         updateAction={formAction}
         updateStartTimeAction={updateStartTimeAction}

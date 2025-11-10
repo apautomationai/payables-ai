@@ -116,7 +116,14 @@ export class GoogleController {
   };
 
   syncEmails = async (_req: Request, res: Response) => {
-    const data = []
+    const data: any[] = [];
+    const metadata = {
+      totalIntegrations: 0,
+      processedIntegrations: 0,
+      totalEmails: 0,
+      totalSuccess: 0,
+      totalFailed: 0,
+    };
     try {
       const integration: any = await integrationsService.getGmailIntegration();
       if (!integration.success) {
@@ -125,31 +132,82 @@ export class GoogleController {
 
       // @ts-ignore
       const integrations = integration.data || [];
+      metadata.totalIntegrations = integrations.length;
       for (const integration of integrations) {
-        const tokens = {
-          access_token: integration.accessToken,
-          refresh_token: integration.refreshToken,
-          token_type: integration.tokenType,
-          expiry_date: integration.expiryDate,
+        const result: any = {
+          integrationId: integration.id,
+          userId: integration.userId,
+          success: false,
+          message: "",
+          emailsSynced: 0,
+          data: [],
+          error: null,
+          meta: {
+            lastRead: integration.lastRead || null,
+            startReading: integration.startReading || null,
+          },
         };
-        if (!tokens) {
-          throw new BadRequestError("Need valid tokens");
-        }
+        try {
+          const tokens = {
+            access_token: integration.accessToken,
+            refresh_token: integration.refreshToken,
+            token_type: integration.tokenType,
+            expiry_date: integration.expiryDate,
+          };
+          if (!tokens.access_token) {
+            throw new Error("Missing access token");
+          }
 
-        let lastRead = integration.lastRead;
-        if (!lastRead) {
-          lastRead = integration.startReading;
+          let lastRead = integration.lastRead;
+          if (!lastRead) {
+            lastRead = integration.startReading;
+          }
+          const attachments = await googleServices.getEmailsWithAttachments(
+            tokens,
+            integration.userId,
+            integration.id,
+            lastRead
+          );
+
+          const emails = attachments.data || [];
+          result.data = emails;
+          result.emailsSynced = emails.length;
+          result.message =
+            attachments.message ||
+            (attachments.success
+              ? "Emails synced successfully"
+              : "Unable to sync emails");
+          result.success = Boolean(attachments.success);
+
+          if (attachments.success) {
+            metadata.totalSuccess++;
+            metadata.totalEmails += emails.length;
+          } else {
+            metadata.totalFailed++;
+          }
+        } catch (error: any) {
+          result.success = false;
+          result.message = error?.message || "Unexpected error during sync";
+          result.error = {
+            message: error?.message || "Unknown error",
+            stack: process.env.NODE_ENV === "development" ? error?.stack : undefined,
+          };
+          metadata.totalFailed++;
         }
-        const attachments = await googleServices.getEmailsWithAttachments(
-          tokens,
-          integration.userId,
-          integration.id,
-          lastRead
-        );
-        data.push(attachments);
+        metadata.processedIntegrations++;
+        data.push(result);
       }
+
+      const responseMessage =
+        metadata.totalFailed > 0 && metadata.totalSuccess > 0
+          ? "Emails synced with partial errors"
+          : metadata.totalFailed > 0
+          ? "Unable to sync emails for any integration"
+          : "Emails synced successfully";
+
       return res.status(200).json({
-        message: "Emails synced successfully",
+        message: responseMessage,
+        metadata,
         data,
       });
     } catch (error: any) {

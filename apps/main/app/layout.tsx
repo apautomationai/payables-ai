@@ -9,8 +9,11 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
-  title: "PDF Data Extractor Dashboard",
-  description: "A modern dashboard to manage PDF data extraction.",
+  title: "SLEDGE - Invoice Management",
+  description: "A modern dashboard to manage and process invoices with AI-powered data extraction.",
+  icons: {
+    icon: '/icon.png',
+  },
 };
 
 export default function RootLayout({

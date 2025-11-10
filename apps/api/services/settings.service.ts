@@ -14,6 +14,7 @@ class SettingsService {
           createdAt: integrationsModel.createdAt,
           startReading: integrationsModel.startReading,
           lastRead: integrationsModel.lastRead,
+          metadata: integrationsModel.metadata,
         })
         .from(integrationsModel)
         .where(eq(integrationsModel.userId, userId));
@@ -29,6 +30,7 @@ class SettingsService {
           createdAt: null,
           startReading: null,
           lastRead: null,
+          metadata: {},
         });
       }
 

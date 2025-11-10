@@ -43,6 +43,10 @@ interface IntegrationsListProps {
     startReading?: string | null;
     createdAt?: string | null;
     lastRead?: string | null;
+    metadata?: {
+      lastErrorMessage?: string | null;
+      [key: string]: any;
+    };
   }>;
   updateAction: (formData: FormData) => void;
   updateStartTimeAction: (
@@ -67,6 +71,7 @@ export default function IntegrationsList({
       startReading: existing?.startReading,
       createdAt: existing?.createdAt,
       lastRead: existing?.lastRead,
+      errorMessage: existing?.metadata?.lastErrorMessage || null,
     } as Integration;
   });
 

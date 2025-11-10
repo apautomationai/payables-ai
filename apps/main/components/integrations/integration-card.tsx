@@ -28,11 +28,17 @@ import {
   CircleHelp,
   PauseCircle,
   PlayCircle,
+  AlertTriangle,
 } from "lucide-react";
 import client from "@/lib/axios-client";
 import type { Integration, IntegrationStatus } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@workspace/ui/components/alert";
 
 const INTEGRATION_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
   Gmail: () => <Mail className="w-8 h-8 text-red-500" />,
@@ -64,7 +70,18 @@ export function IntegrationCard({
   updateAction,
   updateStartTimeAction,
 }: IntegrationCardProps) {
-  const { name, status, allowCollection, path, backendName, category, startReading, createdAt, lastRead } =
+  const {
+    name,
+    status,
+    allowCollection,
+    path,
+    backendName,
+    category,
+    startReading,
+    createdAt,
+    lastRead,
+    errorMessage,
+  } =
     integration;
 
   const { text: statusText, color: statusColor } = STATUS_CONFIG[status as IntegrationStatus] || STATUS_CONFIG.not_connected;
@@ -80,11 +97,11 @@ export function IntegrationCard({
       const res: any = await client.get(url);
       window.location.href = res.url;
     } catch (error: unknown) {
-      const errorMessage =
+      const connectErrorMessage =
         error && typeof error === "object" && "response" in error
           ? ((error.response as any)?.data?.message as string) || "Failed to connect!"
           : "Failed to connect!";
-      toast.error(errorMessage);
+      toast.error(connectErrorMessage);
     }
   };
 
@@ -106,7 +123,16 @@ export function IntegrationCard({
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow space-y-3">
+        {errorMessage && (
+          <Alert variant="destructive" className="border-destructive/30">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="flex items-center gap-2">
+              Sync Paused
+            </AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
         {isConnected && (
           <div className="space-y-2.5 text-sm text-muted-foreground border-l-2 pl-4 py-2">
             {createdAt && (

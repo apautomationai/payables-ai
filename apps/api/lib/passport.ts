@@ -142,7 +142,13 @@ if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_SECRET && GOOGLE_AUTH_REDIRECT_URI) {
           try {
             await RegistrationService.assignSubscriptionToUser(newUser.id);
           } catch (subscriptionError: any) {
-            // Silently handle subscription assignment errors to not break authentication
+            console.error('❌ Failed to assign subscription to user:', {
+              userId: newUser.id,
+              email: newUser.email,
+              error: subscriptionError.message,
+              stack: subscriptionError.stack
+            });
+            // Don't break authentication, but log the error for investigation
             // Note: In production, you might want to add this to a retry queue
           }
 

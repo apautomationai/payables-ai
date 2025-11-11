@@ -23,6 +23,9 @@ router.patch("/:id", authenticate, requireSubscriptionAccess, invoiceController.
 // Update invoice status
 router.patch("/:id/status", authenticate, requireSubscriptionAccess, invoiceController.updateInvoiceStatus);
 
+// Delete an invoice
+router.delete("/invoices/:id", authenticate, requireSubscriptionAccess, invoiceController.deleteInvoice);
+
 router.post("/split", authenticate, requireSubscriptionAccess, invoiceController.splitInvoices);
 
 // Get all line items (for debugging)

@@ -5,7 +5,7 @@ import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
-import { count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 import { sendAttachmentMessage } from "@/helpers/sqs";
@@ -533,10 +533,10 @@ export class GoogleServices {
         (hasSuccess && hasErrors
           ? "Attachments synced with partial errors"
           : hasSuccess
-          ? "Emails synced successfully"
-          : hasErrors
-          ? "Unable to sync emails"
-          : "No new emails found");
+            ? "Emails synced successfully"
+            : hasErrors
+              ? "Unable to sync emails"
+              : "No new emails found");
 
       return {
         success: hasSuccess || (!hasSuccess && !hasErrors && metadata.duplicatesSkipped > 0),
@@ -563,8 +563,8 @@ export class GoogleServices {
         message: metadata.errorMessage
           ? metadata.errorMessage
           : error instanceof Error
-          ? error.message
-          : "An unknown error occurred",
+            ? error.message
+            : "An unknown error occurred",
         data: [],
         metadata,
       };
@@ -577,14 +577,24 @@ export class GoogleServices {
       const attachments = await db
         .select()
         .from(attachmentsModel)
-        .where(eq(attachmentsModel.userId, userId))
+        .where(
+          and(
+            eq(attachmentsModel.userId, userId),
+            eq(attachmentsModel.isDeleted, false)
+          )
+        )
         .orderBy(desc(attachmentsModel.created_at))
         .limit(limit)
         .offset(offset);
       const [attachmentCount] = await db
         .select({ count: count() })
         .from(attachmentsModel)
-        .where(eq(attachmentsModel.userId, userId));
+        .where(
+          and(
+            eq(attachmentsModel.userId, userId),
+            eq(attachmentsModel.isDeleted, false)
+          )
+        );
       const totalAttachments = attachmentCount.count;
       return { attachments, totalAttachments };
     } catch (error: any) {
@@ -600,7 +610,12 @@ export class GoogleServices {
       const response = await db
         .select()
         .from(attachmentsModel)
-        .where(eq(attachmentsModel.hashId, hashId));
+        .where(
+          and(
+            eq(attachmentsModel.hashId, hashId),
+            eq(attachmentsModel.isDeleted, false)
+          )
+        );
       return response;
     } catch (error: any) {
       throw new BadRequestError(error.message || "No attachment found");

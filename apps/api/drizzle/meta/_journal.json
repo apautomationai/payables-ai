@@ -36,6 +36,13 @@
       "when": 1762474704980,
       "tag": "0004_worthless_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1762474705000,
+      "tag": "0005_add_soft_delete_columns",
+      "breakpoints": true
     }
   ]
 }

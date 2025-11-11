@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  boolean,
   integer,
   numeric,
   pgEnum,
@@ -48,6 +49,8 @@ export const invoiceModel = pgTable("invoices", {
   fileKey: text("file_key"),
   s3JsonKey: text("s3_json_key"),
   status: invoiceStatusEnum("status").notNull().default("pending"),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

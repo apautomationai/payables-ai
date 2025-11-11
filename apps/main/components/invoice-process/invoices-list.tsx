@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import type { InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
 import { Badge } from "@workspace/ui/components/badge";
+import { Button } from "@workspace/ui/components/button";
 import {
   Pagination,
   PaginationContent,
@@ -11,8 +12,7 @@ import {
 } from "@workspace/ui/components/pagination";
 import { cn } from "@workspace/ui/lib/utils";
 import { useRouter } from "next/navigation";
-// import { Button } from "@workspace/ui/components/button";
-// import { RefreshCcw } from "lucide-react";
+import { Trash2 } from "lucide-react";
 
 const StatusBadge = ({ status }: { status: InvoiceStatus | null }) => {
   if (!status) return null;
@@ -42,13 +42,14 @@ interface InvoicesListProps {
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onDeleteInvoice?: (invoiceId: number) => void;
 }
 
 const formatDateTime = (dateString: string) => {
   if (!dateString) return "Invalid Date";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "Invalid Date";
-  
+
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
     month: 'short',
@@ -67,6 +68,7 @@ export default function InvoicesList({
   currentPage,
   totalPages,
   onPageChange,
+  onDeleteInvoice,
 }: InvoicesListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
@@ -97,8 +99,8 @@ export default function InvoicesList({
     <div className="flex flex-col h-[calc(100vh-10rem)] rounded-lg border bg-card text-card-foreground shadow-sm">
       <div className="p-4 border-b">
         <div className="flex justify-between items-center mb-2">
-        <h2 className="text-lg font-semibold">Invoices</h2>
-        {/* <Button variant={'link'} size={'sm'} className="cursor-pointer" onClick={handleRefresh} disabled={isRefreshing}>
+          <h2 className="text-lg font-semibold">Invoices</h2>
+          {/* <Button variant={'link'} size={'sm'} className="cursor-pointer" onClick={handleRefresh} disabled={isRefreshing}>
           {isRefreshing ? <>
                 <RefreshCcw className="w-4 h-4 mr-2 animate-spin " /> <span className="text-sm">Refreshing...</span>
               </>
@@ -141,11 +143,10 @@ export default function InvoicesList({
                 <li
                   key={invoice.id}
                   onClick={() => onSelectInvoice(invoice)}
-                  className={`p-3 rounded-md cursor-pointer transition-all duration-150 border-l-4 ${
-                    selectedInvoiceId === invoice.id
-                      ? "bg-primary/10 border-primary"
-                      : "border-transparent hover:bg-muted/50"
-                  }`}
+                  className={`group p-3 rounded-md cursor-pointer transition-all duration-150 border-l-4 ${selectedInvoiceId === invoice.id
+                    ? "bg-primary/10 border-primary"
+                    : "border-transparent hover:bg-muted/50"
+                    }`}
                 >
                   <div className="flex justify-between items-start mb-1">
                     <p className="font-semibold text-sm truncate pr-2">{invoice.invoiceNumber}</p>
@@ -155,7 +156,22 @@ export default function InvoicesList({
                   <div className="flex justify-between items-center text-xs text-muted-foreground">
                     {/* THIS IS THE FIX: Use 'createdAt' which is available in the list data */}
                     <span>{formatDateTime(invoice.createdAt)}</span>
-                    <span>ID: {invoice.id}</span>
+                    <div className="flex items-center gap-2">
+                      <span>ID: {invoice.id}</span>
+                      {onDeleteInvoice && (
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteInvoice(invoice.id);
+                          }}
+                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </li>
               ))}

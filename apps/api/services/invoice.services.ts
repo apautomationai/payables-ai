@@ -39,7 +39,8 @@ export class InvoiceServices {
           .where(
             and(
               eq(invoiceModel.invoiceNumber, invoiceData.invoiceNumber!),
-              eq(invoiceModel.attachmentId, invoiceData.attachmentId)
+              eq(invoiceModel.attachmentId, invoiceData.attachmentId),
+              eq(invoiceModel.isDeleted, false)
             )
           );
 
@@ -155,7 +156,12 @@ export class InvoiceServices {
         attachmentsModel,
         eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
-      .where(eq(invoiceModel.userId, userId))
+      .where(
+        and(
+          eq(invoiceModel.userId, userId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      )
       .orderBy(desc(invoiceModel.createdAt))
       .limit(limit)
       .offset(offset);
@@ -163,7 +169,12 @@ export class InvoiceServices {
     const [totalResult] = await db
       .select({ count: count() })
       .from(invoiceModel)
-      .where(eq(invoiceModel.userId, userId));
+      .where(
+        and(
+          eq(invoiceModel.userId, userId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      );
 
     return {
       invoices: allInvoices,
@@ -182,7 +193,12 @@ export class InvoiceServices {
         attachmentsModel,
         eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
-      .where(eq(invoiceModel.id, invoiceId));
+      .where(
+        and(
+          eq(invoiceModel.id, invoiceId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      );
 
     if (!response) {
       throw new NotFoundError("No invoice found with that ID.");
@@ -212,6 +228,42 @@ export class InvoiceServices {
     } catch (error) {
       console.log(error);
       throw new BadRequestError("Unable to update invoice");
+    }
+  }
+
+  async softDeleteInvoice(invoiceId: number): Promise<void> {
+    try {
+      // Verify invoice exists and is not already deleted
+      const [existingInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(eq(invoiceModel.id, invoiceId));
+
+      if (!existingInvoice) {
+        throw new NotFoundError("Invoice not found");
+      }
+
+      if (existingInvoice.isDeleted) {
+        throw new BadRequestError("Invoice has already been deleted");
+      }
+
+      // Perform soft delete
+      const [result] = await db
+        .update(invoiceModel)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(invoiceModel.id, invoiceId))
+        .returning();
+
+      if (!result) {
+        throw new BadRequestError("Failed to delete invoice");
+      }
+    } catch (error) {
+      console.error("Error soft deleting invoice:", error);
+      throw error;
     }
   }
 
@@ -423,7 +475,12 @@ export class InvoiceServices {
     const [attachment] = await db
       .select()
       .from(attachmentsModel)
-      .where(eq(attachmentsModel.id, attachmentId));
+      .where(
+        and(
+          eq(attachmentsModel.id, attachmentId),
+          eq(attachmentsModel.isDeleted, false)
+        )
+      );
 
     const s3Url = attachment.fileUrl;
     //convert s3Url to attachment
@@ -629,7 +686,12 @@ export class InvoiceServices {
           attachmentsModel,
           eq(invoiceModel.attachmentId, attachmentsModel.id),
         )
-        .where(eq(invoiceModel.userId, userId))
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        )
         .orderBy(desc(invoiceModel.createdAt))
         .limit(10);
 
@@ -640,6 +702,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             gte(invoiceModel.createdAt, startOfMonth),
             lt(invoiceModel.createdAt, startOfNextMonth)
           )
@@ -652,6 +715,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             eq(invoiceModel.status, "pending"),
             gte(invoiceModel.createdAt, startOfMonth),
             lt(invoiceModel.createdAt, startOfNextMonth)
@@ -665,6 +729,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             eq(invoiceModel.status, "approved"),
             gte(invoiceModel.createdAt, startOfMonth),
             lt(invoiceModel.createdAt, startOfNextMonth)
@@ -678,6 +743,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             eq(invoiceModel.status, "rejected"),
             gte(invoiceModel.createdAt, startOfMonth),
             lt(invoiceModel.createdAt, startOfNextMonth)
@@ -693,6 +759,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             eq(invoiceModel.status, "pending")
           )
         );

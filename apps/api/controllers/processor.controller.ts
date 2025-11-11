@@ -1,4 +1,4 @@
-import { BadRequestError, NotFoundError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError, ForbiddenError } from "@/helpers/errors";
 import { attachmentServices } from "@/services/attachment.services";
 import { invoiceServices } from "@/services/invoice.services";
 import { getWebSocketService } from "@/services/websocket.service";
@@ -201,6 +201,65 @@ class ProcessorController {
         });
       }
       return res.status(500).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  }
+
+  async deleteAttachment(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      // Validate user ID
+      if (!userId) {
+        throw new BadRequestError("User ID is required");
+      }
+
+      // Validate and parse attachment ID
+      const attachmentId = parseInt(req.params.id, 10);
+      if (isNaN(attachmentId) || attachmentId <= 0) {
+        throw new BadRequestError("Attachment ID must be a valid positive number");
+      }
+
+      // Get attachment to verify ownership
+      const attachment = await attachmentServices.getAttachmentById(attachmentId);
+
+      if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+      }
+
+      if (attachment.userId !== userId) {
+        throw new ForbiddenError("Not authorized to delete this attachment");
+      }
+
+      // Check for associated invoice
+      const associatedInvoice = await attachmentServices.getAssociatedInvoice(attachmentId);
+
+      // Soft delete attachment
+      await attachmentServices.softDeleteAttachment(attachmentId);
+
+      // Cascade delete invoice if exists
+      if (associatedInvoice) {
+        await invoiceServices.softDeleteInvoice(associatedInvoice.id);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Attachment deleted successfully",
+        deletedInvoice: associatedInvoice ? {
+          id: associatedInvoice.id,
+          invoiceNumber: associatedInvoice.invoiceNumber,
+          vendorName: associatedInvoice.vendorName,
+        } : null,
+      });
+    } catch (error: any) {
+      console.error("Error deleting attachment:", error);
+
+      // Return appropriate status code based on error type
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
         success: false,
         error: error.message || "Internal server error",
       });

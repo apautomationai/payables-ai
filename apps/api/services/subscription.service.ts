@@ -156,33 +156,87 @@ export class SubscriptionService {
      * Requirements: 1.1, 1.5
      */
     static async createSubscription(userId: number, registrationOrder: number): Promise<any> {
-        const tier = this.determineTier(registrationOrder);
+        try {
+            // Check if subscription already exists for this user
+            const existingSubscription = await this.getSubscriptionByUserId(userId);
+            if (existingSubscription) {
+                console.log(`⚠️ Subscription already exists for user ${userId}, returning existing subscription`);
+                return existingSubscription;
+            }
 
-        // For paid tiers, users start with 'incomplete' status until they set up payment
-        // Trial only starts after payment method is added
-        let trialStart = null;
-        let trialEnd = null;
-        let status;
+            const tier = this.determineTier(registrationOrder);
 
-        if (tier === SUBSCRIPTION_CONFIG.TIERS.FREE) {
-            status = SUBSCRIPTION_CONFIG.STATUS.ACTIVE;
-        } else {
-            // Paid tiers start as 'incomplete' - requiring payment setup
-            status = SUBSCRIPTION_CONFIG.STATUS.INCOMPLETE;
-            // Trial dates will be set when payment is configured
+            console.log(`📊 Creating subscription for user ${userId}:`, {
+                registrationOrder,
+                tier,
+                tierLimits: {
+                    FREE_MAX: SUBSCRIPTION_CONFIG.TIER_LIMITS.FREE_MAX,
+                    PROMOTIONAL_MAX: SUBSCRIPTION_CONFIG.TIER_LIMITS.PROMOTIONAL_MAX
+                }
+            });
+
+            // For paid tiers, users start with 'incomplete' status until they set up payment
+            // Trial only starts after payment method is added
+            let trialStart = null;
+            let trialEnd = null;
+            let status;
+
+            if (tier === SUBSCRIPTION_CONFIG.TIERS.FREE) {
+                status = SUBSCRIPTION_CONFIG.STATUS.ACTIVE;
+                console.log(`✅ User ${userId} assigned to FREE tier (active)`);
+            } else if (tier === SUBSCRIPTION_CONFIG.TIERS.PROMOTIONAL) {
+                status = SUBSCRIPTION_CONFIG.STATUS.INCOMPLETE;
+                console.log(`✅ User ${userId} assigned to PROMOTIONAL tier (incomplete - needs payment setup)`);
+            } else {
+                // Paid tiers start as 'incomplete' - requiring payment setup
+                status = SUBSCRIPTION_CONFIG.STATUS.INCOMPLETE;
+                console.log(`✅ User ${userId} assigned to STANDARD tier (incomplete - needs payment setup)`);
+            }
+
+            const subscriptionData = {
+                userId,
+                registrationOrder,
+                tier,
+                status,
+                trialStart,
+                trialEnd,
+                stripePriceId: this.getStripePriceId(tier),
+            };
+
+            console.log(`💾 Inserting subscription record:`, subscriptionData);
+
+            // Check if registration order is already taken
+            const [existingOrder] = await db
+                .select()
+                .from(subscriptionsModel)
+                .where(eq(subscriptionsModel.registrationOrder, registrationOrder))
+                .limit(1);
+
+            if (existingOrder) {
+                console.error(`❌ Registration order ${registrationOrder} is already taken by user ${existingOrder.userId}`);
+                throw new Error(`Registration order ${registrationOrder} is already in use. This indicates a race condition or data inconsistency.`);
+            }
+
+            const [subscription] = await db.insert(subscriptionsModel).values(subscriptionData).returning();
+
+            console.log(`✅ Subscription created successfully:`, {
+                id: subscription.id,
+                userId: subscription.userId,
+                tier: subscription.tier,
+                status: subscription.status,
+                registrationOrder: subscription.registrationOrder
+            });
+
+            return subscription;
+        } catch (error: any) {
+            console.error(`❌ Error creating subscription for user ${userId}:`, {
+                error: error.message,
+                code: error.code,
+                detail: error.detail,
+                stack: error.stack
+            });
+            throw error;
         }
-
-        const [subscription] = await db.insert(subscriptionsModel).values({
-            userId,
-            registrationOrder,
-            tier,
-            status,
-            trialStart,
-            trialEnd,
-            stripePriceId: this.getStripePriceId(tier),
-        }).returning();
-
-        return subscription;
     }
 
     /**

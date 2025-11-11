@@ -17,4 +17,20 @@ router.get(
   googleController.getAttachmentWithId
 );
 
+// Get associated invoice for an attachment
+router.get(
+  "/attachments/:id/invoice",
+  authenticate,
+  requireSubscriptionAccess,
+  googleController.getAssociatedInvoice
+);
+
+// Delete an attachment
+router.delete(
+  "/attachments/:id",
+  authenticate,
+  requireSubscriptionAccess,
+  googleController.deleteAttachment
+);
+
 export default router;

@@ -1,11 +1,13 @@
 import { Request, Response, NextFunction } from "express";
-import { BadRequestError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError, ForbiddenError } from "@/helpers/errors";
 import { google } from "googleapis";
 import { integrationsService } from "@/services/integrations.service";
 import { googleServices } from "@/services/google.services";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { s3Client } from "@/helpers/s3upload";
 import { streamToBuffer } from "@/lib/utils/steamToBuffer";
+import { attachmentServices } from "@/services/attachment.services";
+import { invoiceServices } from "@/services/invoice.services";
 
 const oAuth2Client = new google.auth.OAuth2(
   process.env.GOOGLE_CLIENT_ID!,
@@ -189,7 +191,7 @@ export class GoogleController {
           result.success = Boolean(attachments.success);
           result.error =
             Array.isArray(attachmentMetadata.errors) &&
-            attachmentMetadata.errors.length > 0
+              attachmentMetadata.errors.length > 0
               ? attachmentMetadata.errors
               : null;
           if (attachmentMetadata.tokenRefreshed) {
@@ -221,8 +223,8 @@ export class GoogleController {
         metadata.totalFailed > 0 && metadata.totalSuccess > 0
           ? "Emails synced with partial errors"
           : metadata.totalFailed > 0
-          ? "Unable to sync emails for any integration"
-          : "Emails synced successfully";
+            ? "Unable to sync emails for any integration"
+            : "Emails synced successfully";
 
       return res.status(200).json({
         message: responseMessage,
@@ -404,6 +406,122 @@ export class GoogleController {
         data: error.message,
       };
       return res.send(result);
+    }
+  };
+
+  getAssociatedInvoice = async (req: Request, res: Response) => {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      // Validate user ID
+      if (!userId) {
+        throw new BadRequestError("User ID is required");
+      }
+
+      // Validate and parse attachment ID
+      const attachmentId = parseInt(req.params.id, 10);
+      if (isNaN(attachmentId) || attachmentId <= 0) {
+        throw new BadRequestError("Attachment ID must be a valid positive number");
+      }
+
+      // Get attachment to verify ownership
+      const attachment = await attachmentServices.getAttachmentById(attachmentId);
+
+      if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+      }
+
+      if (attachment.userId !== userId) {
+        throw new ForbiddenError("Not authorized to access this attachment");
+      }
+
+      // Get associated invoice
+      const associatedInvoice = await attachmentServices.getAssociatedInvoice(attachmentId);
+
+      if (!associatedInvoice) {
+        return res.status(404).json({
+          success: false,
+          message: "No associated invoice found"
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          id: associatedInvoice.id,
+          invoiceNumber: associatedInvoice.invoiceNumber,
+          vendorName: associatedInvoice.vendorName
+        }
+      });
+    } catch (error: any) {
+      console.error("Error getting associated invoice:", error);
+
+      // Return appropriate status code based on error type
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
+    }
+  };
+
+  deleteAttachment = async (req: Request, res: Response) => {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      // Validate user ID
+      if (!userId) {
+        throw new BadRequestError("User ID is required");
+      }
+
+      // Validate and parse attachment ID
+      const attachmentId = parseInt(req.params.id, 10);
+      if (isNaN(attachmentId) || attachmentId <= 0) {
+        throw new BadRequestError("Attachment ID must be a valid positive number");
+      }
+
+      // Get attachment to verify ownership
+      const attachment = await attachmentServices.getAttachmentById(attachmentId);
+
+      if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+      }
+
+      if (attachment.userId !== userId) {
+        throw new ForbiddenError("Not authorized to delete this attachment");
+      }
+
+      // Check for associated invoice
+      const associatedInvoice = await attachmentServices.getAssociatedInvoice(attachmentId);
+
+      // Soft delete attachment
+      await attachmentServices.softDeleteAttachment(attachmentId);
+
+      // Cascade delete invoice if exists
+      if (associatedInvoice) {
+        await invoiceServices.softDeleteInvoice(associatedInvoice.id);
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Attachment deleted successfully",
+        deletedInvoice: associatedInvoice ? {
+          id: associatedInvoice.id,
+          invoiceNumber: associatedInvoice.invoiceNumber,
+          vendorName: associatedInvoice.vendorName
+        } : null
+      });
+    } catch (error: any) {
+      console.error("Error deleting attachment:", error);
+
+      // Return appropriate status code based on error type
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message || "Internal server error",
+      });
     }
   };
 }

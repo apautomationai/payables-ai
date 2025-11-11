@@ -1,4 +1,4 @@
-import { BadRequestError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError, ForbiddenError } from "@/helpers/errors";
 import { invoiceServices } from "@/services/invoice.services";
 import { getWebSocketService } from "@/services/websocket.service";
 import { Request, Response } from "express";
@@ -374,6 +374,52 @@ class InvoiceController {
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,
+      });
+    }
+  }
+
+  async deleteInvoice(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+
+      // Validate user ID
+      if (!userId) {
+        throw new BadRequestError("User ID is required");
+      }
+
+      // Validate and parse invoice ID
+      const invoiceId = parseInt(req.params.id, 10);
+      if (isNaN(invoiceId) || invoiceId <= 0) {
+        throw new BadRequestError("Invoice ID must be a valid positive number");
+      }
+
+      // Get invoice to verify ownership
+      const invoice = await invoiceServices.getInvoice(invoiceId);
+
+      if (!invoice) {
+        throw new NotFoundError("Invoice not found");
+      }
+
+      if (invoice.userId !== userId) {
+        throw new ForbiddenError("Not authorized to delete this invoice");
+      }
+
+      // Soft delete the invoice
+      await invoiceServices.softDeleteInvoice(invoiceId);
+
+      return res.status(200).json({
+        success: true,
+        message: "Invoice deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting invoice:", error);
+
+      // Return appropriate status code based on error type
+      const statusCode = error.statusCode || 500;
+      return res.status(statusCode).json({
+        success: false,
+        error: error.message || "Internal server error",
       });
     }
   }

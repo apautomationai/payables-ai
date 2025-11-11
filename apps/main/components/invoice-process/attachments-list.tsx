@@ -12,7 +12,7 @@ import {
   CardDescription,
 } from "@workspace/ui/components/card";
 import { Input } from "@workspace/ui/components/input";
-import { Search, FileText, Loader2, RefreshCcw } from "lucide-react";
+import { Search, FileText, Loader2, RefreshCcw, Trash2 } from "lucide-react";
 import type { Attachment } from "@/lib/types/invoice";
 import { cn } from "@workspace/ui/lib/utils";
 import PdfUploader from "./pdf-uploader";
@@ -53,6 +53,7 @@ export default function AttachmentsList({
   currentPage,
   totalPages,
   onPageChange,
+  onDeleteAttachment,
 }: {
   attachments: any[] | null;
   selectedAttachment: Attachment | null;
@@ -62,6 +63,7 @@ export default function AttachmentsList({
   currentPage: number;
   totalPages: number;
   onPageChange: (page: number) => void;
+  onDeleteAttachment?: (attachmentId: string) => void;
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const router = useRouter();
@@ -149,7 +151,7 @@ export default function AttachmentsList({
                     key={attachment.id}
                     onClick={() => onSelectAttachment(attachment)}
                     className={cn(
-                      "flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-muted",
+                      "group flex items-center gap-3 rounded-md p-2.5 text-left transition-colors hover:bg-muted relative",
                       selectedAttachment?.id === attachment.id && "bg-muted"
                     )}
                   >
@@ -162,14 +164,29 @@ export default function AttachmentsList({
                         >
                           {displayName}
                         </p>
-                        <Badge variant="outline"
-                          className={cn("capitalize", {
-                            "bg-yellow-100 text-yellow-800 border-yellow-200": attachment.status === "pending",
-                            "bg-red-100 text-red-800 border-red-200": attachment.status === "failed",
-                            "bg-blue-100 text-blue-800 border-blue-200": attachment.status === "processing",
-                            "bg-green-100 text-green-800 border-green-200": attachment.status === "success",
-                          })}
-                        >{attachment.status}</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline"
+                            className={cn("capitalize", {
+                              "bg-yellow-100 text-yellow-800 border-yellow-200": attachment.status === "pending",
+                              "bg-red-100 text-red-800 border-red-200": attachment.status === "failed",
+                              "bg-blue-100 text-blue-800 border-blue-200": attachment.status === "processing",
+                              "bg-green-100 text-green-800 border-green-200": attachment.status === "success",
+                            })}
+                          >{attachment.status}</Badge>
+                          {onDeleteAttachment && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteAttachment(attachment.id);
+                              }}
+                              className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1.5">
                         <p className="truncate" title={String(attachment.id)}>

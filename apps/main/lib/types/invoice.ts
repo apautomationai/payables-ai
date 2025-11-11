@@ -10,6 +10,8 @@ export type Attachment = {
   receiver: string;
   fileUrl: string;
   fileKey: string;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -22,6 +24,8 @@ export type InvoiceListItem = {
   vendorName: string | null;
   totalAmount: string | null;
   status: InvoiceStatus | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
   createdAt: string;
 };
 
@@ -46,6 +50,8 @@ export interface InvoiceDetails {
   rate: string | null;
   description: string | null;
   status: InvoiceStatus | null;
+  isDeleted?: boolean;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
   fileUrl: string;
@@ -63,4 +69,31 @@ export interface LineItem {
   amount: string | null;
   itemType?: 'account' | 'product' | null;
   resourceId?: number | null;
+}
+/**
+ *
+ Associated invoice details returned when deleting an attachment
+ * that has a linked invoice
+ */
+export interface AssociatedInvoiceDetails {
+  id: number;
+  invoiceNumber: string;
+  vendorName: string;
+}
+
+/**
+ * Response from DELETE /api/invoices/:id
+ */
+export interface DeleteInvoiceResponse {
+  success: boolean;
+  message: string;
+}
+
+/**
+ * Response from DELETE /api/attachments/:id
+ */
+export interface DeleteAttachmentResponse {
+  success: boolean;
+  message: string;
+  deletedInvoice?: AssociatedInvoiceDetails | null;
 }

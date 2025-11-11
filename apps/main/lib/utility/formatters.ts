@@ -7,9 +7,12 @@ export const formatLabel = (key: string): string => {
     .replace(/^./, (str) => str.toUpperCase()); // Capitalize the first letter
 };
 
-export const renderValue = (value: string | number | any[] | null | undefined): string => {
+export const renderValue = (value: string | number | boolean | any[] | null | undefined): string => {
   if (value === null || value === undefined) {
     return "N/A";
+  }
+  if (typeof value === 'boolean') {
+    return value ? "Yes" : "No";
   }
   if (Array.isArray(value)) {
     return value.length === 0 ? "No items" : `${value.length} item(s)`;

@@ -28,7 +28,7 @@ const FormField = ({
 }: {
   fieldKey: string;
   label: string;
-  value: string | number | any[] | null | undefined;
+  value: string | number | boolean | any[] | null | undefined;
   isEditing: boolean;
   isSelected: boolean;
   onToggle: (fieldKey: string) => void;
@@ -39,9 +39,11 @@ const FormField = ({
 
   const displayValue = Array.isArray(value)
     ? `${value.length} item(s)`
-    : isDateField
-      ? formatDate(value as string)
-      : value ?? "N/A";
+    : typeof value === 'boolean'
+      ? (value ? "Yes" : "No")
+      : isDateField
+        ? formatDate(value as string)
+        : value ?? "N/A";
 
   // For date fields, use the formatted date string directly
   const dateStringValue = isDateField && value ? formatDate(value as string) : undefined;

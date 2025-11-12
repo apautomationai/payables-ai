@@ -62,7 +62,10 @@ async function handleRequest(request: NextRequest, method: string) {
 
     // if got 200 response then redirect to /integrations page
     if (backendResponse.status === 200) {
-      return NextResponse.redirect(new URL("/integrations", request.url));
+      const redirectUrl = new URL("/integrations", request.url);
+      redirectUrl.searchParams.set("type", "integration.gmail");
+      redirectUrl.searchParams.set("message", "Gmail successfully integrated");
+      return NextResponse.redirect(redirectUrl);
     } else {
       return NextResponse.json(await backendResponse.json(), {
         status: backendResponse.status,

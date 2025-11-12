@@ -94,7 +94,13 @@ export class GoogleController {
       const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!);
       REDIRECT_URI.searchParams.set("type", "integration.gmail");
       REDIRECT_URI.searchParams.set("message", "Gmail successfully integrated");
-      res.redirect(REDIRECT_URI.toString());
+      // res.redirect(REDIRECT_URI.toString());
+      return res.status(200).json({
+        message: "OAuth successful",
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+        expiry_date: tokens.expiry_date,
+      });
     } catch (error: any) {
       console.error("Integration insert error:", error);
       res.status(500).json({

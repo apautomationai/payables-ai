@@ -300,7 +300,7 @@ class InvoiceController {
       //@ts-ignore
       const userId = req.user.id;
       const { id } = req.params;
-      const { itemType, resourceId } = req.body;
+      const { itemType, resourceId, quantity, rate, amount } = req.body;
 
       if (!id) {
         throw new BadRequestError("Line item ID is required");
@@ -319,6 +319,9 @@ class InvoiceController {
       const updateData: {
         itemType?: 'account' | 'product' | null;
         resourceId?: string | null;
+        quantity?: string;
+        rate?: string;
+        amount?: string;
       } = {};
 
       if (itemType !== undefined) {
@@ -326,6 +329,15 @@ class InvoiceController {
       }
       if (resourceId !== undefined) {
         updateData.resourceId = resourceId ? String(resourceId) : null;
+      }
+      if (quantity !== undefined) {
+        updateData.quantity = String(quantity);
+      }
+      if (rate !== undefined) {
+        updateData.rate = String(rate);
+      }
+      if (amount !== undefined) {
+        updateData.amount = String(amount);
       }
 
       const updatedLineItem = await invoiceServices.updateLineItem(lineItemId, updateData);

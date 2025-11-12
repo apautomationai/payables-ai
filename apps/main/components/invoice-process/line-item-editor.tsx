@@ -4,12 +4,14 @@ import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { Label } from "@workspace/ui/components/label";
+import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
 import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
 import { fetchQuickBooksAccounts, fetchQuickBooksItems, updateLineItem } from "@/lib/services/quickbooks.service";
 import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
 import type { LineItem } from "@/lib/types/invoice";
 import { toast } from "sonner";
+import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
 import {
@@ -41,6 +43,12 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
     lineItem.resourceId ? String(lineItem.resourceId) : null
   );
   const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
+
+  // Editable fields state
+  const [quantity, setQuantity] = useState(lineItem.quantity || "1");
+  const [rate, setRate] = useState(lineItem.rate || "0");
+  const [amount, setAmount] = useState(lineItem.amount || "0");
+  const [hasFieldChanges, setHasFieldChanges] = useState(false);
 
   console.log(items)
 
@@ -229,6 +237,56 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
     return item.FullyQualifiedName || item.Name;
   };
 
+  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setQuantity(value);
+    setHasFieldChanges(true);
+    // Auto-calculate amount if rate is set
+    if (rate && value) {
+      const calculatedAmount = (parseFloat(value) * parseFloat(rate)).toFixed(2);
+      setAmount(calculatedAmount);
+    }
+  };
+
+  const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setRate(value);
+    setHasFieldChanges(true);
+    // Auto-calculate amount if quantity is set
+    if (quantity && value) {
+      const calculatedAmount = (parseFloat(quantity) * parseFloat(value)).toFixed(2);
+      setAmount(calculatedAmount);
+    }
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAmount(e.target.value);
+    setHasFieldChanges(true);
+  };
+
+  const handleSaveFields = async () => {
+    setIsSaving(true);
+    try {
+      const response = await client.patch(`/api/v1/invoice/line-items/${lineItem.id}`, {
+        quantity,
+        rate,
+        amount,
+      });
+
+      if (response.data.success && onUpdate) {
+        onUpdate(response.data.data);
+      }
+
+      setHasFieldChanges(false);
+      toast.success("Line item updated");
+    } catch (error) {
+      console.error("Error updating line item fields:", error);
+      toast.error("Failed to update line item");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className={cn(
       "bg-muted/50 rounded-lg p-3 text-sm space-y-3",
@@ -246,14 +304,52 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
             </p>
           )}
         </div>
-        <span className="text-muted-foreground ml-2">
-          ${parseFloat(lineItem.amount || "0").toFixed(2)}
-        </span>
       </div>
 
-      <div className="flex justify-between text-xs text-muted-foreground mb-3">
-        <span>Qty: {lineItem.quantity || 1}</span>
-        <span>Rate: ${parseFloat(lineItem.rate || "0").toFixed(2)}</span>
+      {/* Editable Fields */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="space-y-1">
+          <Label htmlFor={`quantity-${lineItem.id}`} className="text-xs">
+            Quantity
+          </Label>
+          <Input
+            id={`quantity-${lineItem.id}`}
+            type="number"
+            step="0.01"
+            value={quantity}
+            onChange={handleQuantityChange}
+            className="h-8 text-xs"
+            disabled={!isEditing || isSaving}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`rate-${lineItem.id}`} className="text-xs">
+            Rate ($)
+          </Label>
+          <Input
+            id={`rate-${lineItem.id}`}
+            type="number"
+            step="0.01"
+            value={rate}
+            onChange={handleRateChange}
+            className="h-8 text-xs"
+            disabled={!isEditing || isSaving}
+          />
+        </div>
+        <div className="space-y-1">
+          <Label htmlFor={`amount-${lineItem.id}`} className="text-xs">
+            Amount ($)
+          </Label>
+          <Input
+            id={`amount-${lineItem.id}`}
+            type="number"
+            step="0.01"
+            value={amount}
+            onChange={handleAmountChange}
+            className="h-8 text-xs"
+            disabled={!isEditing || isSaving}
+          />
+        </div>
       </div>
 
       {/* Item Type Selector */}
@@ -320,7 +416,28 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
         </div>
       )}
 
-      {isSaving && (
+      {/* Save Button for Field Changes */}
+      {hasFieldChanges && (
+        <div className="pt-2 border-t">
+          <Button
+            onClick={handleSaveFields}
+            disabled={isSaving}
+            size="sm"
+            className="w-full h-8"
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
+        </div>
+      )}
+
+      {isSaving && !hasFieldChanges && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Loader2 className="h-3 w-3 animate-spin" />
           <span>Saving...</span>

@@ -16,25 +16,25 @@ const INITIAL_INTEGRATIONS: Omit<
   Integration,
   "status" | "backendName" | "startReading" | "createdAt" | "lastRead"
 >[] = [
-  {
-    name: "Gmail",
-    path: "google/auth",
-    category: "Email Processing & Automation",
-    allowCollection: true,
-  },
-  {
-    name: "Outlook",
-    path: "outlook/auth",
-    category: "Email Processing & Automation",
-    allowCollection: false,
-  },
-  {
-    name: "QuickBooks",
-    path: "quickbooks/auth",
-    category: "Accounting & Bookkeeping",
-    allowCollection: true,
-  },
-];
+    {
+      name: "Gmail",
+      path: "google/auth",
+      category: "Email Processing & Automation",
+      allowCollection: true,
+    },
+    {
+      name: "Outlook",
+      path: "outlook/auth",
+      category: "Email Processing & Automation",
+      allowCollection: false,
+    },
+    {
+      name: "QuickBooks",
+      path: "quickbooks/auth",
+      category: "Accounting & Bookkeeping",
+      allowCollection: true,
+    },
+  ];
 
 interface IntegrationsListProps {
   integrations: Array<{
@@ -53,12 +53,16 @@ interface IntegrationsListProps {
     prevState: ActionState,
     formData: FormData,
   ) => Promise<ActionState>;
+  shouldOpenGmailConfig?: boolean;
+  onGmailConfigClose?: () => void;
 }
 
 export default function IntegrationsList({
   integrations: initialBackendIntegrations,
   updateAction,
   updateStartTimeAction,
+  shouldOpenGmailConfig,
+  onGmailConfigClose,
 }: IntegrationsListProps) {
   const integrations: Integration[] = INITIAL_INTEGRATIONS.map((integration) => {
     const backendName =
@@ -91,6 +95,8 @@ export default function IntegrationsList({
               integration={integration}
               updateAction={updateAction}
               updateStartTimeAction={updateStartTimeAction}
+              shouldOpenConfigDialog={integration.backendName === "gmail" && shouldOpenGmailConfig}
+              onConfigDialogClose={integration.backendName === "gmail" ? onGmailConfigClose : undefined}
             />
           ))}
         </div>

@@ -63,12 +63,16 @@ interface IntegrationCardProps {
     prevState: ActionState,
     formData: FormData,
   ) => Promise<ActionState>;
+  shouldOpenConfigDialog?: boolean;
+  onConfigDialogClose?: () => void;
 }
 
 export function IntegrationCard({
   integration,
   updateAction,
   updateStartTimeAction,
+  shouldOpenConfigDialog,
+  onConfigDialogClose,
 }: IntegrationCardProps) {
   const {
     name,
@@ -169,9 +173,9 @@ export function IntegrationCard({
 
           {allowCollection ? (
             (status === "not_connected" || status === "disconnected") && (
-                <Button size="sm" className="w-full cursor-pointer" onClick={handleConnect}>
-                  Connect Now
-                </Button>
+              <Button size="sm" className="w-full cursor-pointer" onClick={handleConnect}>
+                Connect Now
+              </Button>
             )
           ) : (
             <TooltipProvider>
@@ -191,7 +195,12 @@ export function IntegrationCard({
           {status === "success" && (
             <>
               {isGmail && !startReading && (
-                <ConfigureDialog backendName={backendName} updateStartTimeAction={updateStartTimeAction} />
+                <ConfigureDialog
+                  backendName={backendName}
+                  updateStartTimeAction={updateStartTimeAction}
+                  defaultOpen={shouldOpenConfigDialog}
+                  onOpenChange={(open) => !open && onConfigDialogClose?.()}
+                />
               )}
               <SubmitButton name="status" value="paused" label="Pause" variant="outline">
                 <PauseCircle className="h-4 w-4 mr-2" /> Pause
@@ -203,7 +212,12 @@ export function IntegrationCard({
           {status === "paused" && (
             <>
               {isGmail && !startReading && (
-                <ConfigureDialog backendName={backendName} updateStartTimeAction={updateStartTimeAction} />
+                <ConfigureDialog
+                  backendName={backendName}
+                  updateStartTimeAction={updateStartTimeAction}
+                  defaultOpen={shouldOpenConfigDialog}
+                  onOpenChange={(open) => !open && onConfigDialogClose?.()}
+                />
               )}
               <SubmitButton name="status" value="success" label="Resume" variant="outline">
                 <PlayCircle className="h-4 w-4 mr-2 text-green-600" /> Resume

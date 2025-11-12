@@ -55,13 +55,32 @@ export default function IntegrationsView({
 }: IntegrationsViewProps) {
   const { message, type } = searchParams;
   const [isRedirectDialogOpen, setRedirectDialogOpen] = useState(false);
+  const [shouldOpenGmailConfig, setShouldOpenGmailConfig] = useState(false);
   const [state, formAction] = useActionState(updateIntegrationStatusAction, undefined);
 
   useEffect(() => {
     if (message && type) {
       setRedirectDialogOpen(true);
+
+      // Check if this is a successful Gmail integration
+      const isSuccess = String(type).toLowerCase().includes("success") ||
+        String(message).toLowerCase().includes("successfully");
+      const isGmail = String(type).toLowerCase().includes("gmail") ||
+        String(message).toLowerCase().includes("gmail");
+
+      if (isSuccess && isGmail) {
+        // Check if Gmail needs configuration
+        const gmailIntegration = integrations.find(i => i.name === "gmail");
+        if (gmailIntegration && gmailIntegration.status === "success" && !gmailIntegration.startReading) {
+          // Open configure dialog after a short delay to let the success dialog show first
+          setTimeout(() => {
+            setRedirectDialogOpen(false);
+            setShouldOpenGmailConfig(true);
+          }, 1500);
+        }
+      }
     }
-  }, [message, type]);
+  }, [message, type, integrations]);
 
   useEffect(() => {
     if (!state) return;
@@ -117,6 +136,8 @@ export default function IntegrationsView({
         }>}
         updateAction={formAction}
         updateStartTimeAction={updateStartTimeAction}
+        shouldOpenGmailConfig={shouldOpenGmailConfig}
+        onGmailConfigClose={() => setShouldOpenGmailConfig(false)}
       />
 
       <Dialog open={isRedirectDialogOpen} onOpenChange={setRedirectDialogOpen}>

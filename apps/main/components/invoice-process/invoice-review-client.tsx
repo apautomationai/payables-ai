@@ -139,6 +139,7 @@ export default function InvoiceReviewClient({
   const [refreshCount, setRefreshCount] = useState(0);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     if (invoiceDetails) {
@@ -384,6 +385,7 @@ export default function InvoiceReviewClient({
     if (invoice.id === selectedInvoiceId) return;
 
     setIsEditing(false);
+    setHasUnsavedChanges(false);
     setSelectedInvoiceId(invoice.id);
 
     // Check if we have the details in cache
@@ -450,6 +452,7 @@ export default function InvoiceReviewClient({
     if (!invoiceDetails) return;
     const { name, value } = e.target;
     setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
+    setHasUnsavedChanges(true);
   };
 
   const handleCancelEdit = () => {
@@ -489,15 +492,8 @@ export default function InvoiceReviewClient({
         updateInvoiceStatusInList(updatedData.id, updatedData.status);
       }
 
-      // Show appropriate success message
-      const statusChanged = invoiceDetails.status !== updatedData?.status;
-      const message = statusChanged
-        ? "Changes saved successfully. Invoice status reset to pending for review."
-        : "Changes saved successfully";
-
-      toast.success(message);
+      setHasUnsavedChanges(false);
       setIsEditing(false);
-      router.refresh();
     } catch (err) {
       toast.error("Failed to save changes");
     }
@@ -525,7 +521,6 @@ export default function InvoiceReviewClient({
       updateInvoiceStatusInList(updatedData.id, "approved");
 
       toast.success("Invoice has been approved");
-      router.refresh();
     } catch (err) {
 
       toast.error("Failed to approve invoice");
@@ -554,7 +549,6 @@ export default function InvoiceReviewClient({
       updateInvoiceStatusInList(updatedData.id, "rejected");
 
       toast.success("Invoice has been rejected");
-      router.refresh();
     } catch (err) {
       toast.error("Failed to reject invoice");
     }
@@ -925,6 +919,7 @@ export default function InvoiceReviewClient({
                     )}
                     <InvoiceDetailsForm
                       invoiceDetails={invoiceDetails}
+                      originalInvoiceDetails={originalInvoiceDetails || invoiceDetails}
                       isEditing={isEditing}
                       setIsEditing={setIsEditing}
                       onDetailsChange={handleDetailsChange}
@@ -934,6 +929,7 @@ export default function InvoiceReviewClient({
                       onReject={handleRejectInvoice}
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
+                      onFieldChange={() => setHasUnsavedChanges(true)}
                       onApprovalSuccess={() => {
                         // Update the invoice status in the list for real-time UI update
                         if (invoiceDetails) {

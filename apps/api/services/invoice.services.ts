@@ -625,6 +625,9 @@ export class InvoiceServices {
     updateData: {
       itemType?: 'account' | 'product' | null;
       resourceId?: string | null;
+      quantity?: string;
+      rate?: string;
+      amount?: string;
     }
   ) {
     try {
@@ -647,6 +650,18 @@ export class InvoiceServices {
 
       if (updateData.resourceId !== undefined) {
         updateFields.resourceId = updateData.resourceId;
+      }
+
+      if (updateData.quantity !== undefined) {
+        updateFields.quantity = updateData.quantity;
+      }
+
+      if (updateData.rate !== undefined) {
+        updateFields.rate = updateData.rate;
+      }
+
+      if (updateData.amount !== undefined) {
+        updateFields.amount = updateData.amount;
       }
 
       // If itemType is being changed, clear resourceId if it doesn't match

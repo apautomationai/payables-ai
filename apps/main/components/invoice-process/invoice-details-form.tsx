@@ -36,17 +36,42 @@ const FormField = ({
   onDateChange?: (fieldKey: string, dateString: string | undefined) => void;
 }) => {
   const isDateField = fieldKey === 'invoiceDate' || fieldKey === 'dueDate';
+  const isBooleanField = typeof value === 'boolean';
+  const isArrayField = Array.isArray(value);
 
-  const displayValue = Array.isArray(value)
+  // Use local state for the input to avoid cursor jumping
+  const [localValue, setLocalValue] = useState(value ?? "");
+
+  // Update local value when prop changes (e.g., when switching invoices)
+  useEffect(() => {
+    setLocalValue(value ?? "");
+  }, [value]);
+
+  // For display-only fields (arrays, booleans), compute display value
+  const displayValue = isArrayField
     ? `${value.length} item(s)`
-    : typeof value === 'boolean'
+    : isBooleanField
       ? (value ? "Yes" : "No")
       : isDateField
         ? formatDate(value as string)
         : value ?? "N/A";
 
+  // For editable fields, use the local value
+  const inputValue = isArrayField || isBooleanField
+    ? String(displayValue)
+    : String(localValue);
+
   // For date fields, use the formatted date string directly
   const dateStringValue = isDateField && value ? formatDate(value as string) : undefined;
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value);
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    // Only call onChange on blur to update parent
+    onChange(e as any);
+  };
 
   return (
     <div className="flex items-start gap-4">
@@ -83,9 +108,10 @@ const FormField = ({
           <Input
             id={fieldKey}
             name={fieldKey}
-            value={String(displayValue)}
-            readOnly={!isEditing || Array.isArray(value)}
-            onChange={onChange}
+            value={inputValue}
+            readOnly={!isEditing || isArrayField || isBooleanField}
+            onChange={handleChange}
+            onBlur={handleBlur}
             className={cn(
               "h-9 read-only:bg-muted/50 read-only:border-dashed",
               isSelected
@@ -101,6 +127,7 @@ const FormField = ({
 
 interface InvoiceDetailsFormProps {
   invoiceDetails: InvoiceDetails;
+  originalInvoiceDetails: InvoiceDetails;
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
   onDetailsChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -112,10 +139,12 @@ interface InvoiceDetailsFormProps {
   onCancel: () => void;
   onApprovalSuccess?: () => void;
   onInvoiceDetailsUpdate?: (updatedDetails: InvoiceDetails) => void;
+  onFieldChange?: () => void;
 }
 
 export default function InvoiceDetailsForm({
   invoiceDetails,
+  originalInvoiceDetails,
   isEditing,
   setIsEditing,
   onDetailsChange,
@@ -127,6 +156,7 @@ export default function InvoiceDetailsForm({
   onCancel,
   onApprovalSuccess,
   onInvoiceDetailsUpdate,
+  onFieldChange,
 }: InvoiceDetailsFormProps) {
 
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
@@ -276,7 +306,7 @@ export default function InvoiceDetailsForm({
                 fieldKey={key}
                 label={formatLabel(key)}
                 value={localInvoiceDetails[key as keyof InvoiceDetails] ?? null}
-                isEditing={isEditing}
+                isEditing={true}
                 isSelected={selectedFields.includes(key)}
                 onToggle={handleFieldToggle}
                 onChange={onDetailsChange}
@@ -300,7 +330,7 @@ export default function InvoiceDetailsForm({
                       key={item.id}
                       lineItem={item}
                       onUpdate={handleLineItemUpdate}
-                      isEditing={isEditing}
+                      isEditing={true}
                       isQuickBooksConnected={isQuickBooksConnected}
                     />
                   ))}
@@ -328,6 +358,7 @@ export default function InvoiceDetailsForm({
             isEditing={isEditing}
             setIsEditing={setIsEditing}
             invoiceDetails={invoiceDetails}
+            originalInvoiceDetails={originalInvoiceDetails}
             selectedFields={selectedFields}
             onSave={onSave}
             onReject={onReject}
@@ -335,6 +366,7 @@ export default function InvoiceDetailsForm({
             onCancel={onCancel}
             onApprovalSuccess={onApprovalSuccess}
             onInvoiceDetailsUpdate={onInvoiceDetailsUpdate}
+            onFieldChange={onFieldChange}
           />
         </div>
       </CardContent>

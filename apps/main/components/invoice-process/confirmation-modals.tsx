@@ -28,6 +28,7 @@ interface ConfirmationModalsProps {
   isEditing: boolean;
   setIsEditing: (isEditing: boolean) => void;
   invoiceDetails: InvoiceDetails;
+  originalInvoiceDetails: InvoiceDetails;
   selectedFields: string[];
   onSave: () => Promise<void>;
   onReject: () => Promise<void>;
@@ -35,12 +36,14 @@ interface ConfirmationModalsProps {
   onCancel: () => void;
   onApprovalSuccess?: () => void;
   onInvoiceDetailsUpdate?: (updatedDetails: InvoiceDetails) => void;
+  onFieldChange?: () => void;
 }
 
 export default function ConfirmationModals({
   isEditing,
   setIsEditing,
   invoiceDetails,
+  originalInvoiceDetails,
   selectedFields,
   onSave,
   onReject,
@@ -48,6 +51,7 @@ export default function ConfirmationModals({
   onCancel,
   onApprovalSuccess,
   onInvoiceDetailsUpdate,
+  onFieldChange,
 }: ConfirmationModalsProps) {
   const router = useRouter();
   const [isSaving, setIsSaving] = useState(false);
@@ -128,6 +132,12 @@ export default function ConfirmationModals({
   };
 
   const handleApproveClick = async () => {
+    // Step 0: Auto-save if there are unsaved changes (check if onFieldChange was called)
+    // We'll always save before approval to ensure latest changes are persisted
+    setIsSaving(true);
+    await onSave();
+    setIsSaving(false);
+
     // Step 1: Validate line items first
     const { isValid, incompleteItems } = await validateLineItems();
     if (!isValid) {
@@ -353,132 +363,131 @@ export default function ConfirmationModals({
   // Check if invoice is already approved or rejected
   const isInvoiceFinalized = invoiceDetails.status === "approved" || invoiceDetails.status === "rejected";
 
+  const handleRejectClick = async () => {
+    // Auto-save before rejection to ensure latest changes are persisted
+    setIsSaving(true);
+    await onSave();
+    setIsSaving(false);
+
+    // Open the reject dialog
+    setIsRejectDialogOpen(true);
+  };
+
   return (
     <div className="flex justify-between mt-4">
-      {isEditing ? (
-        <>
-          <Button variant="outline" onClick={onCancel} disabled={isSaving}>
-            Cancel
+      <div className="flex gap-2">
+        <Button onClick={handleSaveChanges} disabled={isSaving} variant="outline">
+          {isSaving ? "Saving..." : "Save Changes"}
+        </Button>
+      </div>
+      {!isInvoiceFinalized && (
+        <div className="flex gap-2">
+          <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+            <Button
+              onClick={handleRejectClick}
+              className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900"
+              disabled={isRejecting || isSaving}
+            >
+              {isRejecting ? "Rejecting..." : "Reject"}
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Invoice Rejection</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to reject this invoice? This action will mark the invoice as rejected.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleConfirmReject}
+                  disabled={isRejecting}
+                  className="bg-red-600 text-white hover:bg-red-700"
+                >
+                  {isRejecting ? "Rejecting..." : "Confirm Rejection"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+          <Button
+            onClick={handleApproveClick}
+            variant="default"
+            disabled={isApproving || isSaving}
+          >
+            {isApproving ? "Approving..." : "Approve"}
           </Button>
-          <Button onClick={handleSaveChanges} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save Changes"}
-          </Button>
-        </>
-      ) : (
-        <>
-          <Button variant="outline" onClick={() => setIsEditing(true)}>
-            Edit
-          </Button>
-          {!isInvoiceFinalized && (
-            <div className="flex gap-2">
-              <Dialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button
-                    className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 dark:bg-red-950 dark:text-red-400 dark:border-red-800 dark:hover:bg-red-900"
-                    disabled={isRejecting}
-                  >
-                    {isRejecting ? "Rejecting..." : "Reject"}
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirm Invoice Rejection</DialogTitle>
-                    <DialogDescription>
-                      Are you sure you want to reject this invoice? This action will mark the invoice as rejected.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                      onClick={handleConfirmReject}
-                      disabled={isRejecting}
-                      className="bg-red-600 text-white hover:bg-red-700"
-                    >
-                      {isRejecting ? "Rejecting..." : "Confirm Rejection"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Button
-                onClick={handleApproveClick}
-                variant="default"
-              >
-                Approve
-              </Button>
-              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Confirm Invoice Approval</DialogTitle>
-                    <DialogDescription>
-                      The following selected fields are present. Approving will update the invoice status.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="max-h-60 overflow-y-auto my-4 pr-2">
-                    <div className="grid gap-2 text-sm">
-                      {selectedFields
-                        .filter((key) => {
-                          // Hide internal/system fields from the approval popup
-                          const hiddenFields = [
-                            'id',
-                            'userId',
-                            'attachmentId',
-                            'fileUrl',
-                            'fileKey',
-                            's3JsonKey',
-                            'createdAt',
-                            'updatedAt',
-                            'sourcePdfUrl'
-                          ];
-                          return !hiddenFields.includes(key);
-                        })
-                        .map((key) => (
-                          <div
-                            key={key}
-                            className="grid grid-cols-2 gap-4 items-center"
-                          >
-                            <span className="text-muted-foreground">
-                              {formatLabel(key)}
-                            </span>
-                            <span className="font-semibold text-right truncate">
-                              {key === 'status'
-                                ? capitalizeStatus(invoiceDetails[key as keyof InvoiceDetails] as string)
-                                : (key === 'invoiceDate' || key === 'dueDate')
-                                  ? formatDate(invoiceDetails[key as keyof InvoiceDetails] as string)
-                                  : renderValue(invoiceDetails[key as keyof InvoiceDetails])
-                              }
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <DialogClose asChild>
-                      <Button variant="outline">Cancel</Button>
-                    </DialogClose>
-                    <Button
-                      onClick={handleConfirmApproval}
-                      disabled={isApproving}
-                    >
-                      {isApproving ? "Confirming..." : "Confirm Approval"}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-          )}
-          {isInvoiceFinalized && (
-            <div className="flex items-center justify-end">
-              <div className={`px-4 py-2 rounded-full text-sm font-medium ${invoiceDetails.status === "approved"
-                ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
-                : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
-                }`}>
-                {invoiceDetails.status === "approved" ? "✓ Approved" : invoiceDetails.status === "rejected" ? "✗ Rejected" : `✓ ${capitalizeStatus(invoiceDetails.status)}`}
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Confirm Invoice Approval</DialogTitle>
+                <DialogDescription>
+                  The following selected fields are present. Approving will update the invoice status.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-60 overflow-y-auto my-4 pr-2">
+                <div className="grid gap-2 text-sm">
+                  {selectedFields
+                    .filter((key) => {
+                      // Hide internal/system fields from the approval popup
+                      const hiddenFields = [
+                        'id',
+                        'userId',
+                        'attachmentId',
+                        'fileUrl',
+                        'fileKey',
+                        's3JsonKey',
+                        'createdAt',
+                        'updatedAt',
+                        'sourcePdfUrl'
+                      ];
+                      return !hiddenFields.includes(key);
+                    })
+                    .map((key) => (
+                      <div
+                        key={key}
+                        className="grid grid-cols-2 gap-4 items-center"
+                      >
+                        <span className="text-muted-foreground">
+                          {formatLabel(key)}
+                        </span>
+                        <span className="font-semibold text-right truncate">
+                          {key === 'status'
+                            ? capitalizeStatus(invoiceDetails[key as keyof InvoiceDetails] as string)
+                            : (key === 'invoiceDate' || key === 'dueDate')
+                              ? formatDate(invoiceDetails[key as keyof InvoiceDetails] as string)
+                              : renderValue(invoiceDetails[key as keyof InvoiceDetails])
+                          }
+                        </span>
+                      </div>
+                    ))}
+                </div>
               </div>
-            </div>
-          )}
-        </>
+              <DialogFooter>
+                <DialogClose asChild>
+                  <Button variant="outline">Cancel</Button>
+                </DialogClose>
+                <Button
+                  onClick={handleConfirmApproval}
+                  disabled={isApproving}
+                >
+                  {isApproving ? "Confirming..." : "Confirm Approval"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
+      {isInvoiceFinalized && (
+        <div className="flex items-center justify-end">
+          <div className={`px-4 py-2 rounded-full text-sm font-medium ${invoiceDetails.status === "approved"
+            ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+            : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+            }`}>
+            {invoiceDetails.status === "approved" ? "✓ Approved" : invoiceDetails.status === "rejected" ? "✗ Rejected" : `✓ ${capitalizeStatus(invoiceDetails.status)}`}
+          </div>
+        </div>
       )}
 
       {/* QuickBooks Integration Error Dialog */}
@@ -537,7 +546,7 @@ export default function ConfirmationModals({
               Some line items are missing required categorization. Please complete all line items before approving the invoice.
             </DialogDescription>
           </DialogHeader>
-          <div className="my-4">
+          <div className="my-4 max-h-[400px] overflow-y-auto">
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <div className="flex items-start">
                 <div className="flex-shrink-0">
@@ -570,6 +579,6 @@ export default function ConfirmationModals({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }

@@ -60,8 +60,6 @@ export default function IntegrationsView({
 
   useEffect(() => {
     if (message && type) {
-      setRedirectDialogOpen(true);
-
       // Check if this is a successful Gmail integration
       const isSuccess = String(type).toLowerCase().includes("success") ||
         String(message).toLowerCase().includes("successfully");
@@ -72,13 +70,14 @@ export default function IntegrationsView({
         // Check if Gmail needs configuration
         const gmailIntegration = integrations.find(i => i.name === "gmail");
         if (gmailIntegration && gmailIntegration.status === "success" && !gmailIntegration.startReading) {
-          // Open configure dialog after a short delay to let the success dialog show first
-          setTimeout(() => {
-            setRedirectDialogOpen(false);
-            setShouldOpenGmailConfig(true);
-          }, 1500);
+          // Directly open configure dialog, skip success message
+          setShouldOpenGmailConfig(true);
+          return;
         }
       }
+
+      // Show success/error dialog for non-Gmail or already configured
+      setRedirectDialogOpen(true);
     }
   }, [message, type, integrations]);
 

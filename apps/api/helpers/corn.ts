@@ -8,6 +8,7 @@ export const startFetchEmails = () => {
     return;
   }
   console.log('Email cronjob enabled in production mode');
+  // every 2 minutes
   nodeCron.schedule("*/2 * * * *", async () => {
     console.log(`Email sync triggered at: ${new Date().toISOString()}`);
     await axios.get(`${process.env.BACKEND_URL}/api/v1/google/emails`);

@@ -3,20 +3,6 @@
   "dialect": "postgresql",
   "entries": [
     {
-      "idx": 0,
-      "version": "7",
-      "when": 1757769990034,
-      "tag": "0000_wooden_talkback",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1760492868792,
-      "tag": "0001_large_legion",
-      "breakpoints": true
-    },
-    {
       "idx": 2,
       "version": "7",
       "when": 1761708546400,
@@ -40,8 +26,15 @@
     {
       "idx": 5,
       "version": "7",
-      "when": 1762474705000,
-      "tag": "0005_add_soft_delete_columns",
+      "when": 1763060851945,
+      "tag": "0005_rainy_lightspeed",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1763061251019,
+      "tag": "0006_slow_johnny_blaze",
       "breakpoints": true
     }
   ]

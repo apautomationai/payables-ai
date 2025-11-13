@@ -650,6 +650,61 @@ export class QuickBooksController {
     }
   };
 
+  // Sync products and accounts from QuickBooks to database
+  syncProductsAndAccounts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch products and accounts from QuickBooks API
+      const lineItemsResponse = await quickbooksService.getLineItems(integration);
+      const accountsResponse = await quickbooksService.getAccounts(integration);
+
+      // Extract items and accounts from response
+      const products = lineItemsResponse?.QueryResponse?.Item || [];
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      // Sync to database
+      const productsResult = await quickbooksService.syncProductsToDatabase(userId, products);
+      const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      res.json({
+        success: true,
+        message: "Sync completed successfully",
+        data: {
+          products: {
+            inserted: productsResult.inserted,
+            updated: productsResult.updated,
+            skipped: productsResult.skipped,
+            total: products.length,
+          },
+          accounts: {
+            inserted: accountsResult.inserted,
+            updated: accountsResult.updated,
+            skipped: accountsResult.skipped,
+            total: accounts.length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Disconnect QuickBooks integration
   disconnect = async (
     req: Request,

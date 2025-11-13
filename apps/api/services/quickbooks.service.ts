@@ -2,6 +2,8 @@ import axios from "axios";
 import { eq, and } from "drizzle-orm";
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
+import { quickbooksProductsModel } from "@/models/quickbooks-products.model";
+import { quickbooksAccountsModel } from "@/models/quickbooks-accounts.model";
 import { BadRequestError, InternalServerError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 
@@ -1053,6 +1055,216 @@ export class QuickBooksService {
         "Failed to disconnect QuickBooks integration",
       );
     }
+  }
+
+  // Sync products to database
+  async syncProductsToDatabase(
+    userId: number,
+    products: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const product of products) {
+      try {
+        const quickbooksId = product.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = product.MetaData?.CreateTime
+          ? new Date(product.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = product.MetaData?.LastUpdatedTime
+          ? new Date(product.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform product to flat structure
+        const productData = {
+          userId,
+          quickbooksId,
+          name: product.Name || null,
+          description: product.Description || null,
+          active: product.Active ?? null,
+          fullyQualifiedName: product.FullyQualifiedName || null,
+          taxable: product.Taxable ?? null,
+          unitPrice: product.UnitPrice ? product.UnitPrice.toString() : null,
+          type: product.Type || null,
+          incomeAccountValue: product.IncomeAccountRef?.value || null,
+          incomeAccountName: product.IncomeAccountRef?.name || null,
+          purchaseDesc: product.PurchaseDesc || null,
+          purchaseCost: product.PurchaseCost ? product.PurchaseCost.toString() : null,
+          expenseAccountValue: product.ExpenseAccountRef?.value || null,
+          expenseAccountName: product.ExpenseAccountRef?.name || null,
+          assetAccountValue: product.AssetAccountRef?.value || null,
+          assetAccountName: product.AssetAccountRef?.name || null,
+          trackQtyOnHand: product.TrackQtyOnHand ?? null,
+          qtyOnHand: product.QtyOnHand ? product.QtyOnHand.toString() : null,
+          invStartDate: product.InvStartDate ? new Date(product.InvStartDate) : null,
+          domain: product.domain || null,
+          sparse: product.sparse ?? null,
+          syncToken: product.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        // Check if record exists
+        const [existing] = await db
+          .select()
+          .from(quickbooksProductsModel)
+          .where(
+            and(
+              eq(quickbooksProductsModel.userId, userId),
+              eq(quickbooksProductsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+
+        if (existing) {
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+
+          if (dbUpdatedAt !== qbUpdatedAt) {
+            // Update record
+            await db
+              .update(quickbooksProductsModel)
+              .set({
+                ...productData,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksProductsModel.id, existing.id));
+            updated++;
+          } else {
+            // Skip - no changes
+            skipped++;
+          }
+        } else {
+          // Insert new record
+          await db.insert(quickbooksProductsModel).values({
+            ...productData,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing product ${product.Id}:`, error);
+        // Continue with next product
+      }
+    }
+
+    return { inserted, updated, skipped };
+  }
+
+  // Sync accounts to database
+  async syncAccountsToDatabase(
+    userId: number,
+    accounts: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const account of accounts) {
+      try {
+        const quickbooksId = account.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = account.MetaData?.CreateTime
+          ? new Date(account.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = account.MetaData?.LastUpdatedTime
+          ? new Date(account.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform account to flat structure
+        const accountData = {
+          userId,
+          quickbooksId,
+          name: account.Name || null,
+          subAccount: account.SubAccount ?? null,
+          parentRefValue: account.ParentRef?.value || null,
+          fullyQualifiedName: account.FullyQualifiedName || null,
+          active: account.Active ?? null,
+          classification: account.Classification || null,
+          accountType: account.AccountType || null,
+          accountSubType: account.AccountSubType || null,
+          currentBalance: account.CurrentBalance
+            ? account.CurrentBalance.toString()
+            : null,
+          currentBalanceWithSubAccounts: account.CurrentBalanceWithSubAccounts
+            ? account.CurrentBalanceWithSubAccounts.toString()
+            : null,
+          currencyRefValue: account.CurrencyRef?.value || null,
+          currencyRefName: account.CurrencyRef?.name || null,
+          domain: account.domain || null,
+          sparse: account.sparse ?? null,
+          syncToken: account.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        // Check if record exists
+        const [existing] = await db
+          .select()
+          .from(quickbooksAccountsModel)
+          .where(
+            and(
+              eq(quickbooksAccountsModel.userId, userId),
+              eq(quickbooksAccountsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+
+        if (existing) {
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+
+          if (dbUpdatedAt !== qbUpdatedAt) {
+            // Update record
+            await db
+              .update(quickbooksAccountsModel)
+              .set({
+                ...accountData,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksAccountsModel.id, existing.id));
+            updated++;
+          } else {
+            // Skip - no changes
+            skipped++;
+          }
+        } else {
+          // Insert new record
+          await db.insert(quickbooksAccountsModel).values({
+            ...accountData,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing account ${account.Id}:`, error);
+        // Continue with next account
+      }
+    }
+
+    return { inserted, updated, skipped };
   }
 }
 

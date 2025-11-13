@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import {
@@ -29,11 +29,13 @@ import {
   PauseCircle,
   PlayCircle,
   AlertTriangle,
+  RefreshCcw,
 } from "lucide-react";
 import client from "@/lib/axios-client";
 import type { Integration, IntegrationStatus } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
+import { syncQuickBooksData } from "@/lib/services/quickbooks.service";
 import {
   Alert,
   AlertDescription,
@@ -92,7 +94,9 @@ export function IntegrationCard({
   const isConnected = status === "success" || status === "paused";
   const formId = `form-${backendName}`;
   const isGmail = name.toLowerCase() === "gmail";
+  const isQuickBooks = name.toLowerCase() === "quickbooks";
   const IntegrationLogo = INTEGRATION_LOGOS[name];
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -106,6 +110,25 @@ export function IntegrationCard({
           ? ((error.response as any)?.data?.message as string) || "Failed to connect!"
           : "Failed to connect!";
       toast.error(connectErrorMessage);
+    }
+  };
+
+  const handleSync = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setIsSyncing(true);
+    try {
+      const result = await syncQuickBooksData();
+      toast.success("Sync completed successfully", {
+        description: `Products: ${result.data.products.inserted} inserted, ${result.data.products.updated} updated, ${result.data.products.skipped} skipped. Accounts: ${result.data.accounts.inserted} inserted, ${result.data.accounts.updated} updated, ${result.data.accounts.skipped} skipped.`,
+      });
+    } catch (error: unknown) {
+      const syncErrorMessage =
+        error && typeof error === "object" && "response" in error
+          ? ((error.response as any)?.data?.message as string) || "Failed to sync!"
+          : "Failed to sync!";
+      toast.error(syncErrorMessage);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -202,6 +225,25 @@ export function IntegrationCard({
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
               )}
+              {isQuickBooks && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" /> Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2" /> Sync
+                    </>
+                  )}
+                </Button>
+              )}
               <SubmitButton name="status" value="paused" label="Pause" variant="outline">
                 <PauseCircle className="h-4 w-4 mr-2" /> Pause
               </SubmitButton>
@@ -218,6 +260,25 @@ export function IntegrationCard({
                   defaultOpen={shouldOpenConfigDialog}
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
+              )}
+              {isQuickBooks && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" /> Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2" /> Sync
+                    </>
+                  )}
+                </Button>
               )}
               <SubmitButton name="status" value="success" label="Resume" variant="outline">
                 <PlayCircle className="h-4 w-4 mr-2 text-green-600" /> Resume

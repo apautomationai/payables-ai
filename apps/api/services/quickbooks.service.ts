@@ -1,9 +1,12 @@
 import axios from "axios";
 import { eq, and } from "drizzle-orm";
-import db from "@/lib/db";
+import db, { pool } from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
+import { quickbooksProductsModel } from "@/models/quickbooks-products.model";
+import { quickbooksAccountsModel } from "@/models/quickbooks-accounts.model";
 import { BadRequestError, InternalServerError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
+import { embeddingsService } from "./embeddings.service";
 
 // QuickBooks integration type based on generic integrations model
 interface QuickBooksIntegration {
@@ -18,6 +21,9 @@ interface QuickBooksIntegration {
   createdAt: Date | null;
   updatedAt: Date | null;
 }
+
+type QuickBooksProductRecord = typeof quickbooksProductsModel.$inferInsert;
+type QuickBooksAccountRecord = typeof quickbooksAccountsModel.$inferInsert;
 
 export class QuickBooksService {
   private clientId: string;
@@ -1053,6 +1059,433 @@ export class QuickBooksService {
         "Failed to disconnect QuickBooks integration",
       );
     }
+  }
+
+  private buildProductEmbeddingText(
+    product: Partial<QuickBooksProductRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (product.name) parts.push(`Name: ${product.name}`);
+    if (product.description) parts.push(`Description: ${product.description}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private buildAccountEmbeddingText(
+    account: Partial<QuickBooksAccountRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (account.name) parts.push(`Name: ${account.name}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private async maybeGenerateEmbedding(
+    text: string,
+    fallback?: number[] | null,
+  ): Promise<number[] | null> {
+    const normalized = text.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const embedding = await embeddingsService.generateEmbedding(normalized);
+    if (embedding && embedding.length > 0) {
+      return embedding;
+    }
+
+    return fallback ?? null;
+  }
+
+  private clampMatchCount(value?: number): number {
+    if (!value || Number.isNaN(value)) {
+      return 10;
+    }
+
+    return Math.max(1, Math.min(value, 50));
+  }
+
+
+  async hybridSearchProducts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksProductRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+
+    if (!embeddingVector) {
+      return [];
+    }
+
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          description,
+          active,
+          fully_qualified_name,
+          taxable,
+          unit_price,
+          type,
+          income_account_value,
+          income_account_name,
+          purchase_desc,
+          purchase_cost,
+          expense_account_value,
+          expense_account_name,
+          asset_account_value,
+          asset_account_name,
+          track_qty_on_hand,
+          qty_on_hand,
+          inv_start_date,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_products
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksProductRecord[];
+    } finally {
+      client.release();
+    }
+  }
+
+  async hybridSearchAccounts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksAccountRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+
+    if (!embeddingVector) {
+      return [];
+    }
+
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          sub_account,
+          parent_ref_value,
+          fully_qualified_name,
+          active,
+          classification,
+          account_type,
+          account_sub_type,
+          current_balance,
+          current_balance_with_sub_accounts,
+          currency_ref_value,
+          currency_ref_name,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_accounts
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksAccountRecord[];
+    } finally {
+      client.release();
+    }
+  }
+
+  // Sync products to database
+  async syncProductsToDatabase(
+    userId: number,
+    products: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const product of products) {
+      try {
+        const quickbooksId = product.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = product.MetaData?.CreateTime
+          ? new Date(product.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = product.MetaData?.LastUpdatedTime
+          ? new Date(product.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform product to flat structure
+        const productData = {
+          userId,
+          quickbooksId,
+          name: product.Name || null,
+          description: product.Description || null,
+          active: product.Active ?? null,
+          fullyQualifiedName: product.FullyQualifiedName || null,
+          taxable: product.Taxable ?? null,
+          unitPrice: product.UnitPrice ? product.UnitPrice.toString() : null,
+          type: product.Type || null,
+          incomeAccountValue: product.IncomeAccountRef?.value || null,
+          incomeAccountName: product.IncomeAccountRef?.name || null,
+          purchaseDesc: product.PurchaseDesc || null,
+          purchaseCost: product.PurchaseCost ? product.PurchaseCost.toString() : null,
+          expenseAccountValue: product.ExpenseAccountRef?.value || null,
+          expenseAccountName: product.ExpenseAccountRef?.name || null,
+          assetAccountValue: product.AssetAccountRef?.value || null,
+          assetAccountName: product.AssetAccountRef?.name || null,
+          trackQtyOnHand: product.TrackQtyOnHand ?? null,
+          qtyOnHand: product.QtyOnHand ? product.QtyOnHand.toString() : null,
+          invStartDate: product.InvStartDate ? new Date(product.InvStartDate) : null,
+          domain: product.domain || null,
+          sparse: product.sparse ?? null,
+          syncToken: product.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        // Check if record exists
+        const embeddingText = this.buildProductEmbeddingText(productData);
+        console.log('hit 1');
+
+        const [existing] = await db
+          .select()
+          .from(quickbooksProductsModel)
+          .where(
+            and(
+              eq(quickbooksProductsModel.userId, userId),
+              eq(quickbooksProductsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+        console.log('hit 2');
+        if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+          console.log('hit 3'); 
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
+
+          console.log('hit 4');
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+            console.log('hit 5');
+            await db
+              .update(quickbooksProductsModel)
+              .set({
+                ...productData,
+                embedding,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksProductsModel.id, existing.id));
+            console.log('hit 6');
+            updated++;
+          } else {
+            // Skip - no changes
+            console.log('hit 7');
+            skipped++;
+          }
+        } else {
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+          console.log('hit 8');
+          console.log('embedding', embedding);
+          await db.insert(quickbooksProductsModel).values({
+            ...productData,
+            embedding,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          console.log('hit 9');
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing product ${product.Id}:`, error);
+        // Continue with next product
+      }
+    }
+
+    return { inserted, updated, skipped };
+  }
+
+  // Sync accounts to database
+  async syncAccountsToDatabase(
+    userId: number,
+    accounts: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const account of accounts) {
+      try {
+        const quickbooksId = account.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = account.MetaData?.CreateTime
+          ? new Date(account.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = account.MetaData?.LastUpdatedTime
+          ? new Date(account.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform account to flat structure
+        const accountData = {
+          userId,
+          quickbooksId,
+          name: account.Name || null,
+          subAccount: account.SubAccount ?? null,
+          parentRefValue: account.ParentRef?.value || null,
+          fullyQualifiedName: account.FullyQualifiedName || null,
+          active: account.Active ?? null,
+          classification: account.Classification || null,
+          accountType: account.AccountType || null,
+          accountSubType: account.AccountSubType || null,
+          currentBalance: account.CurrentBalance
+            ? account.CurrentBalance.toString()
+            : null,
+          currentBalanceWithSubAccounts: account.CurrentBalanceWithSubAccounts
+            ? account.CurrentBalanceWithSubAccounts.toString()
+            : null,
+          currencyRefValue: account.CurrencyRef?.value || null,
+          currencyRefName: account.CurrencyRef?.name || null,
+          domain: account.domain || null,
+          sparse: account.sparse ?? null,
+          syncToken: account.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        const embeddingText = this.buildAccountEmbeddingText(accountData);
+
+        // Check if record exists
+        const [existing] = await db
+          .select()
+          .from(quickbooksAccountsModel)
+          .where(
+            and(
+              eq(quickbooksAccountsModel.userId, userId),
+              eq(quickbooksAccountsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+
+        if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
+
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+
+            await db
+              .update(quickbooksAccountsModel)
+              .set({
+                ...accountData,
+                embedding,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksAccountsModel.id, existing.id));
+            updated++;
+          } else {
+            // Skip - no changes
+            skipped++;
+          }
+        } else {
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+
+          await db.insert(quickbooksAccountsModel).values({
+            ...accountData,
+            embedding,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing account ${account.Id}:`, error);
+        // Continue with next account
+      }
+    }
+
+    return { inserted, updated, skipped };
   }
 }
 

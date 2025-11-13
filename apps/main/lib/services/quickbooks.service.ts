@@ -141,3 +141,36 @@ export async function updateLineItem(
   }
 }
 
+/**
+ * Sync QuickBooks products and accounts to database
+ */
+interface SyncResponse {
+  success: boolean;
+  message: string;
+  data: {
+    products: {
+      inserted: number;
+      updated: number;
+      skipped: number;
+      total: number;
+    };
+    accounts: {
+      inserted: number;
+      updated: number;
+      skipped: number;
+      total: number;
+    };
+  };
+}
+
+export async function syncQuickBooksData(): Promise<SyncResponse> {
+  try {
+    const response = await client.post<SyncResponse>("/api/v1/quickbooks/sync");
+    // @ts-ignore
+    return response;
+  } catch (error) {
+    console.error("Error syncing QuickBooks data:", error);
+    throw error;
+  }
+}
+

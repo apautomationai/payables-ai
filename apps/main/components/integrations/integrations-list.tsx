@@ -44,7 +44,7 @@ interface IntegrationsListProps {
     createdAt?: string | null;
     lastRead?: string | null;
     metadata?: {
-      lastErrorMessage?: string | null;
+      lastErrorMessage?: any;
       [key: string]: any;
     };
   }>;
@@ -75,7 +75,7 @@ export default function IntegrationsList({
       startReading: existing?.startReading,
       createdAt: existing?.createdAt,
       lastRead: existing?.lastRead,
-      errorMessage: existing?.metadata?.lastErrorMessage || null,
+      errorMessage: existing?.metadata?.lastErrorMessage?.message || existing?.metadata?.lastErrorMessage || null,
     } as Integration;
   });
 

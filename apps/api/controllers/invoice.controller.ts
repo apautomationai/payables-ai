@@ -91,8 +91,9 @@ class InvoiceController {
     try {
       //@ts-ignore
       const userId = req.user.id;
+      const dateRange = (req.query.dateRange as 'monthly' | 'all-time') || 'monthly';
 
-      const dashboardData = await invoiceServices.getDashboardMetrics(userId);
+      const dashboardData = await invoiceServices.getDashboardMetrics(userId, dateRange);
 
       return res.json({
         success: true,

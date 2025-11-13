@@ -4,9 +4,10 @@ import { DashboardMetrics } from "@/lib/types";
 
 interface StatsCardsProps {
   metrics: DashboardMetrics;
+  dateRange?: string;
 }
 
-export default function StatsCards({ metrics }: StatsCardsProps) {
+export default function StatsCards({ metrics, dateRange = "monthly" }: StatsCardsProps) {
   const formatCurrency = (amount: number): string => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -16,6 +17,8 @@ export default function StatsCards({ metrics }: StatsCardsProps) {
     }).format(amount);
   };
 
+  const periodLabel = dateRange === "all-time" ? "All Time" : "This Month";
+
   const stats = [
     {
       title: "Total Outstanding",
@@ -24,7 +27,7 @@ export default function StatsCards({ metrics }: StatsCardsProps) {
       icon: DollarSign,
     },
     {
-      title: "Invoices This Month",
+      title: `Invoices ${periodLabel}`,
       value: metrics.invoicesThisMonth.toString(),
       description: "Total processed",
       icon: FileText,
@@ -36,7 +39,7 @@ export default function StatsCards({ metrics }: StatsCardsProps) {
       icon: Clock,
     },
     {
-      title: "Approved This Month",
+      title: `Approved ${periodLabel}`,
       value: metrics.approvedThisMonth.toString(),
       description: "Successfully processed",
       icon: CheckCircle,

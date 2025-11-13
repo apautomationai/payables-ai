@@ -2,7 +2,7 @@ import React from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
 import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
-import { User, ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
+import { ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
 
 function getErrorMessage(error: any): string | null {
   const message = error?.error?.message || error?.message || "";
@@ -12,36 +12,20 @@ function getErrorMessage(error: any): string | null {
 }
 
 async function DashboardContent() {
-  let userName = "User";
   let dashboardData: DashboardData | null = null;
   let integrationError: string | null = null;
 
   try {
-    const [userResult, dashboardResult] = await Promise.allSettled([
-      client.get<ApiResponse<User>>("api/v1/users/me"),
-      client.get<ApiResponse<DashboardData>>("api/v1/invoice/dashboard"),
-    ]);
+    const dashboardResult = await client.get<ApiResponse<DashboardData>>("api/v1/invoice/dashboard");
 
-    if (userResult.status === "fulfilled" && userResult.value?.data) {
-      const user = userResult.value.data;
-      userName = `${user.firstName} ${user.lastName}`.trim();
-    } else if (userResult.status === "rejected") {
-      integrationError = getErrorMessage(userResult.reason);
-      if (!integrationError) {
-        console.error("Failed to fetch user data:", userResult.reason);
-      }
-    }
-
-    if (dashboardResult.status === "fulfilled" && dashboardResult.value?.data) {
-      dashboardData = dashboardResult.value.data;
-    } else if (dashboardResult.status === "rejected") {
-      integrationError = getErrorMessage(dashboardResult.reason);
-      if (!integrationError) {
-        console.error("Failed to fetch dashboard data:", dashboardResult.reason);
-      }
+    if (dashboardResult?.data) {
+      dashboardData = dashboardResult.data;
     }
   } catch (error) {
-    console.error("An unexpected error occurred while fetching dashboard data:", error);
+    integrationError = getErrorMessage(error);
+    if (!integrationError) {
+      console.error("Failed to fetch dashboard data:", error);
+    }
   }
 
   const defaultMetrics: DashboardMetrics = {
@@ -54,9 +38,7 @@ async function DashboardContent() {
 
   return (
     <DashboardClient
-      userName={userName}
-      invoices={dashboardData?.recentInvoices || []}
-      metrics={dashboardData?.metrics || defaultMetrics}
+      initialMetrics={dashboardData?.metrics || defaultMetrics}
       integrationError={integrationError}
     />
   );

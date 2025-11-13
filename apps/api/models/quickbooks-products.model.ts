@@ -8,7 +8,10 @@ import {
   boolean,
   numeric,
   varchar,
+  vector,
+  index,
 } from "drizzle-orm/pg-core";
+import { QUICKBOOKS_EMBEDDING_DIMENSION } from "@/lib/vector.constants";
 import { usersModel } from "./users.model";
 
 export const quickbooksProductsModel = pgTable(
@@ -40,9 +43,13 @@ export const quickbooksProductsModel = pgTable(
     syncToken: varchar("sync_token", { length: 50 }),
     metaDataCreateTime: timestamp("meta_data_create_time"),
     metaDataLastUpdatedTime: timestamp("meta_data_last_updated_time"),
+    embedding: vector("embedding", { dimensions: QUICKBOOKS_EMBEDDING_DIMENSION }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
-  }
+  },
+  (table) => [
+    index('quickbooks_products_embedding_idx').using('hnsw', table.embedding.op('vector_cosine_ops')),
+  ]
 );
 
 export const quickbooksProductsRelations = relations(

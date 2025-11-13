@@ -373,6 +373,76 @@ export class QuickBooksController {
     }
   };
 
+  // Hybrid search for stored QuickBooks products
+  searchProductsHybrid = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { searchTerm, limit } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!searchTerm || typeof searchTerm !== "string" || !searchTerm.trim()) {
+        throw new BadRequestError("Search term is required");
+      }
+
+      const matchCount = limit ? Number(limit) : undefined;
+      const results = await quickbooksService.hybridSearchProducts(
+        userId,
+        searchTerm,
+        Number.isNaN(matchCount) ? undefined : matchCount,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          searchTerm,
+          totalResults: results.length,
+          results,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Hybrid search for stored QuickBooks accounts
+  searchAccountsHybrid = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { searchTerm, limit } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!searchTerm || typeof searchTerm !== "string" || !searchTerm.trim()) {
+        throw new BadRequestError("Search term is required");
+      }
+
+      const matchCount = limit ? Number(limit) : undefined;
+      const results = await quickbooksService.hybridSearchAccounts(
+        userId,
+        searchTerm,
+        Number.isNaN(matchCount) ? undefined : matchCount,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          searchTerm,
+          totalResults: results.length,
+          results,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Hierarchical vendor search: email → phone → address → name
   hierarchicalVendorSearch = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
@@ -651,6 +721,98 @@ export class QuickBooksController {
   };
 
   // Sync products and accounts from QuickBooks to database
+  // Sync only QuickBooks products
+  syncProducts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch products from QuickBooks API
+      const lineItemsResponse = await quickbooksService.getLineItems(integration);
+
+      // Extract products from response
+      const products = lineItemsResponse?.QueryResponse?.Item || [];
+
+      // Sync to database (includes embedding generation)
+      const productsResult = await quickbooksService.syncProductsToDatabase(userId, [products[0]]);
+
+      res.json({
+        success: true,
+        message: "Products sync completed successfully",
+        data: {
+          products: {
+            inserted: productsResult.inserted,
+            updated: productsResult.updated,
+            skipped: productsResult.skipped,
+            total: products.length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Sync only QuickBooks accounts
+  syncAccounts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch accounts from QuickBooks API
+      const accountsResponse = await quickbooksService.getAccounts(integration);
+
+      // Extract accounts from response
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      // Sync to database (includes embedding generation)
+      const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      res.json({
+        success: true,
+        message: "Accounts sync completed successfully",
+        data: {
+          accounts: {
+            inserted: accountsResult.inserted,
+            updated: accountsResult.updated,
+            skipped: accountsResult.skipped,
+            total: accounts.length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   syncProductsAndAccounts = async (
     req: Request,
     res: Response,

@@ -1,11 +1,12 @@
 import axios from "axios";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
 import { quickbooksProductsModel } from "@/models/quickbooks-products.model";
 import { quickbooksAccountsModel } from "@/models/quickbooks-accounts.model";
 import { BadRequestError, InternalServerError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
+import { embeddingsService } from "./embeddings.service";
 
 // QuickBooks integration type based on generic integrations model
 interface QuickBooksIntegration {
@@ -20,6 +21,9 @@ interface QuickBooksIntegration {
   createdAt: Date | null;
   updatedAt: Date | null;
 }
+
+type QuickBooksProductRecord = typeof quickbooksProductsModel.$inferInsert;
+type QuickBooksAccountRecord = typeof quickbooksAccountsModel.$inferInsert;
 
 export class QuickBooksService {
   private clientId: string;
@@ -1057,6 +1061,119 @@ export class QuickBooksService {
     }
   }
 
+  private buildProductEmbeddingText(
+    product: Partial<QuickBooksProductRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (product.name) parts.push(`Name: ${product.name}`);
+    if (product.description) parts.push(`Description: ${product.description}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private buildAccountEmbeddingText(
+    account: Partial<QuickBooksAccountRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (account.name) parts.push(`Name: ${account.name}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private async maybeGenerateEmbedding(
+    text: string,
+    fallback?: number[] | null,
+  ): Promise<number[] | null> {
+    const normalized = text.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const embedding = await embeddingsService.generateEmbedding(normalized);
+    if (embedding && embedding.length > 0) {
+      return embedding;
+    }
+
+    return fallback ?? null;
+  }
+
+  private clampMatchCount(value?: number): number {
+    if (!value || Number.isNaN(value)) {
+      return 10;
+    }
+
+    return Math.max(1, Math.min(value, 50));
+  }
+
+  private buildEmbeddingLiteral(embedding: number[] | null) {
+    if (!embedding || embedding.length === 0) {
+      return sql`null`;
+    }
+
+    const embeddingString = `[${embedding.join(",")}]`;
+    return sql`${embeddingString}::extensions.vector`;
+  }
+
+  async hybridSearchProducts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksProductRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+    const embeddingLiteral = this.buildEmbeddingLiteral(embeddingVector);
+
+    const result = await db.execute(
+      sql`
+        select *
+        from hybrid_search_quickbooks_products(
+          ${userId},
+          ${textQuery},
+          ${embeddingLiteral},
+          ${maxMatches}
+        )
+      `,
+    );
+
+    return result.rows as QuickBooksProductRecord[];
+  }
+
+  async hybridSearchAccounts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksAccountRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+    const embeddingLiteral = this.buildEmbeddingLiteral(embeddingVector);
+
+    const result = await db.execute(
+      sql`
+        select *
+        from hybrid_search_quickbooks_accounts(
+          ${userId},
+          ${textQuery},
+          ${embeddingLiteral},
+          ${maxMatches}
+        )
+      `,
+    );
+
+    return result.rows as QuickBooksAccountRecord[];
+  }
+
   // Sync products to database
   async syncProductsToDatabase(
     userId: number,
@@ -1111,6 +1228,9 @@ export class QuickBooksService {
         };
 
         // Check if record exists
+        const embeddingText = this.buildProductEmbeddingText(productData);
+        console.log('hit 1');
+
         const [existing] = await db
           .select()
           .from(quickbooksProductsModel)
@@ -1121,8 +1241,11 @@ export class QuickBooksService {
             ),
           )
           .limit(1);
-
+        console.log('hit 2');
         if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+          console.log('hit 3'); 
           // Compare updated_at timestamps
           const dbUpdatedAt = existing.metaDataLastUpdatedTime
             ? new Date(existing.metaDataLastUpdatedTime).getTime()
@@ -1130,28 +1253,43 @@ export class QuickBooksService {
           const qbUpdatedAt = metaDataLastUpdatedTime
             ? metaDataLastUpdatedTime.getTime()
             : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
 
-          if (dbUpdatedAt !== qbUpdatedAt) {
-            // Update record
+          console.log('hit 4');
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+            console.log('hit 5');
             await db
               .update(quickbooksProductsModel)
               .set({
                 ...productData,
+                embedding,
                 updatedAt: new Date(),
               })
               .where(eq(quickbooksProductsModel.id, existing.id));
+            console.log('hit 6');
             updated++;
           } else {
             // Skip - no changes
+            console.log('hit 7');
             skipped++;
           }
         } else {
-          // Insert new record
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+          console.log('hit 8');
+          console.log('embedding', embedding);
           await db.insert(quickbooksProductsModel).values({
             ...productData,
+            embedding,
             createdAt: metaDataCreateTime || new Date(),
             updatedAt: metaDataLastUpdatedTime || new Date(),
           });
+          console.log('hit 9');
           inserted++;
         }
       } catch (error) {
@@ -1214,6 +1352,8 @@ export class QuickBooksService {
           metaDataLastUpdatedTime,
         };
 
+        const embeddingText = this.buildAccountEmbeddingText(accountData);
+
         // Check if record exists
         const [existing] = await db
           .select()
@@ -1227,6 +1367,9 @@ export class QuickBooksService {
           .limit(1);
 
         if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+
           // Compare updated_at timestamps
           const dbUpdatedAt = existing.metaDataLastUpdatedTime
             ? new Date(existing.metaDataLastUpdatedTime).getTime()
@@ -1234,13 +1377,19 @@ export class QuickBooksService {
           const qbUpdatedAt = metaDataLastUpdatedTime
             ? metaDataLastUpdatedTime.getTime()
             : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
 
-          if (dbUpdatedAt !== qbUpdatedAt) {
-            // Update record
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+
             await db
               .update(quickbooksAccountsModel)
               .set({
                 ...accountData,
+                embedding,
                 updatedAt: new Date(),
               })
               .where(eq(quickbooksAccountsModel.id, existing.id));
@@ -1250,9 +1399,13 @@ export class QuickBooksService {
             skipped++;
           }
         } else {
-          // Insert new record
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+
           await db.insert(quickbooksAccountsModel).values({
             ...accountData,
+            embedding,
             createdAt: metaDataCreateTime || new Date(),
             updatedAt: metaDataLastUpdatedTime || new Date(),
           });

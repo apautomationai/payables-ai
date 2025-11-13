@@ -258,12 +258,30 @@ export default function ConfirmationModals({
             })
           });
 
-        } catch (error) {
-          toast.error("Approval Failed", {
-            description: "Unable to approve. Please try again",
-            duration: 5000,
+        } catch (error: any) {
+          // Extract error message from API response
+          let errorMessage = "Unable to create bill in QuickBooks. Please try again";
+
+          if (error.response?.data?.error?.message) {
+            // Format: { error: { message: "..." } }
+            errorMessage = error.response.data.error.message;
+          } else if (error.response?.data?.message) {
+            // Format: { message: "..." }
+            errorMessage = error.response.data.message;
+          } else if (error.response?.data?.error) {
+            // Format: { error: "..." }
+            errorMessage = error.response.data.error;
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+
+          toast.dismiss();
+          toast.error("Bill Creation Failed", {
+            description: errorMessage,
+            duration: 7000,
           });
           setIsDialogOpen(false);
+          setIsApproving(false);
           return;
         }
 
@@ -279,6 +297,7 @@ export default function ConfirmationModals({
           onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
         }
 
+        toast.dismiss();
         toast.success("Invoice approved and bill created in QuickBooks successfully!");
 
         // Close the dialog first
@@ -314,6 +333,7 @@ export default function ConfirmationModals({
       }
 
       // Show error toast with specific message
+      toast.dismiss();
       toast.error("Approval Failed", {
         description: errorMessage,
         duration: 5000,
@@ -343,6 +363,7 @@ export default function ConfirmationModals({
         onInvoiceDetailsUpdate(updatedDetails as InvoiceDetails);
       }
 
+      toast.dismiss();
       toast.success("Invoice has been rejected");
 
       // Close the dialog first
@@ -352,6 +373,7 @@ export default function ConfirmationModals({
       console.error("Error rejecting invoice:", error.response?.data || error.message);
 
       const errorMessage = error.response?.data?.error || error.message || "Failed to reject invoice";
+      toast.dismiss();
       toast.error("Rejection Failed", {
         description: errorMessage
       });

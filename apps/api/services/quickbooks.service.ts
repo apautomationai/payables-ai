@@ -347,7 +347,7 @@ export class QuickBooksService {
 
   // Get tax accounts for bill creation
   async getTaxAccounts(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Other Current Liability' OR AccountType = 'Expense'");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType IN ('Other Current Liability', 'Expense')");
   }
 
   // Get accounts from QuickBooks (excluding Accounts Payable and other invalid types for bills)

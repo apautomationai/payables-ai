@@ -346,7 +346,7 @@ export default function InvoiceReviewClient({
       console.log('Invoice deleted, refreshing list:', invoiceId);
       refreshInvoiceData();
     },
-    enableToasts: true,
+    enableToasts: false,
     autoConnect: true,
   });
 

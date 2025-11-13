@@ -1,27 +1,30 @@
 "use client";
 
-import React from "react";
-import { InvoiceDetails, DashboardMetrics } from "@/lib/types";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import React, { useState } from "react";
+import { DashboardMetrics } from "@/lib/types";
 import StatsCards from "./stats-cards";
-import InvoiceList from "./invoice-list";
-import AttachmentViewer from "./attachment-viewer";
-import InvoiceDetailsComponent from "./invoice-list-details";
-import NewInvoiceButton from "./new-invoice-button";
+import DateRangeSelector, { DateRangeType } from "./date-range-selector";
+import InvoiceStatusChart from "./invoice-status-chart";
+import InvoiceTrendChart from "./invoice-trend-chart";
 
 interface DashboardDataViewProps {
-  invoices: InvoiceDetails[];
   metrics: DashboardMetrics;
-  selectedInvoice: InvoiceDetails | null;
-  onSelectInvoice: (invoiceId: number) => void;
+  onDateRangeChange: (dateRange: DateRangeType) => void;
+  isLoading: boolean;
 }
 
 export default function DashboardDataView({
-  invoices,
   metrics,
-  selectedInvoice,
-  onSelectInvoice,
+  onDateRangeChange,
+  isLoading,
 }: DashboardDataViewProps) {
+  const [dateRange, setDateRange] = useState<DateRangeType>("monthly");
+
+  const handleDateRangeChange = (newRange: DateRangeType) => {
+    setDateRange(newRange);
+    onDateRangeChange(newRange);
+  };
+
   return (
     <div className="flex flex-col h-full min-h-screen overflow-hidden">
       <header className="flex items-center justify-between py-2 flex-shrink-0">
@@ -31,39 +34,20 @@ export default function DashboardDataView({
             Monitor your accounts payable workflow and pending invoices.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <NewInvoiceButton />
-        </div>
+        <DateRangeSelector
+          selectedRange={dateRange}
+          onRangeChange={handleDateRangeChange}
+        />
       </header>
 
-      <StatsCards metrics={metrics} />
+      <div className={isLoading ? "opacity-50 pointer-events-none" : ""}>
+        <StatsCards metrics={metrics} dateRange={dateRange} />
 
-      <main className="grid grid-cols-1 md:grid-cols-5 gap-6 mt-4 flex-1 overflow-hidden">
-        <div className="md:col-span-2 flex flex-col h-full">
-          <InvoiceList
-            invoices={invoices}
-            selectedInvoiceId={selectedInvoice?.id || null}
-            onSelectInvoice={onSelectInvoice}
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          <InvoiceStatusChart metrics={metrics} dateRange={dateRange} />
+          <InvoiceTrendChart dateRange={dateRange} />
         </div>
-
-        <div className="md:col-span-3 hidden md:flex flex-col h-full">
-          <Tabs defaultValue="document" className="flex flex-col h-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="document">Document</TabsTrigger>
-              <TabsTrigger value="details">Details</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="document" className="flex-1 overflow-hidden mt-2">
-              <AttachmentViewer selectedInvoice={selectedInvoice} />
-            </TabsContent>
-
-            <TabsContent value="details" className="flex-1 overflow-hidden mt-2">
-              <InvoiceDetailsComponent invoice={selectedInvoice} />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </main>
+      </div>
     </div>
   );
 }

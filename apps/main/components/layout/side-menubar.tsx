@@ -70,7 +70,7 @@ const NavLink = ({
             "hover:bg-accent hover:text-primary hover:shadow-sm",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isActive &&
-              "bg-gradient-to-r from-primary/10 to-primary/5 text-primary font-semibold shadow-sm border-l-4 border-l-primary",
+            "bg-gradient-to-r from-primary/10 to-primary/5 text-primary font-semibold shadow-sm border-l-4 border-l-primary",
             isCollapsed ? "justify-center px-2" : "pl-4"
           )}
         >
@@ -248,7 +248,7 @@ export default function SideMenuBar({
                 isActive={pathname === "/dashboard"}
                 isCollapsed={isCollapsed}
               >
-                Dashboard
+                Overview
               </NavLink>
               <NavLink
                 href="/invoice-review"

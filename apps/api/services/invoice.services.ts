@@ -683,12 +683,18 @@ export class InvoiceServices {
     }
   }
 
-  async getDashboardMetrics(userId: number) {
+  async getDashboardMetrics(userId: number, dateRange: 'monthly' | 'all-time' = 'monthly') {
     try {
-      // Calculate current month boundaries
+      // Calculate date boundaries based on range
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+
+      if (dateRange === 'monthly') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      }
+      // For 'all-time', startDate and endDate remain null (no date filtering)
 
       // Fetch last 10 invoices with full details including attachment URL
       const recentInvoices = await db
@@ -710,60 +716,68 @@ export class InvoiceServices {
         .orderBy(desc(invoiceModel.createdAt))
         .limit(10);
 
-      // Count invoices created this month
+      // Count invoices in the selected date range
+      const invoiceConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+      ];
+      if (startDate && endDate) {
+        invoiceConditions.push(gte(invoiceModel.createdAt, startDate));
+        invoiceConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [invoicesThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.isDeleted, false),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...invoiceConditions));
 
-      // Count pending invoices this month
+      // Count pending invoices in the selected date range
+      const pendingConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "pending"),
+      ];
+      if (startDate && endDate) {
+        pendingConditions.push(gte(invoiceModel.createdAt, startDate));
+        pendingConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [pendingThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.isDeleted, false),
-            eq(invoiceModel.status, "pending"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...pendingConditions));
 
-      // Count approved invoices this month
+      // Count approved invoices in the selected date range
+      const approvedConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "approved"),
+      ];
+      if (startDate && endDate) {
+        approvedConditions.push(gte(invoiceModel.createdAt, startDate));
+        approvedConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [approvedThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.isDeleted, false),
-            eq(invoiceModel.status, "approved"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...approvedConditions));
 
-      // Count rejected invoices this month
+      // Count rejected invoices in the selected date range
+      const rejectedConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "rejected"),
+      ];
+      if (startDate && endDate) {
+        rejectedConditions.push(gte(invoiceModel.createdAt, startDate));
+        rejectedConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [rejectedThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.isDeleted, false),
-            eq(invoiceModel.status, "rejected"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...rejectedConditions));
 
       // Calculate total outstanding (sum of totalAmount for ALL pending invoices)
       const [totalOutstandingResult] = await db

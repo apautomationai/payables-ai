@@ -39,19 +39,19 @@ const GoogleIcon = (props: React.SVGProps<SVGSVGElement>) => (
 
 const MicrosoftIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" {...props}>
-    <path fill="#ff5722" d="M22 22H6V6h16v16z"/>
-    <path fill="#4caf50" d="M42 22H26V6h16v16z"/>
-    <path fill="#ffc107" d="M42 42H26V26h16v16z"/>
-    <path fill="#03a9f4" d="M22 42H6V26h16v16z"/>
+    <path fill="#ff5722" d="M22 22H6V6h16v16z" />
+    <path fill="#4caf50" d="M42 22H26V6h16v16z" />
+    <path fill="#ffc107" d="M42 42H26V26h16v16z" />
+    <path fill="#03a9f4" d="M22 42H6V26h16v16z" />
   </svg>
 );
 
 function SubmitButton() {
   const { pending } = useFormStatus();
   return (
-    <Button 
+    <Button
       className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-gray-900 font-bold py-3 px-4 rounded-none transition-all duration-300 shadow-lg shadow-yellow-500/50 hover:shadow-yellow-400/60 border-2 border-yellow-600 uppercase relative overflow-hidden group"
-      type="submit" 
+      type="submit"
       disabled={pending}
     >
       {pending ? (
@@ -66,16 +66,16 @@ function SubmitButton() {
   );
 }
 
-function PasswordInput({ 
-  id, 
-  name, 
-  placeholder, 
-  errors 
-}: { 
-  id: string; 
-  name: string; 
-  placeholder: string; 
-  errors?: string[]; 
+function PasswordInput({
+  id,
+  name,
+  placeholder,
+  errors
+}: {
+  id: string;
+  name: string;
+  placeholder: string;
+  errors?: string[];
 }) {
   const [showPassword, setShowPassword] = useState(false);
 
@@ -145,161 +145,162 @@ export default function SignUpForm() {
       </div>
 
       <div className="space-y-6">
-          <div className="grid grid-cols-2 gap-3">
-            <Button 
-              variant="outline"
-              disabled
-              className="h-11 cursor-not-allowed bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
-            >
-              <GoogleIcon className="mr-2 h-4 w-4 relative z-10" /> 
-              <span className="relative z-10">Google</span>
-            </Button>
-            <Button 
-              variant="outline" 
-              disabled
-              className="h-11 bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
-            >
-              <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" /> 
-              <span className="relative z-10">Microsoft</span>
-            </Button>
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="outline"
+            disabled
+            className="h-11 cursor-not-allowed bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
+          >
+            <GoogleIcon className="mr-2 h-4 w-4 relative z-10" />
+            <span className="relative z-10">Google</span>
+          </Button>
+          <Button
+            variant="outline"
+            disabled
+            className="h-11 bg-gray-800 border-4 border-gray-600 hover:bg-gray-700 hover:border-gray-500 text-gray-200 rounded-none transition-all duration-300 relative overflow-hidden group uppercase"
+          >
+            <MicrosoftIcon className="mr-2 h-4 w-4 relative z-10" />
+            <span className="relative z-10">Microsoft</span>
+          </Button>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t-2 border-gray-600" />
           </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t-2 border-gray-600" />
-            </div>
-            <div className="relative flex justify-center">
-              <span className="bg-gradient-to-br from-gray-900 to-black px-3 text-sm text-gray-400">
-                Or sign up with email
-              </span>
-            </div>
+          <div className="relative flex justify-center">
+            <span className="bg-gradient-to-br from-gray-900 to-black px-3 text-sm text-gray-400">
+              Or sign up with email
+            </span>
           </div>
+        </div>
 
-          <form action={formAction} className="space-y-5">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label htmlFor="firstName" className="text-gray-300 font-medium text-sm">
-                  First Name<span className="text-red-400 ml-1">*</span>
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    placeholder="John"
-                    required
-                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
-                  />
-                </div>
-                {state.errors?.firstName && (
-                  <p className="text-sm text-red-400 mt-1">{state.errors.firstName[0]}</p>
-                )}
-              </div>
-              
-              <div className="space-y-3">
-                <Label htmlFor="lastName" className="text-gray-300 font-medium text-sm">
-                  Last Name<span className="text-red-400 ml-1">*</span>
-                </Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    placeholder="Doe"
-                    required
-                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
-                  />
-                </div>
-                {state.errors?.lastName && (
-                  <p className="text-sm text-red-400 mt-1">{state.errors.lastName[0]}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-3">
-                <Label htmlFor="phone" className="text-gray-300 font-medium text-sm">
-                  Phone Number
-                </Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
-                  <Input
-                    id="phone"
-                    name="phone"
-                    placeholder="+1234567890"
-                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
-                  />
-                </div>
-                {state.errors?.phone && (
-                  <p className="text-sm text-red-400 mt-1">{state.errors.phone[0]}</p>
-                )}
-              </div>
-
-              <div className="space-y-3">
-                <Label htmlFor="businessName" className="text-gray-300 font-medium text-sm">
-                  Business Name
-                </Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
-                  <Input
-                    id="businessName"
-                    name="businessName"
-                    placeholder="Business Name"
-                    className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
-                  />
-                </div>
-                {state.errors?.businessName && (
-                  <p className="text-sm text-red-400 mt-1">{state.errors.businessName[0]}</p>
-                )}
-              </div>
-            </div>
-
+        <form action={formAction} className="space-y-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-3">
-              <Label htmlFor="email" className="text-gray-300 font-medium text-sm">
-                Email Address<span className="text-red-400 ml-1">*</span>
+              <Label htmlFor="firstName" className="text-gray-300 font-medium text-sm">
+                First Name<span className="text-red-400 ml-1">*</span>
               </Label>
               <div className="relative">
-                <AtSign className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
                 <Input
-                  id="email"
-                  name="email"
-                  type="email"
+                  id="firstName"
+                  name="firstName"
+                  placeholder="John"
                   required
-                  placeholder="you@example.com"
                   className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
                 />
               </div>
-              {state.errors?.email && (
-                <p className="text-sm text-red-400 mt-1">{state.errors.email[0]}</p>
+              {state.errors?.firstName && (
+                <p className="text-sm text-red-400 mt-1">{state.errors.firstName[0]}</p>
               )}
             </div>
 
-            <PasswordInput 
-              id="password"
-              name="password"
-              placeholder="6+ characters"
-              errors={state.errors?.password}
-            />
-
-            {state.errors?._form && (
-              <div className="p-3 bg-red-900/20 border-4 border-red-800 rounded-none relative overflow-hidden">
-                <p className="text-sm text-red-400 text-center relative z-10">{state.errors._form[0]}</p>
+            <div className="space-y-3">
+              <Label htmlFor="lastName" className="text-gray-300 font-medium text-sm">
+                Last Name<span className="text-red-400 ml-1">*</span>
+              </Label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
+                <Input
+                  id="lastName"
+                  name="lastName"
+                  placeholder="Doe"
+                  required
+                  className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
+                />
               </div>
-            )}
-
-            <SubmitButton />
-          </form>
-
-          <div className="text-sm text-gray-400 text-center pt-4 border-t-2 border-gray-600">
-            Already have an account?{" "}
-            <Link
-              href="/sign-in"
-              className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300 underline underline-offset-4"
-            >
-              Sign In
-            </Link>
+              {state.errors?.lastName && (
+                <p className="text-sm text-red-400 mt-1">{state.errors.lastName[0]}</p>
+              )}
+            </div>
           </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-3">
+              <Label htmlFor="phone" className="text-gray-300 font-medium text-sm">
+                Phone Number
+              </Label>
+              <div className="relative">
+                <Phone className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
+                <Input
+                  id="phone"
+                  name="phone"
+                  placeholder="+1234567890"
+                  className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
+                />
+              </div>
+              {state.errors?.phone && (
+                <p className="text-sm text-red-400 mt-1">{state.errors.phone[0]}</p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <Label htmlFor="businessName" className="text-gray-300 font-medium text-sm">
+                Business Name<span className="text-red-400 ml-1">*</span>
+              </Label>
+              <div className="relative">
+                <Building2 className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
+                <Input
+                  id="businessName"
+                  name="businessName"
+                  placeholder="Business Name"
+                  required
+                  className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
+                />
+              </div>
+              {state.errors?.businessName && (
+                <p className="text-sm text-red-400 mt-1">{state.errors.businessName[0]}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label htmlFor="email" className="text-gray-300 font-medium text-sm">
+              Email Address<span className="text-red-400 ml-1">*</span>
+            </Label>
+            <div className="relative">
+              <AtSign className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400 z-20" />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                className="pl-10 h-11 bg-gray-800 border-4 border-gray-600 text-white placeholder-gray-400 rounded-none focus:ring-2 focus:ring-yellow-500 focus:border-yellow-600 transition-all duration-300 relative z-10"
+              />
+            </div>
+            {state.errors?.email && (
+              <p className="text-sm text-red-400 mt-1">{state.errors.email[0]}</p>
+            )}
+          </div>
+
+          <PasswordInput
+            id="password"
+            name="password"
+            placeholder="6+ characters"
+            errors={state.errors?.password}
+          />
+
+          {state.errors?._form && (
+            <div className="p-3 bg-red-900/20 border-4 border-red-800 rounded-none relative overflow-hidden">
+              <p className="text-sm text-red-400 text-center relative z-10">{state.errors._form[0]}</p>
+            </div>
+          )}
+
+          <SubmitButton />
+        </form>
+
+        <div className="text-sm text-gray-400 text-center pt-4 border-t-2 border-gray-600">
+          Already have an account?{" "}
+          <Link
+            href="/sign-in"
+            className="font-medium text-yellow-400 hover:text-yellow-300 transition-colors duration-300 underline underline-offset-4"
+          >
+            Sign In
+          </Link>
         </div>
+      </div>
     </div>
   );
 }

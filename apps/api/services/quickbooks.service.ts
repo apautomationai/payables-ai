@@ -1,6 +1,6 @@
 import axios from "axios";
-import { eq, and, sql } from "drizzle-orm";
-import db from "@/lib/db";
+import { eq, and } from "drizzle-orm";
+import db, { pool } from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
 import { quickbooksProductsModel } from "@/models/quickbooks-products.model";
 import { quickbooksAccountsModel } from "@/models/quickbooks-accounts.model";
@@ -1107,14 +1107,6 @@ export class QuickBooksService {
     return Math.max(1, Math.min(value, 50));
   }
 
-  private buildEmbeddingLiteral(embedding: number[] | null) {
-    if (!embedding || embedding.length === 0) {
-      return sql`null`;
-    }
-
-    const embeddingString = `[${embedding.join(",")}]`;
-    return sql`${embeddingString}::extensions.vector`;
-  }
 
   async hybridSearchProducts(
     userId: number,
@@ -1128,21 +1120,62 @@ export class QuickBooksService {
 
     const maxMatches = this.clampMatchCount(matchCount);
     const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
-    const embeddingLiteral = this.buildEmbeddingLiteral(embeddingVector);
 
-    const result = await db.execute(
-      sql`
-        select *
-        from hybrid_search_quickbooks_products(
-          ${userId},
-          ${textQuery},
-          ${embeddingLiteral},
-          ${maxMatches}
-        )
-      `,
-    );
+    if (!embeddingVector) {
+      return [];
+    }
 
-    return result.rows as QuickBooksProductRecord[];
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          description,
+          active,
+          fully_qualified_name,
+          taxable,
+          unit_price,
+          type,
+          income_account_value,
+          income_account_name,
+          purchase_desc,
+          purchase_cost,
+          expense_account_value,
+          expense_account_name,
+          asset_account_value,
+          asset_account_name,
+          track_qty_on_hand,
+          qty_on_hand,
+          inv_start_date,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_products
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksProductRecord[];
+    } finally {
+      client.release();
+    }
   }
 
   async hybridSearchAccounts(
@@ -1157,21 +1190,56 @@ export class QuickBooksService {
 
     const maxMatches = this.clampMatchCount(matchCount);
     const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
-    const embeddingLiteral = this.buildEmbeddingLiteral(embeddingVector);
 
-    const result = await db.execute(
-      sql`
-        select *
-        from hybrid_search_quickbooks_accounts(
-          ${userId},
-          ${textQuery},
-          ${embeddingLiteral},
-          ${maxMatches}
-        )
-      `,
-    );
+    if (!embeddingVector) {
+      return [];
+    }
 
-    return result.rows as QuickBooksAccountRecord[];
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          sub_account,
+          parent_ref_value,
+          fully_qualified_name,
+          active,
+          classification,
+          account_type,
+          account_sub_type,
+          current_balance,
+          current_balance_with_sub_accounts,
+          currency_ref_value,
+          currency_ref_name,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_accounts
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksAccountRecord[];
+    } finally {
+      client.release();
+    }
   }
 
   // Sync products to database

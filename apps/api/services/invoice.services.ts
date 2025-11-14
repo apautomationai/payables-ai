@@ -625,6 +625,54 @@ export class InvoiceServices {
     }
   }
 
+  async createLineItem(
+    lineItemData: {
+      invoiceId: number;
+      item_name: string;
+      description: string | null;
+      quantity: string;
+      rate: string;
+      amount: string;
+    },
+    userId: number
+  ) {
+    try {
+      // Verify invoice exists and belongs to user
+      const [invoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, lineItemData.invoiceId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!invoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Create the line item
+      const [newLineItem] = await db
+        .insert(lineItemsModel)
+        .values({
+          invoiceId: lineItemData.invoiceId,
+          item_name: lineItemData.item_name,
+          description: lineItemData.description,
+          quantity: lineItemData.quantity,
+          rate: lineItemData.rate,
+          amount: lineItemData.amount,
+          isDeleted: false,
+        })
+        .returning();
+
+      return newLineItem;
+    } catch (error) {
+      console.error("Error creating line item:", error);
+      throw error;
+    }
+  }
+
   async updateLineItem(
     lineItemId: number,
     updateData: {

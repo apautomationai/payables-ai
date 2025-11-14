@@ -15,6 +15,7 @@ import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
 import { LineItemEditor } from "./line-item-editor";
+import { AddLineItemDialog } from "./add-line-item-dialog";
 
 const FormField = ({
   fieldKey,
@@ -202,6 +203,18 @@ export default function InvoiceDetailsForm({
       const newChanges = { ...prev };
       delete newChanges[lineItemId];
       return newChanges;
+    });
+  };
+
+  const handleLineItemAdded = (newLineItem: LineItem) => {
+    // Add to local state and sort alphabetically
+    setLineItems((prevItems) => {
+      const updatedItems = [...prevItems, newLineItem];
+      return updatedItems.sort((a, b) => {
+        const nameA = (a.item_name || '').toLowerCase();
+        const nameB = (b.item_name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
     });
   };
 
@@ -427,6 +440,16 @@ export default function InvoiceDetailsForm({
                 !isLoadingLineItems && (
                   <p className="text-sm text-muted-foreground">No line items found</p>
                 )
+              )}
+
+              {/* Add Line Item Button */}
+              {invoiceDetails?.id && (
+                <div className="mt-3 w-full">
+                  <AddLineItemDialog
+                    invoiceId={invoiceDetails.id}
+                    onLineItemAdded={handleLineItemAdded}
+                  />
+                </div>
               )}
             </div>
           </div>

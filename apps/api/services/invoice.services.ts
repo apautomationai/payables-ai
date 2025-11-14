@@ -593,7 +593,12 @@ export class InvoiceServices {
       const lineItems = await db
         .select()
         .from(lineItemsModel)
-        .where(eq(lineItemsModel.invoiceId, invoiceId));
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false)
+          )
+        );
 
       return lineItems;
     } catch (error) {
@@ -679,6 +684,43 @@ export class InvoiceServices {
       return updatedLineItem;
     } catch (error) {
       console.error("Error updating line item:", error);
+      throw error;
+    }
+  }
+
+  async deleteLineItem(lineItemId: number, userId: number) {
+    try {
+      // Verify line item exists and belongs to user's invoice
+      const [existingLineItem] = await db
+        .select({
+          lineItem: lineItemsModel,
+          invoice: invoiceModel,
+        })
+        .from(lineItemsModel)
+        .innerJoin(invoiceModel, eq(lineItemsModel.invoiceId, invoiceModel.id))
+        .where(
+          and(
+            eq(lineItemsModel.id, lineItemId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!existingLineItem) {
+        throw new NotFoundError("Line item not found or access denied");
+      }
+
+      // Soft delete by setting isDeleted to true
+      await db
+        .update(lineItemsModel)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date()
+        })
+        .where(eq(lineItemsModel.id, lineItemId));
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting line item:", error);
       throw error;
     }
   }

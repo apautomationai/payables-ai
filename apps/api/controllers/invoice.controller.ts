@@ -356,6 +356,36 @@ class InvoiceController {
     }
   }
 
+  async deleteLineItem(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      if (!id) {
+        throw new BadRequestError("Line item ID is required");
+      }
+
+      const lineItemId = parseInt(id, 10);
+      if (isNaN(lineItemId)) {
+        throw new BadRequestError("Line item ID must be a valid number");
+      }
+
+      await invoiceServices.deleteLineItem(lineItemId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: "Line item deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting line item:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async updateInvoiceStatus(req: Request, res: Response) {
     try {
       //@ts-ignore

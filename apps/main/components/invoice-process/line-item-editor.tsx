@@ -28,11 +28,12 @@ interface LineItemEditorProps {
   lineItem: LineItem;
   onUpdate?: (updatedLineItem: LineItem) => void;
   onChange?: (lineItemId: number, changes: Partial<LineItem>) => void;
+  onDelete?: (lineItemId: number) => void;
   isEditing?: boolean;
   isQuickBooksConnected?: boolean | null;
 }
 
-export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false, isQuickBooksConnected = null }: LineItemEditorProps) {
+export function LineItemEditor({ lineItem, onUpdate, onChange, onDelete, isEditing = false, isQuickBooksConnected = null }: LineItemEditorProps) {
   const router = useRouter();
   const [itemType, setItemType] = useState<'account' | 'product' | null>(lineItem.itemType || null);
   const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
@@ -44,6 +45,8 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false
     lineItem.resourceId ? String(lineItem.resourceId) : null
   );
   const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Editable fields state
   const [quantity, setQuantity] = useState(lineItem.quantity || "1");
@@ -234,6 +237,25 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false
     }
   };
 
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await client.delete(`/api/v1/invoice/line-items/${lineItem.id}`);
+      toast.success("Line item deleted successfully");
+      setIsDeleteDialogOpen(false);
+
+      // Notify parent to remove from list
+      if (onDelete) {
+        onDelete(lineItem.id);
+      }
+    } catch (error) {
+      console.error("Error deleting line item:", error);
+      toast.error("Failed to delete line item");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className={cn(
       "bg-muted/50 rounded-lg p-3 text-sm space-y-3",
@@ -251,6 +273,30 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false
             </p>
           )}
         </div>
+        {isEditing && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsDeleteDialogOpen(true)}
+            className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M3 6h18" />
+              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+            </svg>
+          </Button>
+        )}
       </div>
 
       {/* Editable Fields */}
@@ -364,6 +410,49 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false
       )}
 
 
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Line Item</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this line item? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="my-4">
+            <div className="bg-muted rounded-lg p-4">
+              <p className="text-sm font-medium">{lineItem.item_name || `Item ${lineItem.id}`}</p>
+              {lineItem.description && (
+                <p className="text-sm text-muted-foreground mt-1">{lineItem.description}</p>
+              )}
+              <div className="mt-2 text-sm">
+                <span className="text-muted-foreground">Amount: </span>
+                <span className="font-medium">${lineItem.amount || '0.00'}</span>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isDeleting}>Cancel</Button>
+            </DialogClose>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* QuickBooks Integration Error Dialog (same as in confirmation modals) */}
       <Dialog open={isQuickBooksErrorOpen} onOpenChange={setIsQuickBooksErrorOpen}>

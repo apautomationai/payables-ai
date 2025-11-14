@@ -36,6 +36,13 @@
       "when": 1763061251019,
       "tag": "0006_slow_johnny_blaze",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1763163752761,
+      "tag": "0007_charming_the_hunter",
+      "breakpoints": true
     }
   ]
 }

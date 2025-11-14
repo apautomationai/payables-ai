@@ -40,4 +40,7 @@ router.get("/line-items/invoice/:invoiceId", authenticate, requireSubscriptionAc
 // Update a line item
 router.patch("/line-items/:id", authenticate, requireSubscriptionAccess, invoiceController.updateLineItem);
 
+// Delete a line item
+router.delete("/line-items/:id", authenticate, requireSubscriptionAccess, invoiceController.deleteLineItem);
+
 export default router;

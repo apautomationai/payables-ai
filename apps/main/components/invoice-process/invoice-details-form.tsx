@@ -193,6 +193,18 @@ export default function InvoiceDetailsForm({
     }
   };
 
+  const handleLineItemDelete = (lineItemId: number) => {
+    // Remove from local state immediately for UI update
+    setLineItems((prevItems) => prevItems.filter((item) => item.id !== lineItemId));
+
+    // Remove any pending changes for this line item
+    setLineItemChanges((prev) => {
+      const newChanges = { ...prev };
+      delete newChanges[lineItemId];
+      return newChanges;
+    });
+  };
+
   // Method to save all line item changes
   const saveLineItemChanges = async () => {
     const changeEntries = Object.entries(lineItemChanges);
@@ -405,6 +417,7 @@ export default function InvoiceDetailsForm({
                       lineItem={item}
                       onUpdate={handleLineItemUpdate}
                       onChange={handleLineItemChange}
+                      onDelete={handleLineItemDelete}
                       isEditing={true}
                       isQuickBooksConnected={isQuickBooksConnected}
                     />

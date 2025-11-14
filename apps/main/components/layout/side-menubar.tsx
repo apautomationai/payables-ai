@@ -256,7 +256,7 @@ export default function SideMenuBar({
                 isActive={pathname.startsWith("/invoice-review")}
                 isCollapsed={isCollapsed}
               >
-                Invoice Review
+                Invoices
                 {/* <span className={cn(
                   "ml-2 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full",
                   isCollapsed && "hidden"

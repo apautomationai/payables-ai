@@ -140,6 +140,10 @@ interface InvoiceDetailsFormProps {
   onApprovalSuccess?: () => void;
   onInvoiceDetailsUpdate?: (updatedDetails: InvoiceDetails) => void;
   onFieldChange?: () => void;
+  lineItemChangesRef?: React.MutableRefObject<{
+    saveLineItemChanges: () => Promise<void>;
+    hasChanges: () => boolean;
+  } | null>;
 }
 
 export default function InvoiceDetailsForm({
@@ -157,12 +161,14 @@ export default function InvoiceDetailsForm({
   onApprovalSuccess,
   onInvoiceDetailsUpdate,
   onFieldChange,
+  lineItemChangesRef,
 }: InvoiceDetailsFormProps) {
 
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
   const [localInvoiceDetails, setLocalInvoiceDetails] = useState<InvoiceDetails>(invoiceDetails);
   const [isQuickBooksConnected, setIsQuickBooksConnected] = useState<boolean | null>(null);
+  const [lineItemChanges, setLineItemChanges] = useState<Record<number, Partial<LineItem>>>({});
 
   const handleLineItemUpdate = (updatedLineItem: LineItem) => {
     setLineItems((prevItems) =>
@@ -171,6 +177,68 @@ export default function InvoiceDetailsForm({
       )
     );
   };
+
+  const handleLineItemChange = (lineItemId: number, changes: Partial<LineItem>) => {
+    setLineItemChanges((prev) => ({
+      ...prev,
+      [lineItemId]: {
+        ...prev[lineItemId],
+        ...changes,
+      },
+    }));
+
+    // Notify parent that there are unsaved changes
+    if (onFieldChange) {
+      onFieldChange();
+    }
+  };
+
+  // Method to save all line item changes
+  const saveLineItemChanges = async () => {
+    const changeEntries = Object.entries(lineItemChanges);
+    if (changeEntries.length === 0) {
+      return; // No changes to save
+    }
+
+    try {
+      // Save all line item changes in parallel
+      await Promise.all(
+        changeEntries.map(([lineItemId, changes]) =>
+          client.patch(`/api/v1/invoice/line-items/${lineItemId}`, changes)
+        )
+      );
+
+      // Clear the changes after successful save
+      setLineItemChanges({});
+
+      // Refresh line items to get updated data
+      if (invoiceDetails?.id) {
+        const response: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        if (response.success) {
+          // Sort line items by name (item_name)
+          const sortedLineItems = [...response.data].sort((a, b) => {
+            const nameA = (a.item_name || '').toLowerCase();
+            const nameB = (b.item_name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          setLineItems(sortedLineItems);
+        }
+      }
+    } catch (error) {
+      console.error("Error saving line item changes:", error);
+      throw error; // Re-throw to let parent handle the error
+    }
+  };
+
+  // Expose saveLineItemChanges to parent through ref
+  useEffect(() => {
+    if (lineItemChangesRef) {
+      lineItemChangesRef.current = {
+        saveLineItemChanges,
+        hasChanges: () => Object.keys(lineItemChanges).length > 0,
+      };
+    }
+  }, [lineItemChanges, lineItemChangesRef]);
 
   // QuickBooks integration check function (same as in confirmation modals)
   const checkQuickBooksIntegration = async (): Promise<boolean> => {
@@ -220,7 +288,13 @@ export default function InvoiceDetailsForm({
       try {
         const response: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
         if (response.success) {
-          setLineItems(response.data);
+          // Sort line items by name (item_name)
+          const sortedLineItems = [...response.data].sort((a, b) => {
+            const nameA = (a.item_name || '').toLowerCase();
+            const nameB = (b.item_name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          setLineItems(sortedLineItems);
         }
       } catch (error) {
         console.error("Error fetching line items:", error);
@@ -330,6 +404,7 @@ export default function InvoiceDetailsForm({
                       key={item.id}
                       lineItem={item}
                       onUpdate={handleLineItemUpdate}
+                      onChange={handleLineItemChange}
                       isEditing={true}
                       isQuickBooksConnected={isQuickBooksConnected}
                     />

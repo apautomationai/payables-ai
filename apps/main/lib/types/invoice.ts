@@ -68,7 +68,7 @@ export interface LineItem {
   rate: string | null;
   amount: string | null;
   itemType?: 'account' | 'product' | null;
-  resourceId?: number | null;
+  resourceId?: string | null;
 }
 /**
  *

@@ -54,6 +54,12 @@ export default function InvoiceReviewClient({
 
   const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "attachments");
 
+  // Ref to access line item changes from InvoiceDetailsForm
+  const lineItemChangesRef = useRef<{
+    saveLineItemChanges: () => Promise<void>;
+    hasChanges: () => boolean;
+  } | null>(null);
+
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments?.length > 0 ? attachments[0]!.id : null
   );
@@ -479,6 +485,14 @@ export default function InvoiceReviewClient({
 
       // Access the data property from the response
       const updatedData = response?.data;
+
+      // Save line item changes if any
+      if (lineItemChangesRef.current && lineItemChangesRef.current.hasChanges()) {
+        await lineItemChangesRef.current.saveLineItemChanges();
+        toast.success("Invoice and line items saved successfully");
+      } else {
+        toast.success("Invoice saved successfully");
+      }
 
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
@@ -930,6 +944,7 @@ export default function InvoiceReviewClient({
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
                       onFieldChange={() => setHasUnsavedChanges(true)}
+                      lineItemChangesRef={lineItemChangesRef}
                       onApprovalSuccess={() => {
                         // Update the invoice status in the list for real-time UI update
                         if (invoiceDetails) {

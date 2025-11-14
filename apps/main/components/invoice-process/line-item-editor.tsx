@@ -27,11 +27,12 @@ import {
 interface LineItemEditorProps {
   lineItem: LineItem;
   onUpdate?: (updatedLineItem: LineItem) => void;
+  onChange?: (lineItemId: number, changes: Partial<LineItem>) => void;
   isEditing?: boolean;
   isQuickBooksConnected?: boolean | null;
 }
 
-export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickBooksConnected = null }: LineItemEditorProps) {
+export function LineItemEditor({ lineItem, onUpdate, onChange, isEditing = false, isQuickBooksConnected = null }: LineItemEditorProps) {
   const router = useRouter();
   const [itemType, setItemType] = useState<'account' | 'product' | null>(lineItem.itemType || null);
   const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
@@ -48,7 +49,6 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
   const [quantity, setQuantity] = useState(lineItem.quantity || "1");
   const [rate, setRate] = useState(lineItem.rate || "0");
   const [amount, setAmount] = useState(lineItem.amount || "0");
-  const [hasFieldChanges, setHasFieldChanges] = useState(false);
 
   console.log(items)
 
@@ -131,7 +131,7 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
     }
   };
 
-  const handleItemTypeChange = async (newType: 'account' | 'product' | null) => {
+  const handleItemTypeChange = (newType: 'account' | 'product' | null) => {
     // Check if QuickBooks is connected before allowing type selection
     if (newType && !isQuickBooksConnected) {
       setIsQuickBooksErrorOpen(true);
@@ -139,93 +139,38 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
     }
 
     setItemType(newType);
+    setSelectedResourceId(null); // Clear resourceId when changing type
 
-    // Save the itemType change immediately
-    if (isEditing) {
-      setIsSaving(true);
-      try {
-        const updateData: {
-          itemType?: 'account' | 'product' | null;
-          resourceId?: string | null;
-        } = {
-          itemType: newType,
-          resourceId: null, // Clear resourceId when changing type
-        };
-
-        const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-
-        // Update local state
-        setSelectedResourceId(null);
-
-        if (onUpdate) {
-          onUpdate(updatedLineItem.data);
-        }
-
-        toast.success("Line item type updated");
-      } catch (error) {
-        console.error("Error updating line item type:", error);
-        toast.error("Failed to update line item type");
-        // Revert on error
-        setItemType(lineItem.itemType || null);
-      } finally {
-        setIsSaving(false);
-      }
+    // Notify parent of changes without saving
+    if (onChange) {
+      onChange(lineItem.id, {
+        itemType: newType,
+        resourceId: null,
+      });
     }
   };
 
-  const handleAccountSelect = async (accountId: string, _account: QuickBooksAccount) => {
+  const handleAccountSelect = (accountId: string, _account: QuickBooksAccount) => {
     setSelectedResourceId(accountId);
 
-    if (isEditing) {
-      setIsSaving(true);
-      try {
-        const updateData = {
-          itemType: 'account' as const,
-          resourceId: accountId, // Keep as string instead of converting to int
-        };
-
-        const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-
-        if (onUpdate) {
-          onUpdate(updatedLineItem.data);
-        }
-
-        toast.success("Account selected");
-      } catch (error) {
-        console.error("Error updating line item account:", error);
-        toast.error("Failed to update account selection");
-        setSelectedResourceId(lineItem.resourceId ? String(lineItem.resourceId) : null);
-      } finally {
-        setIsSaving(false);
-      }
+    // Notify parent of changes without saving
+    if (onChange) {
+      onChange(lineItem.id, {
+        itemType: 'account',
+        resourceId: accountId,
+      });
     }
   };
 
-  const handleProductSelect = async (productId: string, _product: QuickBooksItem) => {
+  const handleProductSelect = (productId: string, _product: QuickBooksItem) => {
     setSelectedResourceId(productId);
 
-    if (isEditing) {
-      setIsSaving(true);
-      try {
-        const updateData = {
-          itemType: 'product' as const,
-          resourceId: productId, // Keep as string instead of converting to int
-        };
-
-        const updatedLineItem = await updateLineItem(lineItem.id, updateData);
-
-        if (onUpdate) {
-          onUpdate(updatedLineItem.data);
-        }
-
-        toast.success("Product/Service selected");
-      } catch (error) {
-        console.error("Error updating line item product:", error);
-        toast.error("Failed to update product selection");
-        setSelectedResourceId(lineItem.resourceId ? String(lineItem.resourceId) : null);
-      } finally {
-        setIsSaving(false);
-      }
+    // Notify parent of changes without saving
+    if (onChange) {
+      onChange(lineItem.id, {
+        itemType: 'product',
+        resourceId: productId,
+      });
     }
   };
 
@@ -240,50 +185,52 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
   const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuantity(value);
-    setHasFieldChanges(true);
+
     // Auto-calculate amount if rate is set
+    let calculatedAmount = amount;
     if (rate && value) {
-      const calculatedAmount = (parseFloat(value) * parseFloat(rate)).toFixed(2);
+      calculatedAmount = (parseFloat(value) * parseFloat(rate)).toFixed(2);
       setAmount(calculatedAmount);
+    }
+
+    // Notify parent of changes
+    if (onChange) {
+      onChange(lineItem.id, {
+        quantity: value,
+        amount: calculatedAmount,
+      });
     }
   };
 
   const handleRateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setRate(value);
-    setHasFieldChanges(true);
+
     // Auto-calculate amount if quantity is set
+    let calculatedAmount = amount;
     if (quantity && value) {
-      const calculatedAmount = (parseFloat(quantity) * parseFloat(value)).toFixed(2);
+      calculatedAmount = (parseFloat(quantity) * parseFloat(value)).toFixed(2);
       setAmount(calculatedAmount);
+    }
+
+    // Notify parent of changes
+    if (onChange) {
+      onChange(lineItem.id, {
+        rate: value,
+        amount: calculatedAmount,
+      });
     }
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setAmount(e.target.value);
-    setHasFieldChanges(true);
-  };
+    const value = e.target.value;
+    setAmount(value);
 
-  const handleSaveFields = async () => {
-    setIsSaving(true);
-    try {
-      const response = await client.patch(`/api/v1/invoice/line-items/${lineItem.id}`, {
-        quantity,
-        rate,
-        amount,
+    // Notify parent of changes
+    if (onChange) {
+      onChange(lineItem.id, {
+        amount: value,
       });
-
-      if (response.data.success && onUpdate) {
-        onUpdate(response.data.data);
-      }
-
-      setHasFieldChanges(false);
-      toast.success("Line item updated");
-    } catch (error) {
-      console.error("Error updating line item fields:", error);
-      toast.error("Failed to update line item");
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -416,33 +363,7 @@ export function LineItemEditor({ lineItem, onUpdate, isEditing = false, isQuickB
         </div>
       )}
 
-      {/* Save Button for Field Changes */}
-      {hasFieldChanges && (
-        <div className="pt-2 border-t">
-          <Button
-            onClick={handleSaveFields}
-            disabled={isSaving}
-            size="sm"
-            className="w-full h-8"
-          >
-            {isSaving ? (
-              <>
-                <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                Saving...
-              </>
-            ) : (
-              "Save Changes"
-            )}
-          </Button>
-        </div>
-      )}
 
-      {isSaving && !hasFieldChanges && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Loader2 className="h-3 w-3 animate-spin" />
-          <span>Saving...</span>
-        </div>
-      )}
 
       {/* QuickBooks Integration Error Dialog (same as in confirmation modals) */}
       <Dialog open={isQuickBooksErrorOpen} onOpenChange={setIsQuickBooksErrorOpen}>

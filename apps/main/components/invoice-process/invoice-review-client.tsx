@@ -726,6 +726,26 @@ export default function InvoiceReviewClient({
     }
   };
 
+  // Handle invoice cloning
+  const handleCloneInvoice = async (invoiceId: number) => {
+    try {
+      toast.loading("Cloning invoice...");
+      const response: any = await client.post(`/api/v1/invoice/invoices/${invoiceId}/clone`);
+
+      if (response.success) {
+        toast.dismiss();
+        toast.success("Invoice cloned successfully");
+
+        // Refresh the page to show the new invoice
+        router.refresh();
+      }
+    } catch (error: any) {
+      toast.dismiss();
+      console.error("Error cloning invoice:", error);
+      toast.error("Failed to clone invoice");
+    }
+  };
+
   // Handle attachment deletion
   const handleDeleteAttachment = async (attachmentId: string) => {
     try {
@@ -913,6 +933,7 @@ export default function InvoiceReviewClient({
                   totalPages={invoiceTotalPages}
                   onPageChange={handleInvoicePageChange}
                   onDeleteInvoice={handleDeleteInvoice}
+                  onCloneInvoice={handleCloneInvoice}
                 />
               </div>
 

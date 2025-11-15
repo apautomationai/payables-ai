@@ -89,6 +89,14 @@ export default function InvoiceReviewClient({
   const [isDeleting, setIsDeleting] = useState(false);
   const [justDeletedInvoiceId, setJustDeletedInvoiceId] = useState<number | null>(null);
 
+  // Clone dialog state
+  const [cloneDialog, setCloneDialog] = useState<{
+    open: boolean;
+    invoiceId?: number;
+    invoiceNumber?: string;
+  }>({ open: false });
+  const [isCloning, setIsCloning] = useState(false);
+
   // Sync invoices list with prop changes (for pagination)
   useEffect(() => {
     // Don't sync if we just deleted an invoice - let local state take precedence
@@ -726,6 +734,40 @@ export default function InvoiceReviewClient({
     }
   };
 
+  // Handle invoice cloning - show confirmation dialog
+  const handleCloneInvoice = (invoiceId: number) => {
+    // Find the invoice to get its number
+    const invoice = invoicesList.find(inv => inv.id === invoiceId);
+    setCloneDialog({
+      open: true,
+      invoiceId,
+      invoiceNumber: invoice?.invoiceNumber || `Invoice #${invoiceId}`,
+    });
+  };
+
+  // Confirm and execute clone
+  const confirmCloneInvoice = async () => {
+    if (!cloneDialog.invoiceId) return;
+
+    setIsCloning(true);
+    try {
+      const response: any = await client.post(`/api/v1/invoice/invoices/${cloneDialog.invoiceId}/clone`);
+
+      if (response.success) {
+        toast.success("Invoice cloned successfully");
+        setCloneDialog({ open: false });
+
+        // Refresh the page to show the new invoice
+        router.refresh();
+      }
+    } catch (error: any) {
+      console.error("Error cloning invoice:", error);
+      toast.error("Failed to clone invoice");
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
   // Handle attachment deletion
   const handleDeleteAttachment = async (attachmentId: string) => {
     try {
@@ -913,6 +955,7 @@ export default function InvoiceReviewClient({
                   totalPages={invoiceTotalPages}
                   onPageChange={handleInvoicePageChange}
                   onDeleteInvoice={handleDeleteInvoice}
+                  onCloneInvoice={handleCloneInvoice}
                 />
               </div>
 
@@ -998,6 +1041,18 @@ export default function InvoiceReviewClient({
         }
         associatedInvoice={deleteDialog.associatedInvoice}
         isDeleting={isDeleting}
+      />
+
+      {/* Clone Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={cloneDialog.open}
+        onOpenChange={(open) => setCloneDialog({ open })}
+        onConfirm={confirmCloneInvoice}
+        title="Clone Invoice"
+        description={`Are you sure you want to clone invoice "${cloneDialog.invoiceNumber}"? This will create a duplicate with all line items.`}
+        isDeleting={isCloning}
+        confirmText="Clone"
+        confirmVariant="default"
       />
 
       <style jsx global>{`

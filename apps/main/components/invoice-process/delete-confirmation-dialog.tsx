@@ -24,6 +24,8 @@ interface DeleteConfirmationDialogProps {
         vendorName: string;
     };
     isDeleting: boolean;
+    confirmText?: string;
+    confirmVariant?: "default" | "destructive";
 }
 
 export function DeleteConfirmationDialog({
@@ -35,6 +37,8 @@ export function DeleteConfirmationDialog({
     warningMessage,
     associatedInvoice,
     isDeleting,
+    confirmText = "Delete",
+    confirmVariant = "destructive",
 }: DeleteConfirmationDialogProps) {
     return (
         <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -71,15 +75,19 @@ export function DeleteConfirmationDialog({
                             onConfirm();
                         }}
                         disabled={isDeleting}
-                        className="bg-destructive hover:bg-destructive/90 text-white"
+                        className={
+                            confirmVariant === "destructive"
+                                ? "bg-destructive hover:bg-destructive/90 text-white"
+                                : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                        }
                     >
                         {isDeleting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Deleting...
+                                {confirmText === "Clone" ? "Cloning..." : "Processing..."}
                             </>
                         ) : (
-                            "Delete"
+                            confirmText
                         )}
                     </AlertDialogAction>
                 </AlertDialogFooter>

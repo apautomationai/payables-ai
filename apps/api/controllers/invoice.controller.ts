@@ -459,6 +459,37 @@ class InvoiceController {
     }
   }
 
+  async cloneInvoice(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      if (!id) {
+        throw new BadRequestError("Invoice ID is required");
+      }
+
+      const invoiceId = parseInt(id, 10);
+      if (isNaN(invoiceId)) {
+        throw new BadRequestError("Invoice ID must be a valid number");
+      }
+
+      const clonedInvoice = await invoiceServices.cloneInvoice(invoiceId, userId);
+
+      return res.status(201).json({
+        success: true,
+        data: clonedInvoice,
+        message: "Invoice cloned successfully",
+      });
+    } catch (error: any) {
+      console.error("Error cloning invoice:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async deleteInvoice(req: Request, res: Response) {
     try {
       //@ts-ignore

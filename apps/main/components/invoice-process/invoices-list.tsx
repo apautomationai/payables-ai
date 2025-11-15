@@ -10,9 +10,15 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@workspace/ui/components/pagination";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
 import { cn } from "@workspace/ui/lib/utils";
 import { useRouter } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { Trash2, Copy, MoreVertical } from "lucide-react";
 
 const StatusBadge = ({ status }: { status: InvoiceStatus | null }) => {
   if (!status) return null;
@@ -43,6 +49,7 @@ interface InvoicesListProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onDeleteInvoice?: (invoiceId: number) => void;
+  onCloneInvoice?: (invoiceId: number) => void;
 }
 
 const formatDateTime = (dateString: string) => {
@@ -69,6 +76,7 @@ export default function InvoicesList({
   totalPages,
   onPageChange,
   onDeleteInvoice,
+  onCloneInvoice,
 }: InvoicesListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const router = useRouter();
@@ -158,18 +166,45 @@ export default function InvoicesList({
                     <span>{formatDateTime(invoice.createdAt)}</span>
                     <div className="flex items-center gap-2">
                       <span>ID: {invoice.id}</span>
-                      {onDeleteInvoice && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteInvoice(invoice.id);
-                          }}
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
+                      {(onDeleteInvoice || onCloneInvoice) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={(e) => e.stopPropagation()}
+                              className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                            {onCloneInvoice && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onCloneInvoice(invoice.id);
+                                }}
+                                className="cursor-pointer"
+                              >
+                                <Copy className="h-4 w-4 mr-2" />
+                                Clone Invoice
+                              </DropdownMenuItem>
+                            )}
+                            {onDeleteInvoice && (
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onDeleteInvoice(invoice.id);
+                                }}
+                                className="cursor-pointer text-destructive focus:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete Invoice
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       )}
                     </div>
                   </div>

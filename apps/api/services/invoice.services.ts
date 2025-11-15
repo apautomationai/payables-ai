@@ -625,6 +625,107 @@ export class InvoiceServices {
     }
   }
 
+  async cloneInvoice(invoiceId: number, userId: number) {
+    try {
+      // Get the original invoice
+      const [originalInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, invoiceId),
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        );
+
+      if (!originalInvoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Get line items (only non-deleted ones)
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false)
+          )
+        );
+
+      // Generate new invoice number with suffix logic
+      const originalNumber = originalInvoice.invoiceNumber || "INV";
+
+      // Check if the invoice number already has a suffix pattern (ends with -XXX where XXX is digits)
+      const suffixMatch = originalNumber.match(/^(.+)-(\d+)$/);
+
+      let newInvoiceNumber: string;
+
+      if (suffixMatch) {
+        // Invoice already has a suffix (e.g., "546237-001" or "INV-2024-001")
+        const basePart = suffixMatch[1]; // "546237" or "INV-2024"
+        const suffixPart = suffixMatch[2]; // "001"
+        const currentNum = parseInt(suffixPart, 10);
+        const newNum = currentNum + 1;
+        // Pad with zeros to match original length
+        const paddedNum = String(newNum).padStart(suffixPart.length, '0');
+        newInvoiceNumber = `${basePart}-${paddedNum}`;
+      } else {
+        // Invoice doesn't have a suffix, add -001
+        newInvoiceNumber = `${originalNumber}-001`;
+      }
+
+      // Create new invoice
+      const [newInvoice] = await db
+        .insert(invoiceModel)
+        .values({
+          userId: originalInvoice.userId,
+          attachmentId: originalInvoice.attachmentId,
+          invoiceNumber: newInvoiceNumber,
+          vendorName: originalInvoice.vendorName,
+          vendorAddress: originalInvoice.vendorAddress,
+          vendorPhone: originalInvoice.vendorPhone,
+          vendorEmail: originalInvoice.vendorEmail,
+          customerName: originalInvoice.customerName,
+          invoiceDate: originalInvoice.invoiceDate,
+          dueDate: originalInvoice.dueDate,
+          totalAmount: originalInvoice.totalAmount,
+          currency: originalInvoice.currency,
+          totalTax: originalInvoice.totalTax,
+          description: originalInvoice.description,
+          fileUrl: originalInvoice.fileUrl,
+          fileKey: originalInvoice.fileKey,
+          s3JsonKey: originalInvoice.s3JsonKey,
+          status: "pending",
+          isDeleted: false,
+        })
+        .returning();
+
+      // Clone line items if any exist (only non-deleted ones)
+      if (lineItems.length > 0) {
+        await db.insert(lineItemsModel).values(
+          lineItems.map((item) => ({
+            invoiceId: newInvoice.id,
+            item_name: item.item_name,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount,
+            itemType: item.itemType,
+            resourceId: item.resourceId,
+            isDeleted: false,
+          }))
+        );
+      }
+
+      return newInvoice;
+    } catch (error) {
+      console.error("Error cloning invoice:", error);
+      throw error;
+    }
+  }
+
   async createLineItem(
     lineItemData: {
       invoiceId: number;

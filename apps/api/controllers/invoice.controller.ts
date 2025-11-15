@@ -296,6 +296,44 @@ class InvoiceController {
     }
   }
 
+  async createLineItem(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { invoiceId, item_name, description, quantity, rate, amount } = req.body;
+
+      if (!invoiceId) {
+        throw new BadRequestError("Invoice ID is required");
+      }
+
+      if (!item_name) {
+        throw new BadRequestError("Item name is required");
+      }
+
+      const lineItemData = {
+        invoiceId: parseInt(invoiceId, 10),
+        item_name,
+        description: description || null,
+        quantity: quantity ? String(quantity) : "1",
+        rate: rate ? String(rate) : "0",
+        amount: amount ? String(amount) : "0",
+      };
+
+      const newLineItem = await invoiceServices.createLineItem(lineItemData, userId);
+
+      return res.status(201).json({
+        success: true,
+        data: newLineItem,
+      });
+    } catch (error: any) {
+      console.error("Error creating line item:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async updateLineItem(req: Request, res: Response) {
     try {
       //@ts-ignore
@@ -349,6 +387,36 @@ class InvoiceController {
       });
     } catch (error: any) {
       console.error("Error updating line item:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async deleteLineItem(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+
+      if (!id) {
+        throw new BadRequestError("Line item ID is required");
+      }
+
+      const lineItemId = parseInt(id, 10);
+      if (isNaN(lineItemId)) {
+        throw new BadRequestError("Line item ID must be a valid number");
+      }
+
+      await invoiceServices.deleteLineItem(lineItemId, userId);
+
+      return res.status(200).json({
+        success: true,
+        message: "Line item deleted successfully",
+      });
+    } catch (error: any) {
+      console.error("Error deleting line item:", error);
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,

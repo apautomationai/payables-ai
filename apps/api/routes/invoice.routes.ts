@@ -37,7 +37,13 @@ router.get("/line-items/search", authenticate, requireSubscriptionAccess, invoic
 // Get line items by invoice ID
 router.get("/line-items/invoice/:invoiceId", authenticate, requireSubscriptionAccess, invoiceController.getLineItemsByInvoiceId);
 
+// Create a line item
+router.post("/line-items", authenticate, requireSubscriptionAccess, invoiceController.createLineItem);
+
 // Update a line item
 router.patch("/line-items/:id", authenticate, requireSubscriptionAccess, invoiceController.updateLineItem);
+
+// Delete a line item
+router.delete("/line-items/:id", authenticate, requireSubscriptionAccess, invoiceController.deleteLineItem);
 
 export default router;

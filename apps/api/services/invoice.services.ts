@@ -593,7 +593,12 @@ export class InvoiceServices {
       const lineItems = await db
         .select()
         .from(lineItemsModel)
-        .where(eq(lineItemsModel.invoiceId, invoiceId));
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false)
+          )
+        );
 
       return lineItems;
     } catch (error) {
@@ -616,6 +621,54 @@ export class InvoiceServices {
       return updatedInvoice;
     } catch (error) {
       console.error("Error updating invoice status:", error);
+      throw error;
+    }
+  }
+
+  async createLineItem(
+    lineItemData: {
+      invoiceId: number;
+      item_name: string;
+      description: string | null;
+      quantity: string;
+      rate: string;
+      amount: string;
+    },
+    userId: number
+  ) {
+    try {
+      // Verify invoice exists and belongs to user
+      const [invoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, lineItemData.invoiceId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!invoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Create the line item
+      const [newLineItem] = await db
+        .insert(lineItemsModel)
+        .values({
+          invoiceId: lineItemData.invoiceId,
+          item_name: lineItemData.item_name,
+          description: lineItemData.description,
+          quantity: lineItemData.quantity,
+          rate: lineItemData.rate,
+          amount: lineItemData.amount,
+          isDeleted: false,
+        })
+        .returning();
+
+      return newLineItem;
+    } catch (error) {
+      console.error("Error creating line item:", error);
       throw error;
     }
   }
@@ -679,6 +732,43 @@ export class InvoiceServices {
       return updatedLineItem;
     } catch (error) {
       console.error("Error updating line item:", error);
+      throw error;
+    }
+  }
+
+  async deleteLineItem(lineItemId: number, userId: number) {
+    try {
+      // Verify line item exists and belongs to user's invoice
+      const [existingLineItem] = await db
+        .select({
+          lineItem: lineItemsModel,
+          invoice: invoiceModel,
+        })
+        .from(lineItemsModel)
+        .innerJoin(invoiceModel, eq(lineItemsModel.invoiceId, invoiceModel.id))
+        .where(
+          and(
+            eq(lineItemsModel.id, lineItemId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!existingLineItem) {
+        throw new NotFoundError("Line item not found or access denied");
+      }
+
+      // Soft delete by setting isDeleted to true
+      await db
+        .update(lineItemsModel)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date()
+        })
+        .where(eq(lineItemsModel.id, lineItemId));
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting line item:", error);
       throw error;
     }
   }

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { quickbooksService } from "@/services/quickbooks.service";
+import { integrationsService } from "@/services/integrations.service";
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 
 export class QuickBooksController {
@@ -67,6 +68,7 @@ export class QuickBooksController {
       let companyInfo: any = null;
       try {
         // Create a temporary integration object to fetch company info
+        // Include metadata with realmId for API calls
         const tempIntegration = {
           id: 0,
           userId,
@@ -77,6 +79,9 @@ export class QuickBooksController {
           expiryDate: new Date(Date.now() + tokenData.expiresIn * 1000),
           createdAt: null,
           updatedAt: null,
+          metadata: {
+            realmId: tokenData.realmId, // Required for QuickBooks API calls
+          },
         };
         companyInfo = await quickbooksService.getCompanyInfo(tempIntegration);
       } catch (error) {
@@ -783,6 +788,20 @@ export class QuickBooksController {
       // Sync to database (includes embedding generation)
       const productsResult = await quickbooksService.syncProductsToDatabase(userId, [products[0]]);
 
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
+
       res.json({
         success: true,
         message: "Products sync completed successfully",
@@ -828,6 +847,20 @@ export class QuickBooksController {
 
       // Sync to database (includes embedding generation)
       const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
 
       res.json({
         success: true,
@@ -876,6 +909,20 @@ export class QuickBooksController {
       // Sync to database
       const productsResult = await quickbooksService.syncProductsToDatabase(userId, products);
       const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
 
       res.json({
         success: true,

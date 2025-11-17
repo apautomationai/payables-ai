@@ -133,16 +133,14 @@ export class QuickBooksService {
     try {
       const expiresAt = new Date(Date.now() + tokenData.expiresIn * 1000);
 
+      // Only store scopes, companyName, realmId, and lastSyncedAt in metadata
+      // email and providerId have dedicated fields in the integrations table
+      // realmId is needed for QuickBooks API calls and is the same as providerId
       const metadata = {
-        realmId: tokenData.realmId,
-        companyId: tokenData.realmId,
-        companyName: companyInfo?.name || "Unknown Company",
-        email: companyInfo?.email || null,
-        providerId: tokenData.realmId, // realmId serves as provider_id for QuickBooks
         scopes: tokenData.scope ? (Array.isArray(tokenData.scope) ? tokenData.scope : tokenData.scope.split(" ")) : [],
-        tokenExpiresAt: expiresAt.toISOString(),
-        isActive: true,
-        lastSyncAt: null,
+        companyName: companyInfo?.name || "Unknown Company",
+        realmId: tokenData.realmId, // Same as providerId, needed for API calls
+        lastSyncedAt: null,
       };
 
       // Check if integration already exists

@@ -111,13 +111,10 @@ export class GoogleController {
           ? new Date(Number(tokens.expiry_date))
           : null;
 
+        // Only store startReading and scopes in metadata
+        // email and providerId have dedicated fields in the integrations table
         const metadata = {
-          email: userInfo.email,
-          providerId: userInfo.providerId,
-          googleUserId: userInfo.providerId,
-          googleEmail: userInfo.email,
           scopes: tokens.scope ? (Array.isArray(tokens.scope) ? tokens.scope : tokens.scope.split(" ")) : [],
-          tokenExpiresAt: expiryDateValue ? expiryDateValue.toISOString() : null,
         };
 
         if (!existingIntegration) {
@@ -258,6 +255,20 @@ export class GoogleController {
           if (attachments.success) {
             metadata.totalSuccess++;
             metadata.totalEmails += result.emailsSynced;
+            
+            // Update lastRead in metadata after successful sync
+            try {
+              const currentMetadata = (integration.metadata as any) || {};
+              await integrationsService.updateIntegration(integration.id, {
+                metadata: {
+                  ...currentMetadata,
+                  lastRead: new Date().toISOString(),
+                },
+              });
+            } catch (updateError: any) {
+              console.error("Failed to update lastRead in metadata:", updateError);
+              // Don't fail the request if metadata update fails
+            }
           } else {
             metadata.totalFailed++;
           }
@@ -335,6 +346,22 @@ export class GoogleController {
         integration.id,
         lastRead
       );
+
+      // Update lastRead in metadata after successful sync
+      if (attachments.success) {
+        try {
+          const currentMetadata = (integration.metadata as any) || {};
+          await integrationsService.updateIntegration(integration.id, {
+            metadata: {
+              ...currentMetadata,
+              lastRead: new Date().toISOString(),
+            },
+          });
+        } catch (updateError: any) {
+          console.error("Failed to update lastRead in metadata:", updateError);
+          // Don't fail the request if metadata update fails
+        }
+      }
 
       return res.status(200).json({
         message: "Emails synced successfully",

@@ -31,6 +31,7 @@ import type { Integration } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
 import { syncQuickBooksData } from "@/lib/services/quickbooks.service";
+import { syncGmailData } from "@/lib/services/gmail.service";
 import {
   Alert,
   AlertDescription,
@@ -105,10 +106,17 @@ export function IntegrationCard({
     e.preventDefault();
     setIsSyncing(true);
     try {
-      const result = await syncQuickBooksData();
-      toast.success("Sync completed successfully", {
-        description: `Products: ${result.data.products.inserted} inserted, ${result.data.products.updated} updated, ${result.data.products.skipped} skipped. Accounts: ${result.data.accounts.inserted} inserted, ${result.data.accounts.updated} updated, ${result.data.accounts.skipped} skipped.`,
-      });
+      if (isGmail) {
+        const result = await syncGmailData();
+        toast.success("Gmail sync completed successfully", {
+          description: result.message || "Emails synced successfully",
+        });
+      } else if (isQuickBooks) {
+        const result = await syncQuickBooksData();
+        toast.success("Sync completed successfully", {
+          description: `Products: ${result.data.products.inserted} inserted, ${result.data.products.updated} updated, ${result.data.products.skipped} skipped. Accounts: ${result.data.accounts.inserted} inserted, ${result.data.accounts.updated} updated, ${result.data.accounts.skipped} skipped.`,
+        });
+      }
     } catch (error: unknown) {
       const syncErrorMessage =
         error && typeof error === "object" && "response" in error
@@ -201,7 +209,7 @@ export function IntegrationCard({
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
               )}
-              {isQuickBooks && (
+              {(isGmail || isQuickBooks) && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -237,7 +245,7 @@ export function IntegrationCard({
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
               )}
-              {isQuickBooks && (
+              {(isGmail || isQuickBooks) && (
                 <Button
                   size="sm"
                   variant="outline"

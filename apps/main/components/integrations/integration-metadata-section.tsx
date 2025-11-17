@@ -43,7 +43,7 @@ export function IntegrationMetadataSection({
   };
 
   return (
-    <div className={cn("border-t pt-3 sm:pt-4 mt-3 sm:mt-4", className)}>
+    <div className={cn("border-t pt-2 sm:pt-3 mt-2 sm:mt-3", className)}>
       <Button
         variant="ghost"
         size="sm"

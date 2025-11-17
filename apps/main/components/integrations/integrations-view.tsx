@@ -86,6 +86,13 @@ export default function IntegrationsView({
 
   return (
     <div className="flex flex-col gap-3 sm:gap-4 w-full">
+      <div className="mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Integrations</h1>
+        <p className="text-sm sm:text-base text-muted-foreground mt-1">
+          Manage your platform configuration and integrations.
+        </p>
+      </div>
+
       {needsGmailConfig && (
         <IntegrationConfigAlert
           message="Your Gmail account is connected. Please configure the date from which to start processing emails."

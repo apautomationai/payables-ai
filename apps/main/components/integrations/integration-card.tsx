@@ -122,20 +122,20 @@ export function IntegrationCard({
 
   return (
     <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 w-full h-full">
-      <CardHeader className="p-4 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+      <CardHeader className="p-1 sm:p-4 pb-2">
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex items-center gap-3">
             {IntegrationLogo && <IntegrationLogo />}
             <div className="min-w-0 flex-1">
               <CardTitle className="text-base sm:text-lg truncate">{name}</CardTitle>
-              <CardDescription className="text-xs sm:text-sm line-clamp-2">{category}</CardDescription>
+              <CardDescription className="text-xs sm:text-sm line-clamp-1">{category}</CardDescription>
             </div>
           </div>
-          <IntegrationStatusBadge status={status} className="pt-1" />
+          <IntegrationStatusBadge status={status} className="pt-0.5 shrink-0" />
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow space-y-3 p-4 sm:p-6 pt-0">
+      <CardContent className="flex-grow space-y-1 p-1 sm:p-2 pt-0">
         {errorMessage && (
           <Alert variant="destructive" className="border-destructive/30">
             <AlertTriangle className="h-4 w-4" />
@@ -145,7 +145,7 @@ export function IntegrationCard({
         )}
 
         {isConnected && (
-          <div className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-muted-foreground border-l-2 pl-3 sm:pl-4 py-2">
+          <div className="space-y-1 text-xs sm:text-sm text-muted-foreground border-l-2 pl-2.5 sm:pl-3 py-1">
             <IntegrationInfoRow
               icon={Power}
               label="Connected"
@@ -162,11 +162,11 @@ export function IntegrationCard({
         <IntegrationMetadataSection metadata={metadata} />
       </CardContent>
 
-      <CardFooter className="p-4 sm:p-6 pt-0">
+      <CardFooter className="p-1 sm:p-2 pt-1">
         <form
           id={formId}
           action={updateAction}
-          className="flex flex-wrap items-center gap-2 w-full"
+          className="flex flex-wrap items-center gap-1 sm:gap-2 w-full"
         >
           <input type="hidden" name="name" value={backendName} />
 

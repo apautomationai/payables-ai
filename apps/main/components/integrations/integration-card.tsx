@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { format } from "date-fns";
 import { toast } from "sonner";
 import {
   Card,
@@ -18,12 +17,8 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
 import {
-  Mail,
-  BookUser,
   Power,
-  CalendarDays,
   Clock,
   CircleHelp,
   PauseCircle,
@@ -32,7 +27,7 @@ import {
   RefreshCcw,
 } from "lucide-react";
 import client from "@/lib/axios-client";
-import type { Integration, IntegrationStatus } from "./types";
+import type { Integration } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
 import { syncQuickBooksData } from "@/lib/services/quickbooks.service";
@@ -41,22 +36,15 @@ import {
   AlertDescription,
   AlertTitle,
 } from "@workspace/ui/components/alert";
-
-const INTEGRATION_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Gmail: () => <Mail className="w-8 h-8 text-red-500" />,
-  Outlook: () => <Mail className="w-8 h-8 text-blue-500" />,
-  QuickBooks: () => <BookUser className="w-8 h-8 text-green-600" />,
-};
-
-const STATUS_CONFIG: Record<IntegrationStatus, { text: string; color: string }> = {
-  success: { text: "Connected", color: "bg-green-500" },
-  disconnected: { text: "Not Connected", color: "bg-gray-500" },
-  failed: { text: "Failed", color: "bg-red-500" },
-  not_connected: { text: "Not Connected", color: "bg-gray-500" },
-  paused: { text: "Paused", color: "bg-yellow-500" },
-};
-
-const DATE_TIME_FORMAT = "LLL d, yyyy 'at' p";
+import { INTEGRATION_LOGOS } from "./integration-constants";
+import { IntegrationStatusBadge } from "./integration-status-badge";
+import { IntegrationInfoRow } from "./integration-info-row";
+import { IntegrationMetadataSection } from "./integration-metadata-section";
+import {
+  isIntegrationConnected,
+  getTokenExpiration,
+  formatDate,
+} from "./integration-utils";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -83,23 +71,20 @@ export function IntegrationCard({
     path,
     backendName,
     category,
-    startReading,
     createdAt,
-    lastRead,
-    errorMessage,
-    email,
-    providerId,
     metadata,
-  } =
-    integration;
+    errorMessage,
+  } = integration;
 
-  const { text: statusText, color: statusColor } = STATUS_CONFIG[status as IntegrationStatus] || STATUS_CONFIG.not_connected;
-  const isConnected = status === "success" || status === "paused";
+  const isConnected = isIntegrationConnected(status);
   const formId = `form-${backendName}`;
   const isGmail = name.toLowerCase() === "gmail";
   const isQuickBooks = name.toLowerCase() === "quickbooks";
   const IntegrationLogo = INTEGRATION_LOGOS[name];
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const tokenExpiresAt = getTokenExpiration(metadata);
+  const connectedTime = formatDate(createdAt);
 
   const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -146,10 +131,7 @@ export function IntegrationCard({
               <CardDescription>{category}</CardDescription>
             </div>
           </div>
-          <div className="flex items-center text-xs font-medium text-muted-foreground pt-1">
-            <span className={cn("h-2 w-2 rounded-full mr-2 shrink-0", statusColor)} />
-            {statusText}
-          </div>
+          <IntegrationStatusBadge status={status} className="pt-1" />
         </div>
       </CardHeader>
 
@@ -157,73 +139,35 @@ export function IntegrationCard({
         {errorMessage && (
           <Alert variant="destructive" className="border-destructive/30">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="flex items-center gap-2">
-              Sync Paused
-            </AlertTitle>
+            <AlertTitle className="flex items-center gap-2">Sync Paused</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
         )}
+
         {isConnected && (
           <div className="space-y-2.5 text-sm text-muted-foreground border-l-2 pl-4 py-2">
-            {email && (
-              <div className="flex items-center gap-2">
-                <Mail className="h-4 w-4" /> Email:{" "}
-                <span className="font-medium text-primary">{email}</span>
-              </div>
-            )}
-            {isQuickBooks && metadata?.companyName && (
-              <div className="flex items-center gap-2">
-                <BookUser className="h-4 w-4" /> Company:{" "}
-                <span className="font-medium text-primary">{metadata.companyName}</span>
-              </div>
-            )}
-            {createdAt && (
-              <div className="flex items-center gap-2">
-                <Power className="h-4 w-4" /> Connected:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(createdAt), DATE_TIME_FORMAT)}
-                </span>
-              </div>
-            )}
-            {isGmail && startReading && (
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" /> Start Reading:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(startReading), "LLL d, yyyy")}
-                </span>
-              </div>
-            )}
-            {isGmail && lastRead && (
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Last Read:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(lastRead), DATE_TIME_FORMAT)}
-                </span>
-              </div>
-            )}
-            {metadata?.scopes && Array.isArray(metadata.scopes) && metadata.scopes.length > 0 && (
-              <div className="flex items-start gap-2">
-                <CircleHelp className="h-4 w-4 mt-0.5" /> Scopes:{" "}
-                <span className="font-medium text-primary text-xs">
-                  {metadata.scopes.slice(0, 2).join(", ")}
-                  {metadata.scopes.length > 2 && ` +${metadata.scopes.length - 2} more`}
-                </span>
-              </div>
-            )}
-            {metadata?.tokenExpiresAt && (
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Token Expires:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(metadata.tokenExpiresAt), DATE_TIME_FORMAT)}
-                </span>
-              </div>
-            )}
+            <IntegrationInfoRow
+              icon={Power}
+              label="Connected"
+              value={connectedTime}
+            />
+            <IntegrationInfoRow
+              icon={Clock}
+              label="Token Expires"
+              value={tokenExpiresAt ? formatDate(tokenExpiresAt) : "Never"}
+            />
           </div>
         )}
+
+        <IntegrationMetadataSection metadata={metadata} />
       </CardContent>
 
       <CardFooter>
-        <form id={formId} action={updateAction} className="flex flex-wrap items-center gap-2 w-full">
+        <form
+          id={formId}
+          action={updateAction}
+          className="flex flex-wrap items-center gap-2 w-full"
+        >
           <input type="hidden" name="name" value={backendName} />
 
           {allowCollection ? (
@@ -249,7 +193,7 @@ export function IntegrationCard({
 
           {status === "success" && (
             <>
-              {isGmail && !startReading && (
+              {isGmail && !integration.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -285,7 +229,7 @@ export function IntegrationCard({
 
           {status === "paused" && (
             <>
-              {isGmail && !startReading && (
+              {isGmail && !integration.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -323,4 +267,3 @@ export function IntegrationCard({
     </Card>
   );
 }
-

@@ -5,12 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@work
 import type { Integration } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { IntegrationCard } from "./integration-card";
-
-const BACKEND_NAMES_MAP = {
-  Gmail: "gmail",
-  Outlook: "outlook",
-  QuickBooks: "quickbooks",
-} as const;
+import { BACKEND_NAMES_MAP } from "./integration-constants";
 
 const INITIAL_INTEGRATIONS: Omit<
   Integration,

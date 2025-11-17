@@ -40,8 +40,15 @@
     {
       "idx": 7,
       "version": "7",
-      "when": 1763163752761,
-      "tag": "0007_charming_the_hunter",
+      "when": 1764000000000,
+      "tag": "0007_quickbooks_hybrid_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764000001000,
+      "tag": "0008_integrations_oauth_fields",
       "breakpoints": true
     }
   ]

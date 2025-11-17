@@ -52,23 +52,37 @@ async function handleRequest(request: NextRequest, method: string) {
     }
 
     // Forward the request to the backend
+    // Use redirect: 'manual' to handle redirects ourselves
     const backendResponse = await fetch(
       `${backendUrl}/api/v1/quickbooks/callback${queryString}`,
       {
         method,
         headers,
         body: method !== "GET" && method !== "DELETE" ? await request.text() : undefined,
+        redirect: 'manual', // Don't follow redirects automatically
       }
     );
 
-    // if got 200 response then redirect to /integrations page
+    // Handle redirect responses from backend
+    if (backendResponse.status >= 300 && backendResponse.status < 400) {
+      const location = backendResponse.headers.get('location');
+      if (location) {
+        return NextResponse.redirect(location);
+      }
+    }
+
+    // Handle success responses (200)
     if (backendResponse.status === 200) {
       return NextResponse.redirect(new URL("/integrations", request.url));
-    } else {
-      return NextResponse.json(await backendResponse.json(), {
-        status: backendResponse.status,
-      });
     }
+
+    // Handle error responses
+    const errorData = await backendResponse.json().catch(() => ({}));
+    const errorMessage = errorData.message || "Failed to connect QuickBooks";
+    const redirectUrl = new URL("/integrations", request.url);
+    redirectUrl.searchParams.set("type", "error");
+    redirectUrl.searchParams.set("message", encodeURIComponent(errorMessage));
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Error forwarding request to backend:", error);
     return NextResponse.json(

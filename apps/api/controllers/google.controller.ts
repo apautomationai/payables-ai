@@ -18,12 +18,20 @@ const oAuth2Client = new google.auth.OAuth2(
 export class GoogleController {
   //@ts-ignore
   authRedirect = async (req: Request, res: Response) => {
-    const url = googleServices.generateAuthUrl();
-    // const token = req.headers.authorization;
+    // @ts-ignore - user is added by auth middleware
+    const userId = req.user?.id;
 
-    //@ts-ignore
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Generate state parameter for security (like QuickBooks)
+    const state = Buffer.from(JSON.stringify({ userId })).toString("base64");
+    const url = googleServices.generateAuthUrl(state);
+
+    // @ts-ignore
     if (req.token) {
-      //@ts-ignore
+      // @ts-ignore
       res.cookie("token", req.token, { httpOnly: true });
     }
 
@@ -35,31 +43,81 @@ export class GoogleController {
   oauthCallback = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const code = req.query.code as string;
+      const state = req.query.state as string;
 
-      if (!code)
-        return res
-          .status(400)
-          .json({ message: "Authorization code is required" });
+      if (!code) {
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = "Authorization code is required";
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
+
+      // Verify state parameter to get userId
+      let userId: number;
+      try {
+        if (!state) {
+          throw new BadRequestError("Missing state parameter");
+        }
+        const stateData = JSON.parse(
+          Buffer.from(state, "base64").toString()
+        );
+        userId = stateData.userId;
+        if (!userId) {
+          throw new BadRequestError("Invalid state parameter: missing userId");
+        }
+      } catch (error: any) {
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = `Invalid state parameter: ${error.message}`;
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
 
       const tokens = await googleServices.getTokensFromCode(code);
 
       oAuth2Client.setCredentials(tokens);
 
-      let integration;
+      // Fetch user info from Google to get email and provider_id
+      let userInfo;
+      try {
+        userInfo = await googleServices.getUserInfo(tokens);
+      } catch (error: any) {
+        console.error("Failed to fetch user info from Google:", error);
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = "Failed to fetch user information from Google";
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
 
-      //@ts-ignore
-      const userId = req.user.id;
+      // Check if email already exists in another integration
+      if (userInfo.email) {
+        const emailExists = await integrationsService.checkEmailExists(userInfo.email, userId);
+        if (emailExists) {
+          const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+          const errorMessage = "This email is already connected to another sledge account. Please disconnect it from that account then try again.";
+          const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+          return res.redirect(redirectUrl);
+        }
+      }
+
+      let integration;
 
       try {
         const existingIntegration = await integrationsService.checkIntegration(
           userId,
           "gmail"
         );
-        if (!existingIntegration) {
-          const expiryDateValue = tokens.expiry_date
-            ? new Date(Number(tokens.expiry_date))
-            : null;
+        
+        const expiryDateValue = tokens.expiry_date
+          ? new Date(Number(tokens.expiry_date))
+          : null;
 
+        // Only store startReading and scopes in metadata
+        // email and providerId have dedicated fields in the integrations table
+        const metadata = {
+          scopes: tokens.scope ? (Array.isArray(tokens.scope) ? tokens.scope : tokens.scope.split(" ")) : [],
+        };
+
+        if (!existingIntegration) {
           integration = await integrationsService.insertIntegration({
             userId: userId,
             name: "gmail",
@@ -68,6 +126,9 @@ export class GoogleController {
             refreshToken: tokens.refresh_token,
             tokenType: tokens.token_type,
             expiryDate: expiryDateValue,
+            providerId: userInfo.providerId,
+            email: userInfo.email,
+            metadata,
           });
 
           if (!integration.success) {
@@ -81,9 +142,10 @@ export class GoogleController {
               accessToken: tokens.access_token,
               refreshToken: tokens.refresh_token,
               tokenType: tokens.token_type,
-              expiryDate: tokens.expiry_date
-                ? new Date(tokens.expiry_date)
-                : null,
+              expiryDate: expiryDateValue,
+              providerId: userInfo.providerId,
+              email: userInfo.email,
+              metadata,
             }
           );
         }
@@ -91,23 +153,17 @@ export class GoogleController {
         throw new Error(error.message);
       }
 
-      const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!);
-      REDIRECT_URI.searchParams.set("type", "integration.gmail");
-      REDIRECT_URI.searchParams.set("message", "Gmail successfully integrated");
-      // res.redirect(REDIRECT_URI.toString());
-      return res.status(200).json({
-        message: "OAuth successful",
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expiry_date: tokens.expiry_date,
-      });
+      // Redirect to frontend integrations page with success
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/integrations?message=Gmail successfully integrated&type=success`;
+      return res.redirect(redirectUrl);
     } catch (error: any) {
       console.error("Integration insert error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Integration insert failed",
-        error: error.message,
-      });
+      // Redirect to frontend integrations page with error
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const errorMessage = error.message || "Failed to connect Gmail";
+      const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+      return res.redirect(redirectUrl);
     }
   };
 
@@ -157,9 +213,11 @@ export class GoogleController {
             throw new Error("Missing access token");
           }
 
-          let lastRead = integration.lastRead;
+          // Read lastRead from metadata
+          const metadata = (integration.metadata as any) || {};
+          let lastRead = metadata.lastRead;
           if (!lastRead) {
-            lastRead = integration.startReading;
+            lastRead = metadata.startReading;
           }
           const attachments = await googleServices.getEmailsWithAttachments(
             tokens,
@@ -197,6 +255,20 @@ export class GoogleController {
           if (attachments.success) {
             metadata.totalSuccess++;
             metadata.totalEmails += result.emailsSynced;
+            
+            // Update lastRead in metadata after successful sync
+            try {
+              const currentMetadata = (integration.metadata as any) || {};
+              await integrationsService.updateIntegration(integration.id, {
+                metadata: {
+                  ...currentMetadata,
+                  lastRead: new Date().toISOString(),
+                },
+              });
+            } catch (updateError: any) {
+              console.error("Failed to update lastRead in metadata:", updateError);
+              // Don't fail the request if metadata update fails
+            }
           } else {
             metadata.totalFailed++;
           }
@@ -256,9 +328,17 @@ export class GoogleController {
         throw new BadRequestError("Need valid tokens");
       }
 
-      let lastRead = integration.lastRead?.toISOString();
+      // Read lastRead from metadata
+      const metadata = (integration.metadata as any) || {};
+      let lastRead = metadata.lastRead;
       if (!lastRead) {
-        lastRead = integration.startReading?.toISOString();
+        lastRead = metadata.startReading;
+      }
+      // Convert to ISO string if it's a date string
+      if (lastRead && typeof lastRead === 'string') {
+        lastRead = new Date(lastRead).toISOString();
+      } else if (lastRead) {
+        lastRead = lastRead.toISOString();
       }
       const attachments = await googleServices.getEmailsWithAttachments(
         tokens,
@@ -266,6 +346,22 @@ export class GoogleController {
         integration.id,
         lastRead
       );
+
+      // Update lastRead in metadata after successful sync
+      if (attachments.success) {
+        try {
+          const currentMetadata = (integration.metadata as any) || {};
+          await integrationsService.updateIntegration(integration.id, {
+            metadata: {
+              ...currentMetadata,
+              lastRead: new Date().toISOString(),
+            },
+          });
+        } catch (updateError: any) {
+          console.error("Failed to update lastRead in metadata:", updateError);
+          // Don't fail the request if metadata update fails
+        }
+      }
 
       return res.status(200).json({
         message: "Emails synced successfully",

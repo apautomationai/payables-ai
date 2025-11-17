@@ -17,7 +17,7 @@ const oAuth2Client = new google.auth.OAuth2(
 );
 
 export class GoogleServices {
-  generateAuthUrl = (): string => {
+  generateAuthUrl = (state?: string): string => {
     return oAuth2Client.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
@@ -26,12 +26,23 @@ export class GoogleServices {
         "https://www.googleapis.com/auth/gmail.modify",
         "https://www.googleapis.com/auth/userinfo.email",
       ],
+      ...(state && { state }),
     });
   };
 
   getTokensFromCode = async (code: string): Promise<Credentials> => {
     const { tokens } = await oAuth2Client.getToken(code);
     return tokens;
+  };
+
+  getUserInfo = async (tokens: Credentials): Promise<{ email: string; providerId: string }> => {
+    const auth = this.getOAuthClient(tokens);
+    const oauth2 = google.oauth2({ version: "v2", auth });
+    const userInfo = await oauth2.userinfo.get();
+    return {
+      email: userInfo.data.email || "",
+      providerId: userInfo.data.id || "",
+    };
   };
 
   setCredentials = (refreshToken: string): OAuth2Client => {
@@ -395,7 +406,7 @@ export class GoogleServices {
                 .update(partInfo)
                 .digest("hex");
 
-              const isExists = await googleServices.getAttachmentWithId(hashId);
+              const isExists = await googleServices.getAttachmentWithId(hashId, userId);
               if (isExists.length > 0) {
                 metadata.duplicatesSkipped++;
                 continue;
@@ -473,24 +484,6 @@ export class GoogleServices {
               }
             }
           }
-
-          try {
-            await integrationsService.updateIntegration(integrationId, {
-              lastRead: new Date(),
-            });
-          } catch (integrationError: any) {
-            metadata.errors.push({
-              stage: "updateIntegration",
-              messageId: msg.id || undefined,
-              error:
-                integrationError?.message ||
-                "Failed to update integration lastRead",
-              stack:
-                process.env.NODE_ENV === "development"
-                  ? integrationError?.stack
-                  : undefined,
-            });
-          }
         } catch (messageError: any) {
           metadata.failures++;
           metadata.errors.push({
@@ -524,6 +517,31 @@ export class GoogleServices {
           }
           continue;
         }
+      }
+
+      // Update lastRead in metadata after entire loop completes
+      try {
+        const currentIntegration = await integrationsService.getIntegrations(userId);
+        const integration = (currentIntegration.data || []).find((i: any) => i.id === integrationId);
+        const currentMetadata = (integration?.metadata as any) || {};
+        
+        await integrationsService.updateIntegration(integrationId, {
+          metadata: {
+            ...currentMetadata,
+            lastRead: new Date().toISOString(),
+          },
+        });
+      } catch (integrationError: any) {
+        metadata.errors.push({
+          stage: "updateIntegrationLastRead",
+          error:
+            integrationError?.message ||
+            "Failed to update integration lastRead in metadata",
+          stack:
+            process.env.NODE_ENV === "development"
+              ? integrationError?.stack
+              : undefined,
+        });
       }
 
       const hasErrors = metadata.errors.length > 0 || !!metadata.errorMessage;
@@ -605,7 +623,7 @@ export class GoogleServices {
       return result;
     }
   };
-  getAttachmentWithId = async (hashId: string) => {
+  getAttachmentWithId = async (hashId: string, userId: number) => {
     try {
       const response = await db
         .select()
@@ -613,6 +631,7 @@ export class GoogleServices {
         .where(
           and(
             eq(attachmentsModel.hashId, hashId),
+            eq(attachmentsModel.userId, userId),
             eq(attachmentsModel.isDeleted, false)
           )
         );

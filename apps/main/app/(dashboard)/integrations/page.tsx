@@ -15,6 +15,9 @@ interface IntegrationData {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  email?: string | null;
+  providerId?: string | null;
+  metadata?: Record<string, any>;
 }
 
 interface IntegrationsPageProps {

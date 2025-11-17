@@ -12,31 +12,43 @@ class SettingsService {
           status: integrationsModel.status,
           updatedAt: integrationsModel.updatedAt,
           createdAt: integrationsModel.createdAt,
-          startReading: integrationsModel.startReading,
-          lastRead: integrationsModel.lastRead,
+          email: integrationsModel.email,
+          providerId: integrationsModel.providerId,
           metadata: integrationsModel.metadata,
         })
         .from(integrationsModel)
         .where(eq(integrationsModel.userId, userId));
 
+      // Transform integrations to extract startReading/lastRead from metadata
+      const transformedIntegrations = integrations.map((integration) => {
+        const metadata = (integration.metadata as any) || {};
+        return {
+          ...integration,
+          startReading: metadata.startReading || null,
+          lastRead: metadata.lastRead || null,
+        };
+      });
+
       // Ensure QuickBooks is included even if not connected
-      const hasQuickBooks = integrations.some(integration => integration.name === "quickbooks");
+      const hasQuickBooks = transformedIntegrations.some(integration => integration.name === "quickbooks");
 
       if (!hasQuickBooks) {
-        integrations.push({
+        transformedIntegrations.push({
           name: "quickbooks",
           status: "not_connected",
           updatedAt: null,
           createdAt: null,
+          email: null,
+          providerId: null,
+          metadata: {},
           startReading: null,
           lastRead: null,
-          metadata: {},
         });
       }
 
       const result = {
         success: true,
-        data: integrations,
+        data: transformedIntegrations,
         timestamp: new Date().toISOString(),
         statusCode: 200,
       };

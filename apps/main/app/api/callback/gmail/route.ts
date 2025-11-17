@@ -60,16 +60,20 @@ async function handleRequest(request: NextRequest, method: string) {
       }
     );
 
-    // if got 200 response then redirect to /integrations page
+    // Handle response and redirect appropriately
     if (backendResponse.status === 200) {
       const redirectUrl = new URL("/integrations", request.url);
       redirectUrl.searchParams.set("type", "integration.gmail");
       redirectUrl.searchParams.set("message", "Gmail successfully integrated");
       return NextResponse.redirect(redirectUrl);
     } else {
-      return NextResponse.json(await backendResponse.json(), {
-        status: backendResponse.status,
-      });
+      // Handle error responses (e.g., duplicate email)
+      const errorData = await backendResponse.json().catch(() => ({}));
+      const errorMessage = errorData.message || "Failed to connect Gmail";
+      const redirectUrl = new URL("/integrations", request.url);
+      redirectUrl.searchParams.set("type", "error");
+      redirectUrl.searchParams.set("message", encodeURIComponent(errorMessage));
+      return NextResponse.redirect(redirectUrl);
     }
   } catch (error) {
     console.error("Error forwarding request to backend:", error);

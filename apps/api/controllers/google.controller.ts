@@ -45,21 +45,55 @@ export class GoogleController {
 
       oAuth2Client.setCredentials(tokens);
 
-      let integration;
-
       //@ts-ignore
       const userId = req.user.id;
+
+      // Fetch user info from Google to get email and provider_id
+      let userInfo;
+      try {
+        userInfo = await googleServices.getUserInfo(tokens);
+      } catch (error: any) {
+        console.error("Failed to fetch user info from Google:", error);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to fetch user information from Google",
+          error: error.message,
+        });
+      }
+
+      // Check if email already exists in another integration
+      if (userInfo.email) {
+        const emailExists = await integrationsService.checkEmailExists(userInfo.email, userId);
+        if (emailExists) {
+          return res.status(400).json({
+            success: false,
+            message: "This email is already connected to another sledge account. Please disconnect it from that account then try again.",
+          });
+        }
+      }
+
+      let integration;
 
       try {
         const existingIntegration = await integrationsService.checkIntegration(
           userId,
           "gmail"
         );
-        if (!existingIntegration) {
-          const expiryDateValue = tokens.expiry_date
-            ? new Date(Number(tokens.expiry_date))
-            : null;
+        
+        const expiryDateValue = tokens.expiry_date
+          ? new Date(Number(tokens.expiry_date))
+          : null;
 
+        const metadata = {
+          email: userInfo.email,
+          providerId: userInfo.providerId,
+          googleUserId: userInfo.providerId,
+          googleEmail: userInfo.email,
+          scopes: tokens.scope ? (Array.isArray(tokens.scope) ? tokens.scope : tokens.scope.split(" ")) : [],
+          tokenExpiresAt: expiryDateValue ? expiryDateValue.toISOString() : null,
+        };
+
+        if (!existingIntegration) {
           integration = await integrationsService.insertIntegration({
             userId: userId,
             name: "gmail",
@@ -68,6 +102,9 @@ export class GoogleController {
             refreshToken: tokens.refresh_token,
             tokenType: tokens.token_type,
             expiryDate: expiryDateValue,
+            providerId: userInfo.providerId,
+            email: userInfo.email,
+            metadata,
           });
 
           if (!integration.success) {
@@ -81,9 +118,10 @@ export class GoogleController {
               accessToken: tokens.access_token,
               refreshToken: tokens.refresh_token,
               tokenType: tokens.token_type,
-              expiryDate: tokens.expiry_date
-                ? new Date(tokens.expiry_date)
-                : null,
+              expiryDate: expiryDateValue,
+              providerId: userInfo.providerId,
+              email: userInfo.email,
+              metadata,
             }
           );
         }
@@ -157,9 +195,11 @@ export class GoogleController {
             throw new Error("Missing access token");
           }
 
-          let lastRead = integration.lastRead;
+          // Read lastRead from metadata
+          const metadata = (integration.metadata as any) || {};
+          let lastRead = metadata.lastRead;
           if (!lastRead) {
-            lastRead = integration.startReading;
+            lastRead = metadata.startReading;
           }
           const attachments = await googleServices.getEmailsWithAttachments(
             tokens,
@@ -256,9 +296,17 @@ export class GoogleController {
         throw new BadRequestError("Need valid tokens");
       }
 
-      let lastRead = integration.lastRead?.toISOString();
+      // Read lastRead from metadata
+      const metadata = (integration.metadata as any) || {};
+      let lastRead = metadata.lastRead;
       if (!lastRead) {
-        lastRead = integration.startReading?.toISOString();
+        lastRead = metadata.startReading;
+      }
+      // Convert to ISO string if it's a date string
+      if (lastRead && typeof lastRead === 'string') {
+        lastRead = new Date(lastRead).toISOString();
+      } else if (lastRead) {
+        lastRead = lastRead.toISOString();
       }
       const attachments = await googleServices.getEmailsWithAttachments(
         tokens,

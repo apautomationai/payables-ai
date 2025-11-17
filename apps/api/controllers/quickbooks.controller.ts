@@ -63,9 +63,42 @@ export class QuickBooksController {
         realmId as string,
       );
 
+      // Get company info to extract email if available
+      let companyInfo: any = null;
+      try {
+        // Create a temporary integration object to fetch company info
+        const tempIntegration = {
+          id: 0,
+          userId,
+          name: "quickbooks",
+          status: "success",
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiryDate: new Date(Date.now() + tokenData.expiresIn * 1000),
+          createdAt: null,
+          updatedAt: null,
+        };
+        companyInfo = await quickbooksService.getCompanyInfo(tempIntegration);
+      } catch (error) {
+        console.warn("Could not fetch company info:", error);
+        // Continue without company info
+      }
+
+      // Check for duplicate email if available
+      if (companyInfo?.email) {
+        const emailExists = await integrationsService.checkEmailExists(companyInfo.email, userId);
+        if (emailExists) {
+          const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+          const errorMessage = "This email is already connected to another sledge account. Please disconnect it from that account then try again.";
+          const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+          return res.redirect(redirectUrl);
+        }
+      }
+
       await quickbooksService.saveIntegration(
         userId,
         tokenData,
+        companyInfo,
       );
 
       // // Save integration to database

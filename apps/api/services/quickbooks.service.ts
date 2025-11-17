@@ -137,6 +137,10 @@ export class QuickBooksService {
         realmId: tokenData.realmId,
         companyId: tokenData.realmId,
         companyName: companyInfo?.name || "Unknown Company",
+        email: companyInfo?.email || null,
+        providerId: tokenData.realmId, // realmId serves as provider_id for QuickBooks
+        scopes: tokenData.scope ? (Array.isArray(tokenData.scope) ? tokenData.scope : tokenData.scope.split(" ")) : [],
+        tokenExpiresAt: expiresAt.toISOString(),
         isActive: true,
         lastSyncAt: null,
       };
@@ -147,6 +151,9 @@ export class QuickBooksService {
         "quickbooks"
       );
 
+      const email = companyInfo?.email || null;
+      const providerId = tokenData.realmId;
+
       if (existingIntegration) {
         // Update existing integration
         await integrationsService.updateIntegration(existingIntegration.id, {
@@ -154,6 +161,8 @@ export class QuickBooksService {
           refreshToken: tokenData.refreshToken,
           expiryDate: expiresAt,
           status: "success",
+          providerId,
+          email,
           metadata,
         });
 
@@ -176,6 +185,8 @@ export class QuickBooksService {
             accessToken: tokenData.accessToken,
             refreshToken: tokenData.refreshToken,
             expiryDate: expiresAt,
+            providerId,
+            email,
             metadata,
           })
           .returning();

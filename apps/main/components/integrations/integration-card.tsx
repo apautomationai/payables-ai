@@ -87,6 +87,9 @@ export function IntegrationCard({
     createdAt,
     lastRead,
     errorMessage,
+    email,
+    providerId,
+    metadata,
   } =
     integration;
 
@@ -162,6 +165,18 @@ export function IntegrationCard({
         )}
         {isConnected && (
           <div className="space-y-2.5 text-sm text-muted-foreground border-l-2 pl-4 py-2">
+            {email && (
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4" /> Email:{" "}
+                <span className="font-medium text-primary">{email}</span>
+              </div>
+            )}
+            {isQuickBooks && metadata?.companyName && (
+              <div className="flex items-center gap-2">
+                <BookUser className="h-4 w-4" /> Company:{" "}
+                <span className="font-medium text-primary">{metadata.companyName}</span>
+              </div>
+            )}
             {createdAt && (
               <div className="flex items-center gap-2">
                 <Power className="h-4 w-4" /> Connected:{" "}
@@ -183,6 +198,23 @@ export function IntegrationCard({
                 <Clock className="h-4 w-4" /> Last Read:{" "}
                 <span className="font-medium text-primary">
                   {format(new Date(lastRead), DATE_TIME_FORMAT)}
+                </span>
+              </div>
+            )}
+            {metadata?.scopes && Array.isArray(metadata.scopes) && metadata.scopes.length > 0 && (
+              <div className="flex items-start gap-2">
+                <CircleHelp className="h-4 w-4 mt-0.5" /> Scopes:{" "}
+                <span className="font-medium text-primary text-xs">
+                  {metadata.scopes.slice(0, 2).join(", ")}
+                  {metadata.scopes.length > 2 && ` +${metadata.scopes.length - 2} more`}
+                </span>
+              </div>
+            )}
+            {metadata?.tokenExpiresAt && (
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4" /> Token Expires:{" "}
+                <span className="font-medium text-primary">
+                  {format(new Date(metadata.tokenExpiresAt), DATE_TIME_FORMAT)}
                 </span>
               </div>
             )}

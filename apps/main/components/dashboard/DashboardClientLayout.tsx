@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, ReactNode } from "react";
+import React, { useState, useEffect, ReactNode } from "react";
 import SideMenuBar from "@/components/layout/side-menubar";
 import Footer from "@/components/layout/footer";
 import { cn } from "@workspace/ui/lib/utils";
@@ -16,7 +16,26 @@ export default function DashboardClientLayout({
   userEmail,
   children,
 }: DashboardClientLayoutProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  // On mobile, start with sidebar collapsed (hidden)
+  // On desktop, start with sidebar expanded
+  const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+      // On mobile, always start collapsed; on desktop, start expanded
+      if (window.innerWidth >= 768) {
+        setIsCollapsed(false);
+      } else {
+        setIsCollapsed(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
@@ -35,8 +54,8 @@ export default function DashboardClientLayout({
         userName={userName}
         userEmail={userEmail}
       />
-      <div className="flex flex-col max-h-screen overflow-hidden">
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+      <div className="flex flex-col max-h-screen overflow-hidden w-full">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 w-full">{children}</main>
         <Footer />
       </div>
     </div>

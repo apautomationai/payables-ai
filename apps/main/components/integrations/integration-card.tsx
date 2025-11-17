@@ -121,21 +121,21 @@ export function IntegrationCard({
   };
 
   return (
-    <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-      <CardHeader>
+    <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 w-full h-full">
+      <CardHeader className="p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
             {IntegrationLogo && <IntegrationLogo />}
-            <div>
-              <CardTitle className="text-lg">{name}</CardTitle>
-              <CardDescription>{category}</CardDescription>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base sm:text-lg truncate">{name}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm line-clamp-2">{category}</CardDescription>
             </div>
           </div>
           <IntegrationStatusBadge status={status} className="pt-1" />
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow space-y-3">
+      <CardContent className="flex-grow space-y-3 p-4 sm:p-6 pt-0">
         {errorMessage && (
           <Alert variant="destructive" className="border-destructive/30">
             <AlertTriangle className="h-4 w-4" />
@@ -145,7 +145,7 @@ export function IntegrationCard({
         )}
 
         {isConnected && (
-          <div className="space-y-2.5 text-sm text-muted-foreground border-l-2 pl-4 py-2">
+          <div className="space-y-2 sm:space-y-2.5 text-xs sm:text-sm text-muted-foreground border-l-2 pl-3 sm:pl-4 py-2">
             <IntegrationInfoRow
               icon={Power}
               label="Connected"
@@ -162,7 +162,7 @@ export function IntegrationCard({
         <IntegrationMetadataSection metadata={metadata} />
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="p-4 sm:p-6 pt-0">
         <form
           id={formId}
           action={updateAction}

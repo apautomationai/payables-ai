@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@workspace/ui/components/card";
 import type { Integration } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { IntegrationCard } from "./integration-card";
@@ -80,27 +79,19 @@ export default function IntegrationsList({
   });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Third-Party Integrations</CardTitle>
-        <CardDescription>
-          Connect and configure external services and platforms.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {integrations.map((integration) => (
-            <IntegrationCard
-              key={integration.name}
-              integration={integration}
-              updateAction={updateAction}
-              updateStartTimeAction={updateStartTimeAction}
-              shouldOpenConfigDialog={integration.backendName === "gmail" && shouldOpenGmailConfig}
-              onConfigDialogClose={integration.backendName === "gmail" ? onGmailConfigClose : undefined}
-            />
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="w-full">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+        {integrations.map((integration) => (
+          <IntegrationCard
+            key={integration.name}
+            integration={integration}
+            updateAction={updateAction}
+            updateStartTimeAction={updateStartTimeAction}
+            shouldOpenConfigDialog={integration.backendName === "gmail" && shouldOpenGmailConfig}
+            onConfigDialogClose={integration.backendName === "gmail" ? onGmailConfigClose : undefined}
+          />
+        ))}
+      </div>
+    </div>
   );
 }

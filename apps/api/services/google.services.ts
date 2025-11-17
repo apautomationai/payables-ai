@@ -521,7 +521,7 @@ export class GoogleServices {
 
       // Update lastRead in metadata after entire loop completes
       try {
-        const currentIntegration = await integrationsService.getIntegrations(userId);
+        const currentIntegration: any = await integrationsService.getIntegrations(userId);
         const integration = (currentIntegration.data || []).find((i: any) => i.id === integrationId);
         const currentMetadata = (integration?.metadata as any) || {};
         

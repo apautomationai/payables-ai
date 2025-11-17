@@ -4,12 +4,39 @@ import React, { useState } from "react";
 import { ChevronDown, ChevronUp, Info } from "lucide-react";
 import { Button } from "@workspace/ui/components/button";
 import { cn } from "@workspace/ui/lib/utils";
-import { formatMetadataForDisplay, formatDate } from "./integration-utils";
+import { formatDate } from "./integration-utils";
 
 interface IntegrationMetadataSectionProps {
   metadata?: Record<string, any>;
   className?: string;
 }
+
+/**
+ * Formats a key to uppercase with spaces between words
+ */
+const formatKeyToUppercase = (key: string): string => {
+  // Convert camelCase/PascalCase to UPPERCASE with spaces
+  return key
+    .replace(/([A-Z])/g, " $1") // Add space before capital letters
+    .trim()
+    // .toUpperCase();
+};
+
+/**
+ * Checks if a value should be displayed (not null, undefined, or empty string)
+ */
+const hasValue = (value: any): boolean => {
+  if (value === null || value === undefined || value === "") {
+    return false;
+  }
+  if (Array.isArray(value) && value.length === 0) {
+    return false;
+  }
+  if (typeof value === "object" && Object.keys(value).length === 0) {
+    return false;
+  }
+  return true;
+};
 
 export function IntegrationMetadataSection({
   metadata,
@@ -21,7 +48,13 @@ export function IntegrationMetadataSection({
     return null;
   }
 
-  const displayMetadata = formatMetadataForDisplay(metadata);
+  // Filter metadata to only include fields with values
+  const displayMetadata: Record<string, any> = {};
+  for (const [key, value] of Object.entries(metadata)) {
+    if (hasValue(value)) {
+      displayMetadata[key] = value;
+    }
+  }
 
   // Don't show section if there's no metadata to display
   if (Object.keys(displayMetadata).length === 0) {
@@ -32,12 +65,27 @@ export function IntegrationMetadataSection({
     if (value === null || value === undefined) return "N/A";
     if (typeof value === "boolean") return value ? "Yes" : "No";
     if (Array.isArray(value)) {
-      return value.length === 0
-        ? "No items"
-        : `${value.length} item(s)`;
+      if (value.length === 0) return "No items";
+      // For arrays, show first few items or count
+      if (value.length <= 3) {
+        return value.join(", ");
+      }
+      return `${value.slice(0, 3).join(", ")} ... (+${value.length - 3} more)`;
     }
     if (typeof value === "object") {
-      return JSON.stringify(value, null, 2);
+      // For nested objects, show as formatted JSON
+      try {
+        return JSON.stringify(value, null, 2);
+      } catch {
+        return String(value);
+      }
+    }
+    // Check if it's a date string
+    if (typeof value === "string") {
+      const dateValue = formatDate(value);
+      if (dateValue) {
+        return dateValue;
+      }
     }
     return String(value);
   };
@@ -68,8 +116,8 @@ export function IntegrationMetadataSection({
               key={key}
               className="flex flex-col sm:flex-row items-start gap-1 sm:gap-2 py-1 border-b last:border-b-0"
             >
-              <span className="font-medium text-muted-foreground sm:min-w-[120px] capitalize shrink-0">
-                {key.replace(/([A-Z])/g, " $1").trim()}:
+              <span className="font-medium text-muted-foreground sm:min-w-[120px] shrink-0 capitalize">
+                {formatKeyToUppercase(key)}:
               </span>
               <span className="text-foreground break-words flex-1 min-w-0">
                 {renderValue(value)}

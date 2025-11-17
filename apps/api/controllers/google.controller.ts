@@ -470,7 +470,12 @@ export class GoogleController {
       if (!id) {
         throw new BadRequestError("No id found");
       }
-      const response = await googleServices.getAttachmentWithId(id);
+      //@ts-ignore
+      const userId = req.user.id;
+      if (!userId) {
+        throw new BadRequestError("User ID is required");
+      }
+      const response = await googleServices.getAttachmentWithId(id, userId);
       const att = response[0];
       //convert s3Url to attachment
       const s3Key = att.fileUrl!.split(".amazonaws.com/")[1];

@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
-import { and, eq, ne, or } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 interface UpdatedData {
   name: "google";
   status: "pending" | "approved" | "rejected" | "failed" | "not_connected";

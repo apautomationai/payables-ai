@@ -6,7 +6,7 @@ import { Router } from "express";
 const router = Router();
 
 router.get("/auth", authenticate, googleController.authRedirect);
-router.get("/callback", authenticate, googleController.oauthCallback);
+router.get("/callback", googleController.oauthCallback);
 router.get("/emails", googleController.syncEmails);
 router.get("/emails/my", authenticate, googleController.syncMyEmails);
 router.get("/attachments", authenticate, googleController.getAttachments);

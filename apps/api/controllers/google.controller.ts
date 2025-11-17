@@ -18,12 +18,20 @@ const oAuth2Client = new google.auth.OAuth2(
 export class GoogleController {
   //@ts-ignore
   authRedirect = async (req: Request, res: Response) => {
-    const url = googleServices.generateAuthUrl();
-    // const token = req.headers.authorization;
+    // @ts-ignore - user is added by auth middleware
+    const userId = req.user?.id;
 
-    //@ts-ignore
+    if (!userId) {
+      return res.status(401).json({ message: "User not authenticated" });
+    }
+
+    // Generate state parameter for security (like QuickBooks)
+    const state = Buffer.from(JSON.stringify({ userId })).toString("base64");
+    const url = googleServices.generateAuthUrl(state);
+
+    // @ts-ignore
     if (req.token) {
-      //@ts-ignore
+      // @ts-ignore
       res.cookie("token", req.token, { httpOnly: true });
     }
 
@@ -35,18 +43,38 @@ export class GoogleController {
   oauthCallback = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const code = req.query.code as string;
+      const state = req.query.state as string;
 
-      if (!code)
-        return res
-          .status(400)
-          .json({ message: "Authorization code is required" });
+      if (!code) {
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = "Authorization code is required";
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
+
+      // Verify state parameter to get userId
+      let userId: number;
+      try {
+        if (!state) {
+          throw new BadRequestError("Missing state parameter");
+        }
+        const stateData = JSON.parse(
+          Buffer.from(state, "base64").toString()
+        );
+        userId = stateData.userId;
+        if (!userId) {
+          throw new BadRequestError("Invalid state parameter: missing userId");
+        }
+      } catch (error: any) {
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = `Invalid state parameter: ${error.message}`;
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
 
       const tokens = await googleServices.getTokensFromCode(code);
 
       oAuth2Client.setCredentials(tokens);
-
-      //@ts-ignore
-      const userId = req.user.id;
 
       // Fetch user info from Google to get email and provider_id
       let userInfo;
@@ -54,21 +82,20 @@ export class GoogleController {
         userInfo = await googleServices.getUserInfo(tokens);
       } catch (error: any) {
         console.error("Failed to fetch user info from Google:", error);
-        return res.status(500).json({
-          success: false,
-          message: "Failed to fetch user information from Google",
-          error: error.message,
-        });
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = "Failed to fetch user information from Google";
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
       }
 
       // Check if email already exists in another integration
       if (userInfo.email) {
         const emailExists = await integrationsService.checkEmailExists(userInfo.email, userId);
         if (emailExists) {
-          return res.status(400).json({
-            success: false,
-            message: "This email is already connected to another sledge account. Please disconnect it from that account then try again.",
-          });
+          const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+          const errorMessage = "This email is already connected to another sledge account. Please disconnect it from that account then try again.";
+          const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+          return res.redirect(redirectUrl);
         }
       }
 
@@ -129,23 +156,17 @@ export class GoogleController {
         throw new Error(error.message);
       }
 
-      const REDIRECT_URI = new URL(process.env.OAUTH_REDIRECT_URI!);
-      REDIRECT_URI.searchParams.set("type", "integration.gmail");
-      REDIRECT_URI.searchParams.set("message", "Gmail successfully integrated");
-      // res.redirect(REDIRECT_URI.toString());
-      return res.status(200).json({
-        message: "OAuth successful",
-        access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
-        expiry_date: tokens.expiry_date,
-      });
+      // Redirect to frontend integrations page with success
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/integrations?message=Gmail successfully integrated&type=success`;
+      return res.redirect(redirectUrl);
     } catch (error: any) {
       console.error("Integration insert error:", error);
-      res.status(500).json({
-        success: false,
-        message: "Integration insert failed",
-        error: error.message,
-      });
+      // Redirect to frontend integrations page with error
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const errorMessage = error.message || "Failed to connect Gmail";
+      const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+      return res.redirect(redirectUrl);
     }
   };
 

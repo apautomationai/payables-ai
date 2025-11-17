@@ -17,7 +17,7 @@ const oAuth2Client = new google.auth.OAuth2(
 );
 
 export class GoogleServices {
-  generateAuthUrl = (): string => {
+  generateAuthUrl = (state?: string): string => {
     return oAuth2Client.generateAuthUrl({
       access_type: "offline",
       prompt: "consent",
@@ -26,6 +26,7 @@ export class GoogleServices {
         "https://www.googleapis.com/auth/gmail.modify",
         "https://www.googleapis.com/auth/userinfo.email",
       ],
+      ...(state && { state }),
     });
   };
 

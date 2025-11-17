@@ -51,30 +51,40 @@ async function handleRequest(request: NextRequest, method: string) {
     }
 
     // Forward the request to the backend
+    // Use redirect: 'manual' to handle redirects ourselves
     const backendResponse = await fetch(
       `${backendUrl}/api/v1/google/callback${queryString}`,
       {
         method,
         headers,
         body: method !== "GET" && method !== "DELETE" ? await request.text() : undefined,
+        redirect: 'manual', // Don't follow redirects automatically
       }
     );
 
-    // Handle response and redirect appropriately
+    // Handle redirect responses from backend
+    if (backendResponse.status >= 300 && backendResponse.status < 400) {
+      const location = backendResponse.headers.get('location');
+      if (location) {
+        return NextResponse.redirect(location);
+      }
+    }
+
+    // Handle success responses (200)
     if (backendResponse.status === 200) {
       const redirectUrl = new URL("/integrations", request.url);
       redirectUrl.searchParams.set("type", "integration.gmail");
       redirectUrl.searchParams.set("message", "Gmail successfully integrated");
       return NextResponse.redirect(redirectUrl);
-    } else {
-      // Handle error responses (e.g., duplicate email)
-      const errorData = await backendResponse.json().catch(() => ({}));
-      const errorMessage = errorData.message || "Failed to connect Gmail";
-      const redirectUrl = new URL("/integrations", request.url);
-      redirectUrl.searchParams.set("type", "error");
-      redirectUrl.searchParams.set("message", encodeURIComponent(errorMessage));
-      return NextResponse.redirect(redirectUrl);
     }
+
+    // Handle error responses
+    const errorData = await backendResponse.json().catch(() => ({}));
+    const errorMessage = errorData.message || "Failed to connect Gmail";
+    const redirectUrl = new URL("/integrations", request.url);
+    redirectUrl.searchParams.set("type", "error");
+    redirectUrl.searchParams.set("message", encodeURIComponent(errorMessage));
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     console.error("Error forwarding request to backend:", error);
     return NextResponse.json(

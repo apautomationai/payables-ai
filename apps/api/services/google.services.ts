@@ -519,24 +519,31 @@ export class GoogleServices {
         }
       }
 
-      // Update lastRead in metadata after entire loop completes
+      // Update lastReadAt and lastProcessedAt in metadata after entire loop completes
       try {
         const currentIntegration: any = await integrationsService.getIntegrations(userId);
         const integration = (currentIntegration.data || []).find((i: any) => i.id === integrationId);
         const currentMetadata = (integration?.metadata as any) || {};
         
+        const updatedMetadata: any = {
+          ...currentMetadata,
+          lastReadAt: new Date().toISOString(),
+        };
+        
+        // Update lastProcessedAt if any attachments were successfully sent to queue
+        if (metadata.storedAttachments > 0) {
+          updatedMetadata.lastProcessedAt = new Date().toISOString();
+        }
+        
         await integrationsService.updateIntegration(integrationId, {
-          metadata: {
-            ...currentMetadata,
-            lastRead: new Date().toISOString(),
-          },
+          metadata: updatedMetadata,
         });
       } catch (integrationError: any) {
         metadata.errors.push({
-          stage: "updateIntegrationLastRead",
+          stage: "updateIntegrationMetadata",
           error:
             integrationError?.message ||
-            "Failed to update integration lastRead in metadata",
+            "Failed to update integration metadata",
           stack:
             process.env.NODE_ENV === "development"
               ? integrationError?.stack

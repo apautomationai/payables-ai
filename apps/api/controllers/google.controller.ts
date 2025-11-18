@@ -213,9 +213,9 @@ export class GoogleController {
             throw new Error("Missing access token");
           }
 
-          // Read lastRead from metadata
+          // Read lastReadAt from metadata (fallback to lastRead for backward compatibility, then startReading)
           const metadata = (integration.metadata as any) || {};
-          let lastRead = metadata.lastRead;
+          let lastRead = metadata.lastReadAt || metadata.lastRead;
           if (!lastRead) {
             lastRead = metadata.startReading;
           }
@@ -256,17 +256,24 @@ export class GoogleController {
             metadata.totalSuccess++;
             metadata.totalEmails += result.emailsSynced;
             
-            // Update lastRead in metadata after successful sync
+            // Update lastReadAt and lastProcessedAt in metadata after successful sync
             try {
               const currentMetadata = (integration.metadata as any) || {};
+              const updatedMetadata: any = {
+                ...currentMetadata,
+                lastReadAt: new Date().toISOString(),
+              };
+              
+              // Update lastProcessedAt if any attachments were successfully sent to queue
+              if (attachmentMetadata.storedAttachments > 0) {
+                updatedMetadata.lastProcessedAt = new Date().toISOString();
+              }
+              
               await integrationsService.updateIntegration(integration.id, {
-                metadata: {
-                  ...currentMetadata,
-                  lastRead: new Date().toISOString(),
-                },
+                metadata: updatedMetadata,
               });
             } catch (updateError: any) {
-              console.error("Failed to update lastRead in metadata:", updateError);
+              console.error("Failed to update metadata:", updateError);
               // Don't fail the request if metadata update fails
             }
           } else {
@@ -328,9 +335,9 @@ export class GoogleController {
         throw new BadRequestError("Need valid tokens");
       }
 
-      // Read lastRead from metadata
+      // Read lastReadAt from metadata (fallback to lastRead for backward compatibility, then startReading)
       const metadata = (integration.metadata as any) || {};
-      let lastRead = metadata.lastRead;
+      let lastRead = metadata.lastReadAt || metadata.lastRead;
       if (!lastRead) {
         lastRead = metadata.startReading;
       }
@@ -347,18 +354,26 @@ export class GoogleController {
         lastRead
       );
 
-      // Update lastRead in metadata after successful sync
+      // Update lastReadAt and lastProcessedAt in metadata after successful sync
       if (attachments.success) {
         try {
           const currentMetadata = (integration.metadata as any) || {};
+          const attachmentMetadata: any = attachments.metadata || {};
+          const updatedMetadata: any = {
+            ...currentMetadata,
+            lastReadAt: new Date().toISOString(),
+          };
+          
+          // Update lastProcessedAt if any attachments were successfully sent to queue
+          if (attachmentMetadata.storedAttachments > 0) {
+            updatedMetadata.lastProcessedAt = new Date().toISOString();
+          }
+          
           await integrationsService.updateIntegration(integration.id, {
-            metadata: {
-              ...currentMetadata,
-              lastRead: new Date().toISOString(),
-            },
+            metadata: updatedMetadata,
           });
         } catch (updateError: any) {
-          console.error("Failed to update lastRead in metadata:", updateError);
+          console.error("Failed to update metadata:", updateError);
           // Don't fail the request if metadata update fails
         }
       }

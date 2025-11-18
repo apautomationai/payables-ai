@@ -51,7 +51,7 @@ export default function IntegrationsView({
     String(message).toLowerCase().includes("gmail");
 
   const needsGmailConfig = integrations.some(
-    (i) => i.name === "gmail" && i.status === "success" && !i.startReading,
+    (i) => i.name === "gmail" && i.status === "success" && !i.metadata?.startReading,
   );
 
   useEffect(() => {
@@ -62,7 +62,7 @@ export default function IntegrationsView({
         if (
           gmailIntegration &&
           gmailIntegration.status === "success" &&
-          !gmailIntegration.startReading
+          !gmailIntegration.metadata?.startReading
         ) {
           // Directly open configure dialog, skip success message
           setShouldOpenGmailConfig(true);

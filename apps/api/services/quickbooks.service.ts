@@ -1306,7 +1306,6 @@ export class QuickBooksService {
 
         // Check if record exists
         const embeddingText = this.buildProductEmbeddingText(productData);
-        console.log('hit 1');
 
         const [existing] = await db
           .select()
@@ -1318,11 +1317,9 @@ export class QuickBooksService {
             ),
           )
           .limit(1);
-        console.log('hit 2');
         if (existing) {
           const existingEmbedding =
             (existing as { embedding?: number[] | null }).embedding ?? null;
-          console.log('hit 3'); 
           // Compare updated_at timestamps
           const dbUpdatedAt = existing.metaDataLastUpdatedTime
             ? new Date(existing.metaDataLastUpdatedTime).getTime()
@@ -1333,12 +1330,10 @@ export class QuickBooksService {
           const embeddingMissing =
             !existingEmbedding || existingEmbedding.length === 0;
 
-          console.log('hit 4');
           if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
             const embedding = embeddingText
               ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
               : null;
-            console.log('hit 5');
             await db
               .update(quickbooksProductsModel)
               .set({
@@ -1347,26 +1342,21 @@ export class QuickBooksService {
                 updatedAt: new Date(),
               })
               .where(eq(quickbooksProductsModel.id, existing.id));
-            console.log('hit 6');
             updated++;
           } else {
             // Skip - no changes
-            console.log('hit 7');
             skipped++;
           }
         } else {
           const embedding = embeddingText
             ? await this.maybeGenerateEmbedding(embeddingText)
             : null;
-          console.log('hit 8');
-          console.log('embedding', embedding);
           await db.insert(quickbooksProductsModel).values({
             ...productData,
             embedding,
             createdAt: metaDataCreateTime || new Date(),
             updatedAt: metaDataLastUpdatedTime || new Date(),
           });
-          console.log('hit 9');
           inserted++;
         }
       } catch (error) {

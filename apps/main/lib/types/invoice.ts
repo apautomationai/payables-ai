@@ -6,10 +6,12 @@ export type Attachment = {
   email: string;
   filename: string;
   mimeType: string;
+  status: string; // pending, processing, success, failed
   sender: string;
   receiver: string;
   fileUrl: string;
   fileKey: string;
+  provider?: string;
   isDeleted?: boolean;
   deletedAt?: string | null;
   created_at: string;

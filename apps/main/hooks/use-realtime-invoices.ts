@@ -10,6 +10,7 @@ interface UseRealtimeInvoicesProps {
     onInvoiceUpdated?: (invoiceId: number) => void;
     onInvoiceStatusUpdated?: (invoiceId: number, status: string) => void;
     onInvoiceDeleted?: (invoiceId: number) => void;
+    onAttachmentStatusUpdated?: (attachmentId: number, status: string) => void;
     enableToasts?: boolean;
     autoConnect?: boolean;
 }
@@ -20,6 +21,7 @@ export const useRealtimeInvoices = ({
     onInvoiceUpdated,
     onInvoiceStatusUpdated,
     onInvoiceDeleted,
+    onAttachmentStatusUpdated,
     enableToasts = true,
     autoConnect = true,
 }: UseRealtimeInvoicesProps = {}) => {
@@ -30,6 +32,7 @@ export const useRealtimeInvoices = ({
         onInvoiceUpdated,
         onInvoiceStatusUpdated,
         onInvoiceDeleted,
+        onAttachmentStatusUpdated,
     });
 
     // Update handlers ref when props change
@@ -40,8 +43,9 @@ export const useRealtimeInvoices = ({
             onInvoiceUpdated,
             onInvoiceStatusUpdated,
             onInvoiceDeleted,
+            onAttachmentStatusUpdated,
         };
-    }, [onRefreshNeeded, onInvoiceCreated, onInvoiceUpdated, onInvoiceStatusUpdated, onInvoiceDeleted]);
+    }, [onRefreshNeeded, onInvoiceCreated, onInvoiceUpdated, onInvoiceStatusUpdated, onInvoiceDeleted, onAttachmentStatusUpdated]);
 
     // WebSocket notification handler
     const handleNotification = useCallback((data: any) => {
@@ -87,6 +91,9 @@ export const useRealtimeInvoices = ({
                 break;
             case 'INVOICE_DELETED':
                 handlersRef.current.onInvoiceDeleted?.(data.invoiceId);
+                break;
+            case 'ATTACHMENT_STATUS_UPDATED':
+                handlersRef.current.onAttachmentStatusUpdated?.(data.attachmentId, data.status);
                 break;
         }
 

@@ -43,6 +43,14 @@ class ProcessorController {
       throw new BadRequestError("Invalid attachment ID");
     }
     const response = await attachmentServices.updateAttachment(attachmentIdNumber, { status, ...updatedData });
+
+    // Emit WebSocket event for attachment status update
+    if (status && response) {
+      const wsService = getWebSocketService();
+      const userId = response.userId;
+      wsService.emitAttachmentStatusUpdated(userId, attachmentIdNumber, status);
+    }
+
     return res.status(200).json({
       success: true,
       data: response,

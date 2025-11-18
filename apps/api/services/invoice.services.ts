@@ -207,6 +207,26 @@ export class InvoiceServices {
     return response;
   }
 
+  async getInvoicesByAttachmentId(attachmentId: number) {
+    const invoices = await db
+      .select({
+        id: invoiceModel.id,
+        status: invoiceModel.status,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        vendorName: invoiceModel.vendorName,
+        totalAmount: invoiceModel.totalAmount,
+      })
+      .from(invoiceModel)
+      .where(
+        and(
+          eq(invoiceModel.attachmentId, attachmentId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      );
+
+    return invoices;
+  }
+
   async updateInvoice(
     invoiceId: number,
     updatedData: Partial<typeof invoiceModel.$inferSelect>

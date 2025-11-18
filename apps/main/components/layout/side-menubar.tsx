@@ -18,6 +18,7 @@ import {
   PanelRightClose,
   ChevronRight,
   Menu,
+  Briefcase,
 } from "lucide-react";
 import {
   Avatar,
@@ -263,6 +264,14 @@ export default function SideMenuBar({
                 )}>
                   12
                 </span> */}
+              </NavLink>
+              <NavLink
+                href="/jobs"
+                icon={Briefcase}
+                isActive={pathname.startsWith("/jobs")}
+                isCollapsed={isCollapsed}
+              >
+                Jobs
               </NavLink>
               <NavLink
                 href="/integrations"

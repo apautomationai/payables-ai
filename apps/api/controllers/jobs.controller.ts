@@ -16,7 +16,8 @@ class JobsController {
             const page = parseInt(req.query.page as string) || 1;
             const limit = parseInt(req.query.limit as string) || 20;
             const statusFilter = (req.query.status as string) || "all";
-            const sortBy = (req.query.sortBy as string) || "newest";
+            const sortBy = (req.query.sortBy as string) || "received";
+            const sortOrder = (req.query.sortOrder as string) || "desc";
             const searchQuery = (req.query.search as string) || "";
 
             // Get attachments (jobs)
@@ -52,17 +53,22 @@ class JobsController {
                         } else if (attachment.status === "success" || attachment.status === "completed") {
                             // Attachment processed successfully, now check invoice statuses
                             if (invoiceCount > 0) {
-                                const statuses = invoices.map((inv: any) => inv.status);
-                                const allApproved = statuses.every((s: string) => s === "approved");
-                                const allRejected = statuses.every((s: string) => s === "rejected");
+                                // Filter out deleted invoices
+                                const activeInvoices = invoices.filter((inv: any) => inv.status !== "deleted");
+                                const statuses = activeInvoices.map((inv: any) => inv.status);
+
+                                const hasPending = statuses.some((s: string) => s === "pending" || s === "processing");
                                 const hasFailed = statuses.some((s: string) => s === "failed");
+                                const allApprovedOrRejected = statuses.every((s: string) => s === "approved" || s === "rejected");
 
                                 if (hasFailed) {
                                     jobStatus = "failed";
-                                } else if (allApproved) {
+                                } else if (allApprovedOrRejected && statuses.length > 0) {
+                                    // All invoices are either approved or rejected (any combination)
                                     jobStatus = "approved";
-                                } else if (allRejected) {
-                                    jobStatus = "rejected";
+                                } else if (hasPending) {
+                                    // At least one invoice needs review
+                                    jobStatus = "processed";
                                 } else {
                                     jobStatus = "processed";
                                 }
@@ -75,10 +81,25 @@ class JobsController {
                             jobStatus = "processed";
                         }
 
+                        // Get vendor name from first invoice if available
+                        const vendorName = invoiceCount > 0 && invoices[0]?.vendorName
+                            ? invoices[0].vendorName
+                            : null;
+
+                        // Calculate invoice status breakdown (excluding deleted)
+                        const activeInvoices = invoices.filter((inv: any) => inv.status !== "deleted");
+                        const invoiceStatusCounts = {
+                            approved: activeInvoices.filter((inv: any) => inv.status === "approved").length,
+                            rejected: activeInvoices.filter((inv: any) => inv.status === "rejected").length,
+                            pending: activeInvoices.filter((inv: any) => inv.status === "pending" || inv.status === "processing").length,
+                        };
+
                         return {
                             ...attachment,
                             invoiceCount,
                             jobStatus,
+                            vendorName,
+                            invoiceStatusCounts,
                         };
                     } catch (error) {
                         console.error(`Failed to fetch invoices for attachment ${attachment.id}:`, error);
@@ -86,6 +107,7 @@ class JobsController {
                             ...attachment,
                             invoiceCount: 0,
                             jobStatus: "pending" as const,
+                            invoiceStatusCounts: { approved: 0, rejected: 0, pending: 0 },
                         };
                     }
                 })
@@ -97,8 +119,7 @@ class JobsController {
                 pending: jobsWithStatus.filter((j: any) => j.jobStatus === "pending").length,
                 processing: jobsWithStatus.filter((j: any) => j.jobStatus === "processing").length,
                 processed: jobsWithStatus.filter((j: any) => j.jobStatus === "processed").length,
-                approved: jobsWithStatus.filter((j: any) => j.jobStatus === "approved").length,
-                rejected: jobsWithStatus.filter((j: any) => j.jobStatus === "rejected").length,
+                approved: jobsWithStatus.filter((j: any) => j.jobStatus === "approved" || j.jobStatus === "rejected").length,
                 failed: jobsWithStatus.filter((j: any) => j.jobStatus === "failed").length,
             };
 
@@ -121,14 +142,44 @@ class JobsController {
 
             // Apply sorting
             jobsWithStatus.sort((a: any, b: any) => {
-                if (sortBy === "newest") {
-                    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-                } else if (sortBy === "oldest") {
-                    return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-                } else if (sortBy === "filename") {
-                    return a.filename.localeCompare(b.filename);
+                let comparison = 0;
+
+                switch (sortBy) {
+                    case "job":
+                        comparison = String(a.id).localeCompare(String(b.id));
+                        break;
+                    case "vendor":
+                        const vendorA = a.vendorName || "";
+                        const vendorB = b.vendorName || "";
+                        comparison = vendorA.localeCompare(vendorB);
+                        break;
+                    case "source":
+                        const sourceA = a.provider || "";
+                        const sourceB = b.provider || "";
+                        comparison = sourceA.localeCompare(sourceB);
+                        break;
+                    case "email":
+                        const emailA = a.sender || "";
+                        const emailB = b.sender || "";
+                        comparison = emailA.localeCompare(emailB);
+                        break;
+                    case "received":
+                        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+                        break;
+                    case "invoices":
+                        comparison = a.invoiceCount - b.invoiceCount;
+                        break;
+                    case "status":
+                        const statusOrder = ["pending", "processing", "processed", "approved", "failed"];
+                        const statusA = statusOrder.indexOf(a.jobStatus);
+                        const statusB = statusOrder.indexOf(b.jobStatus);
+                        comparison = statusA - statusB;
+                        break;
+                    default:
+                        comparison = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
                 }
-                return 0;
+
+                return sortOrder === "asc" ? comparison : -comparison;
             });
 
             const result = {

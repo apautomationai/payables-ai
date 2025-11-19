@@ -25,7 +25,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
 
@@ -38,6 +38,12 @@ export interface Job {
     created_at: string;
     invoiceCount: number;
     jobStatus: "pending" | "processing" | "processed" | "approved" | "rejected" | "failed";
+    vendorName?: string | null;
+    invoiceStatusCounts?: {
+        approved: number;
+        rejected: number;
+        pending: number;
+    };
 }
 
 interface JobsTableProps {
@@ -45,9 +51,12 @@ interface JobsTableProps {
     isLoading: boolean;
     onReviewJob: (jobId: string) => void;
     onJobDeleted?: () => void;
+    sortBy: string;
+    sortOrder: "asc" | "desc";
+    onSort: (field: string) => void;
 }
 
-export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTableProps) {
+export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, sortOrder, onSort }: JobsTableProps) {
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; jobId?: string; filename?: string }>({ open: false });
     const [isDeleting, setIsDeleting] = useState(false);
 
@@ -86,32 +95,27 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTa
                 );
             case "processing":
                 return (
-                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
                         Processing
                     </Badge>
                 );
-            case "rejected":
+            case "processed":
                 return (
-                    <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
-                        Rejected
+                    <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                        Needs Review
                     </Badge>
                 );
             case "approved":
+            case "rejected":
                 return (
                     <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">
-                        Approved
+                        Completed
                     </Badge>
                 );
             case "failed":
                 return (
                     <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">
                         Failed
-                    </Badge>
-                );
-            case "processed":
-                return (
-                    <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">
-                        Processed
                     </Badge>
                 );
             default:
@@ -142,26 +146,111 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTa
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[250px] max-w-[250px]">Job</TableHead>
-                            <TableHead className="min-w-[150px]">Vendor</TableHead>
-                            <TableHead className="min-w-[100px]">Source</TableHead>
-                            <TableHead className="min-w-[200px]">Email</TableHead>
-                            <TableHead className="min-w-[120px]">Received</TableHead>
-                            <TableHead className="min-w-[80px]">Pages</TableHead>
-                            <TableHead className="min-w-[120px]">Status</TableHead>
+                            <TableHead className="w-[250px] max-w-[250px] p-0">
+                                <button
+                                    onClick={() => onSort("job")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Job
+                                    {sortBy === "job" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[150px] p-0">
+                                <button
+                                    onClick={() => onSort("vendor")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Vendor
+                                    {sortBy === "vendor" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[100px] p-0">
+                                <button
+                                    onClick={() => onSort("source")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Source
+                                    {sortBy === "source" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[200px] p-0">
+                                <button
+                                    onClick={() => onSort("email")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Email
+                                    {sortBy === "email" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[120px] p-0">
+                                <button
+                                    onClick={() => onSort("received")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Received
+                                    {sortBy === "received" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[80px] p-0">
+                                <button
+                                    onClick={() => onSort("invoices")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Invoices
+                                    {sortBy === "invoices" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[150px]">Invoice Status</TableHead>
+                            <TableHead className="min-w-[120px] p-0">
+                                <button
+                                    onClick={() => onSort("status")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Status
+                                    {sortBy === "status" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
                             <TableHead className="text-right min-w-[140px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                     Loading...
                                 </TableCell>
                             </TableRow>
                         ) : jobs.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                                     No jobs found
                                 </TableCell>
                             </TableRow>
@@ -179,7 +268,7 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTa
                                                             onReviewJob(job.id);
                                                         }}
                                                     >
-                                                        {job.filename}
+                                                        {job.id}
                                                     </div>
                                                 </TooltipTrigger>
                                                 <TooltipContent
@@ -187,15 +276,15 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTa
                                                     className="max-w-[400px] break-words z-50"
                                                     sideOffset={5}
                                                 >
-                                                    {job.filename}
+                                                    {job.id}
                                                 </TooltipContent>
                                             </Tooltip>
                                         </TooltipProvider>
                                     </TableCell>
-                                    <TableCell>{job.sender || "—"}</TableCell>
+                                    <TableCell>{job.vendorName || "—"}</TableCell>
                                     <TableCell>{getSourceDisplay(job.provider)}</TableCell>
                                     <TableCell className="max-w-[200px] truncate">
-                                        {getEmailDisplay(job.provider, job.receiver)}
+                                        {job.sender || "—"}
                                     </TableCell>
                                     <TableCell>
                                         {new Date(job.created_at).toLocaleDateString("en-US", {
@@ -205,6 +294,17 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTa
                                         })}
                                     </TableCell>
                                     <TableCell>{job.invoiceCount || 0}</TableCell>
+                                    <TableCell>
+                                        {job.invoiceStatusCounts ? (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <span className="text-green-600">✓ {job.invoiceStatusCounts.approved}</span>
+                                                <span className="text-red-600">✗ {job.invoiceStatusCounts.rejected}</span>
+                                                <span className="text-yellow-600">⏳ {job.invoiceStatusCounts.pending}</span>
+                                            </div>
+                                        ) : (
+                                            <span className="text-muted-foreground">—</span>
+                                        )}
+                                    </TableCell>
                                     <TableCell>{getStatusBadge(job.jobStatus)}</TableCell>
                                     <TableCell className="text-right">
                                         <div className="flex items-center justify-end gap-2">

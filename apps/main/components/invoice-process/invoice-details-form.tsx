@@ -2,14 +2,19 @@
 
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@workspace/ui/components/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@workspace/ui/components/accordion";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
-import { Progress } from "@workspace/ui/components/progress";
+
 import { InvoiceDetails, LineItem } from "@/lib/types/invoice";
 import ConfirmationModals from "./confirmation-modals";
 import { ScrollArea } from "@workspace/ui/components/scroll-area";
-import { Checkbox } from "@workspace/ui/components/checkbox";
-import { cn } from "@workspace/ui/lib/utils";
+
 import { formatLabel, formatDate } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
@@ -22,8 +27,6 @@ const FormField = ({
   label,
   value,
   isEditing,
-  isSelected,
-  onToggle,
   onChange,
   onDateChange,
 }: {
@@ -31,8 +34,6 @@ const FormField = ({
   label: string;
   value: string | number | boolean | any[] | null | undefined;
   isEditing: boolean;
-  isSelected: boolean;
-  onToggle: (fieldKey: string) => void;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onDateChange?: (fieldKey: string, dateString: string | undefined) => void;
 }) => {
@@ -75,53 +76,32 @@ const FormField = ({
   };
 
   return (
-    <div className="flex items-start gap-4">
-      <Checkbox
-        id={`select-${fieldKey}`}
-        checked={isSelected}
-        onCheckedChange={() => onToggle(fieldKey)}
-        className="mt-2.5"
-      />
-      <div className="flex-1 space-y-1">
-        <Label
-          htmlFor={fieldKey}
-          className={cn(
-            "text-xs",
-            isSelected ? "text-foreground" : "text-muted-foreground"
-          )}
-        >
-          {label}
-        </Label>
+    <div className="space-y-1.5">
+      <Label
+        htmlFor={fieldKey}
+        className="text-xs font-medium"
+      >
+        {label}
+      </Label>
 
-        {isDateField && isEditing ? (
-          <DatePicker
-            value={dateStringValue}
-            onDateChange={(dateString) => onDateChange?.(fieldKey, dateString)}
-            placeholder={`Select ${label.toLowerCase()}`}
-            className={cn(
-              "h-9",
-              isSelected
-                ? "border-green-500 focus-visible:ring-green-500/20"
-                : "border-input"
-            )}
-          />
-        ) : (
-          <Input
-            id={fieldKey}
-            name={fieldKey}
-            value={inputValue}
-            readOnly={!isEditing || isArrayField || isBooleanField}
-            onChange={handleChange}
-            onBlur={handleBlur}
-            className={cn(
-              "h-9 read-only:bg-muted/50 read-only:border-dashed",
-              isSelected
-                ? "border-green-500 focus-visible:ring-green-500/20"
-                : "border-input"
-            )}
-          />
-        )}
-      </div>
+      {isDateField && isEditing ? (
+        <DatePicker
+          value={dateStringValue}
+          onDateChange={(dateString) => onDateChange?.(fieldKey, dateString)}
+          placeholder={`Select ${label.toLowerCase()}`}
+          className="h-8"
+        />
+      ) : (
+        <Input
+          id={fieldKey}
+          name={fieldKey}
+          value={inputValue}
+          readOnly={!isEditing || isArrayField || isBooleanField}
+          onChange={handleChange}
+          onBlur={handleBlur}
+          className="h-8 read-only:bg-muted/50 read-only:border-dashed"
+        />
+      )}
     </div>
   );
 };
@@ -332,13 +312,7 @@ export default function InvoiceDetailsForm({
     fetchLineItems();
   }, [invoiceDetails?.id]);
 
-  const handleFieldToggle = (fieldKey: string) => {
-    setSelectedFields((prev) =>
-      prev.includes(fieldKey)
-        ? prev.filter((key) => key !== fieldKey)
-        : [...prev, fieldKey]
-    );
-  };
+
 
   const handleDateChange = (fieldKey: string, dateString: string | undefined) => {
     // Convert YYYY-MM-DD to ISO string for storage (but keep it as date-only)
@@ -371,117 +345,112 @@ export default function InvoiceDetailsForm({
     "fileUrl",
     "fileKey",
     "sourcePdfUrl",
-    "s3JsonKey"
+    "s3JsonKey",
+    "isDeleted",
+    "deletedAt"
   ];
   const fieldsToDisplay = allFields.filter(key => !hiddenFields.includes(key));
 
-  const mandatoryFields = [
-    "invoiceNumber",
-    "vendorName",
-    "customerName",
-    "invoiceDate",
-    "dueDate",
-    "totalAmount",
-  ];
 
-  const completedMandatoryFields = mandatoryFields.filter((field) =>
-    selectedFields.includes(field) && localInvoiceDetails[field as keyof InvoiceDetails]
-  ).length;
-
-  const progress =
-    (completedMandatoryFields / (mandatoryFields.length || 1)) * 100;
 
   return (
-    <Card className="h-[calc(100vh-10rem)] flex flex-col">
-      <CardHeader>
-        <CardTitle>Invoice Information</CardTitle>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col gap-4 overflow-hidden">
-        <ScrollArea className="flex-grow pr-4 -mr-4">
-          <div className="space-y-4">
-            {fieldsToDisplay.map((key) => (
-              <FormField
-                key={key}
-                fieldKey={key}
-                label={formatLabel(key)}
-                value={localInvoiceDetails[key as keyof InvoiceDetails] ?? null}
-                isEditing={true}
-                isSelected={selectedFields.includes(key)}
-                onToggle={handleFieldToggle}
-                onChange={onDetailsChange}
-                onDateChange={handleDateChange}
-              />
-            ))}
+    <div className="h-full flex flex-col gap-2">
+      {/* Accordion Sections */}
+      <div className="flex-1 overflow-y-auto min-h-0">
+        <Accordion type="multiple" defaultValue={["invoice-info", "line-items"]} className="space-y-2 h-full flex flex-col overflow-hidden">
+          {/* Section 1: Invoice Information */}
+          <AccordionItem value="invoice-info" className="border rounded-lg bg-card flex-shrink-0">
+            <AccordionTrigger className="px-4 py-2 hover:no-underline">
+              <span className="text-sm font-semibold">Invoice Information</span>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-3">
+              <ScrollArea className="h-[220px] pr-2">
+                <div className="space-y-2.5">
+                  {fieldsToDisplay.map((key) => (
+                    <FormField
+                      key={key}
+                      fieldKey={key}
+                      label={formatLabel(key)}
+                      value={localInvoiceDetails[key as keyof InvoiceDetails] ?? null}
+                      isEditing={true}
+                      onChange={onDetailsChange}
+                      onDateChange={handleDateChange}
+                    />
+                  ))}
+                </div>
+              </ScrollArea>
+            </AccordionContent>
+          </AccordionItem>
 
-            {/* Line Items Section */}
-            <div className="pt-4 border-t">
-              <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-medium text-foreground">Line Items</h3>
+          {/* Section 2: Line Items */}
+          <AccordionItem value="line-items" className="border rounded-lg bg-card flex-1 min-h-0 overflow-y-auto">
+            <AccordionTrigger className="px-4 py-2 hover:no-underline">
+              <div className="flex items-center justify-between w-full pr-2">
+                <span className="text-sm font-semibold">Line Items ({lineItems.length})</span>
                 {isLoadingLineItems && (
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                 )}
               </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-4 pb-3">
+              <div className="flex flex-col max-h-[400px]">
+                <ScrollArea className="flex-1 pr-2">
+                  {lineItems.length > 0 ? (
+                    <div className="space-y-2">
+                      {lineItems.map((item) => (
+                        <LineItemEditor
+                          key={item.id}
+                          lineItem={item}
+                          onUpdate={handleLineItemUpdate}
+                          onChange={handleLineItemChange}
+                          onDelete={handleLineItemDelete}
+                          isEditing={true}
+                          isQuickBooksConnected={isQuickBooksConnected}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    !isLoadingLineItems && (
+                      <p className="text-sm text-muted-foreground text-center py-3">
+                        No line items found
+                      </p>
+                    )
+                  )}
+                </ScrollArea>
 
-              {lineItems.length > 0 ? (
-                <div className="space-y-3">
-                  {lineItems.map((item) => (
-                    <LineItemEditor
-                      key={item.id}
-                      lineItem={item}
-                      onUpdate={handleLineItemUpdate}
-                      onChange={handleLineItemChange}
-                      onDelete={handleLineItemDelete}
-                      isEditing={true}
-                      isQuickBooksConnected={isQuickBooksConnected}
+                {/* Add Line Item Button */}
+                {invoiceDetails?.id && (
+                  <div className="mt-2 flex-shrink-0">
+                    <AddLineItemDialog
+                      invoiceId={invoiceDetails.id}
+                      onLineItemAdded={handleLineItemAdded}
                     />
-                  ))}
-                </div>
-              ) : (
-                !isLoadingLineItems && (
-                  <p className="text-sm text-muted-foreground">No line items found</p>
-                )
-              )}
+                  </div>
+                )}
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
 
-              {/* Add Line Item Button */}
-              {invoiceDetails?.id && (
-                <div className="mt-3 w-full">
-                  <AddLineItemDialog
-                    invoiceId={invoiceDetails.id}
-                    onLineItemAdded={handleLineItemAdded}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </ScrollArea>
-
-        <div className="flex-shrink-0 mt-auto pt-4 border-t">
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Field Completion</span>
-              <span>
-                {completedMandatoryFields} of {mandatoryFields.length}
-              </span>
-            </div>
-            <Progress value={progress} />
-          </div>
-          <ConfirmationModals
-            isEditing={isEditing}
-            setIsEditing={setIsEditing}
-            invoiceDetails={invoiceDetails}
-            originalInvoiceDetails={originalInvoiceDetails}
-            selectedFields={selectedFields}
-            onSave={onSave}
-            onReject={onReject}
-            onApprove={onApprove}
-            onCancel={onCancel}
-            onApprovalSuccess={onApprovalSuccess}
-            onInvoiceDetailsUpdate={onInvoiceDetailsUpdate}
-            onFieldChange={onFieldChange}
-          />
-        </div>
-      </CardContent>
-    </Card>
+      {/* Section 3: Action Buttons - Fixed at Bottom */}
+      <div className="flex-shrink-0">
+        <ConfirmationModals
+          isEditing={isEditing}
+          setIsEditing={setIsEditing}
+          invoiceDetails={invoiceDetails}
+          originalInvoiceDetails={originalInvoiceDetails}
+          selectedFields={selectedFields}
+          onSave={onSave}
+          onReject={onReject}
+          onApprove={onApprove}
+          onCancel={onCancel}
+          onApprovalSuccess={onApprovalSuccess}
+          onInvoiceDetailsUpdate={onInvoiceDetailsUpdate}
+          onFieldChange={onFieldChange}
+        />
+      </div>
+    </div>
   );
 }
 

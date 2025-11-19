@@ -257,10 +257,7 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, onDelete, isEditi
   };
 
   return (
-    <div className={cn(
-      "bg-muted/50 rounded-lg p-3 text-sm space-y-3",
-      isEditing && "border-2 border-primary"
-    )}>
+    <div className="border border-border rounded-lg bg-card p-3 text-sm space-y-3">
       {/* Line Item Info */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex-1">

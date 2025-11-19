@@ -9,6 +9,12 @@ import {
     TableHeader,
     TableRow,
 } from "@workspace/ui/components/table";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@workspace/ui/components/tooltip";
 
 export interface Job {
     id: string;
@@ -94,14 +100,14 @@ export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="min-w-[200px]">Job</TableHead>
+                            <TableHead className="w-[250px] max-w-[250px]">Job</TableHead>
                             <TableHead className="min-w-[150px]">Vendor</TableHead>
                             <TableHead className="min-w-[100px]">Source</TableHead>
                             <TableHead className="min-w-[200px]">Email</TableHead>
                             <TableHead className="min-w-[120px]">Received</TableHead>
                             <TableHead className="min-w-[80px]">Pages</TableHead>
                             <TableHead className="min-w-[120px]">Status</TableHead>
-                            <TableHead className="text-right min-w-[100px]">Actions</TableHead>
+                            <TableHead className="text-right min-w-[140px]">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -119,8 +125,31 @@ export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
                             </TableRow>
                         ) : (
                             jobs.map((job) => (
-                                <TableRow key={job.id} className="cursor-pointer hover:bg-muted/50">
-                                    <TableCell className="font-medium">{job.filename}</TableCell>
+                                <TableRow key={job.id} className="hover:bg-muted/50">
+                                    <TableCell className="font-medium w-[250px] max-w-[250px]">
+                                        <TooltipProvider delayDuration={300}>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <div
+                                                        className="truncate cursor-pointer"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            onReviewJob(job.id);
+                                                        }}
+                                                    >
+                                                        {job.filename}
+                                                    </div>
+                                                </TooltipTrigger>
+                                                <TooltipContent
+                                                    side="top"
+                                                    className="max-w-[400px] break-words z-50"
+                                                    sideOffset={5}
+                                                >
+                                                    {job.filename}
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
+                                    </TableCell>
                                     <TableCell>{job.sender || "—"}</TableCell>
                                     <TableCell>{getSourceDisplay(job.provider)}</TableCell>
                                     <TableCell className="max-w-[200px] truncate">
@@ -136,8 +165,12 @@ export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
                                     <TableCell>{job.invoiceCount || 0}</TableCell>
                                     <TableCell>{getStatusBadge(job.jobStatus)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button variant="ghost" size="sm" onClick={() => onReviewJob(job.id)}>
-                                            Review
+                                        <Button
+                                            size="sm"
+                                            onClick={() => onReviewJob(job.id)}
+                                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold"
+                                        >
+                                            Open Mission
                                         </Button>
                                     </TableCell>
                                 </TableRow>

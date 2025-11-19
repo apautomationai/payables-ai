@@ -67,8 +67,7 @@ export default function JobsPage() {
     };
 
     const handleReviewJob = (jobId: string) => {
-        // TODO: Navigate to job details page
-        console.log("Review job:", jobId);
+        router.push(`/jobs/${jobId}`);
     };
 
     return (

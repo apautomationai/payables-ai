@@ -145,6 +145,12 @@ export default function JobDetailPage() {
 
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: updatedData.status } : inv
+            ));
+
             setIsEditing(false);
         } catch (err) {
             toast.error("Failed to save changes");
@@ -161,6 +167,12 @@ export default function JobDetailPage() {
             const updatedData = response.data.data;
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: "approved" } : inv
+            ));
+
             toast.success("Invoice has been approved");
         } catch (err) {
             toast.error("Failed to approve invoice");
@@ -177,6 +189,12 @@ export default function JobDetailPage() {
             const updatedData = response.data.data;
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: "rejected" } : inv
+            ));
+
             toast.success("Invoice has been rejected");
         } catch (err) {
             toast.error("Failed to reject invoice");
@@ -304,40 +322,21 @@ export default function JobDetailPage() {
         <div className="space-y-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 bg-muted/30 rounded-lg px-4 py-3 border">
-                <div className="flex items-center gap-4">
-                    <Button variant="secondary" size="icon" onClick={handleBack} className="h-9 w-9">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Button>
-                </div>
+                <Button variant="secondary" size="icon" onClick={handleBack} className="h-9 w-9">
+                    <ArrowLeft className="h-4 w-4" />
+                </Button>
 
-                <div className="flex items-center gap-3">
-                    {invoiceDetails && invoiceDetails.status && (
-                        <Badge variant="outline" className={getStatusColor(invoiceDetails.status)}>
-                            {invoiceDetails.status.charAt(0).toUpperCase() + invoiceDetails.status.slice(1)}
-                        </Badge>
-                    )}
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                                <MoreVertical className="h-4 w-4 mr-2" />
-                                Actions
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
-                                <Copy className="h-4 w-4 mr-2" />
-                                Clone Page
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setShowDeleteDialog(true)}
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Job
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                {/* Status Counts */}
+                <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-medium text-sm px-3 py-1">
+                        Approved: {invoicesList.filter(inv => inv.status === "approved").length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 font-medium text-sm px-3 py-1">
+                        Rejected: {invoicesList.filter(inv => inv.status === "rejected").length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 font-medium text-sm px-3 py-1">
+                        Pending: {invoicesList.filter(inv => inv.status === "pending").length}
+                    </Badge>
                 </div>
             </div>
 
@@ -345,32 +344,68 @@ export default function JobDetailPage() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_500px] gap-4 h-[calc(100%-4rem)] ">
                 {/* Left Side - Invoice Preview with Carousel */}
                 <div className="flex flex-col h-full gap-4 min-w-0 overflow-hidden">
-                    {/* Carousel Controls */}
-                    {invoicesList.length > 1 && (
-                        <div className="flex items-center justify-center gap-2 bg-card rounded-lg border px-4 py-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handlePreviousInvoice}
-                                disabled={currentInvoiceIndex === 0}
-                                className="h-8 w-8"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <span className="text-sm font-medium px-2">
-                                Page {currentInvoiceIndex + 1} of {invoicesList.length}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleNextInvoice}
-                                disabled={currentInvoiceIndex === invoicesList.length - 1}
-                                className="h-8 w-8"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
+                    {/* Carousel Controls with Current Invoice Status and Actions */}
+                    <div className="flex items-center justify-between gap-4 bg-card rounded-lg border px-4 py-3">
+                        {/* Left: Navigation */}
+                        {invoicesList.length > 1 ? (
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handlePreviousInvoice}
+                                    disabled={currentInvoiceIndex === 0}
+                                    className="h-9 w-9 bg-primary/10 hover:bg-primary/20"
+                                >
+                                    <ChevronLeft className="h-5 w-5" />
+                                </Button>
+                                <span className="text-sm font-semibold px-3">
+                                    Invoice {currentInvoiceIndex + 1} of {invoicesList.length}
+                                </span>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={handleNextInvoice}
+                                    disabled={currentInvoiceIndex === invoicesList.length - 1}
+                                    className="h-9 w-9 bg-primary/10 hover:bg-primary/20"
+                                >
+                                    <ChevronRight className="h-5 w-5" />
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="text-sm font-semibold">Invoice Information</div>
+                        )}
+
+                        {/* Right: Current Invoice Status and Actions */}
+                        <div className="flex items-center gap-3">
+                            {invoiceDetails && invoiceDetails.status && (
+                                <Badge variant="outline" className={getStatusColor(invoiceDetails.status)}>
+                                    {invoiceDetails.status.charAt(0).toUpperCase() + invoiceDetails.status.slice(1)}
+                                </Badge>
+                            )}
+
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm" className="h-9">
+                                        <MoreVertical className="h-4 w-4 mr-2" />
+                                        Actions
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
+                                        <Copy className="h-4 w-4 mr-2" />
+                                        Clone Page
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem
+                                        className="text-destructive"
+                                        onClick={() => setShowDeleteDialog(true)}
+                                    >
+                                        <Trash2 className="h-4 w-4 mr-2" />
+                                        Delete Job
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
-                    )}
+                    </div>
 
                     {/* PDF Preview */}
                     <div className="flex-1 min-h-0 overflow-hidden">

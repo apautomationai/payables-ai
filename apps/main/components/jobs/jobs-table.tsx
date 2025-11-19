@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Badge } from "@workspace/ui/components/badge";
 import {
@@ -15,6 +15,19 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@workspace/ui/components/alert-dialog";
+import { Trash2, Loader2 } from "lucide-react";
+import { client } from "@/lib/axios-client";
+import { toast } from "sonner";
 
 export interface Job {
     id: string;
@@ -31,9 +44,38 @@ interface JobsTableProps {
     jobs: Job[];
     isLoading: boolean;
     onReviewJob: (jobId: string) => void;
+    onJobDeleted?: () => void;
 }
 
-export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
+export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted }: JobsTableProps) {
+    const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; jobId?: string; filename?: string }>({ open: false });
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDeleteClick = (e: React.MouseEvent, jobId: string, filename: string) => {
+        e.stopPropagation();
+        setDeleteDialog({ open: true, jobId, filename });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (!deleteDialog.jobId) return;
+
+        setIsDeleting(true);
+        try {
+            await client.delete(`/api/v1/google/attachments/${deleteDialog.jobId}`);
+            toast.success("Job deleted successfully");
+            setDeleteDialog({ open: false });
+
+            // Notify parent to refresh the list
+            if (onJobDeleted) {
+                onJobDeleted();
+            }
+        } catch (error) {
+            console.error("Failed to delete job:", error);
+            toast.error("Failed to delete job");
+        } finally {
+            setIsDeleting(false);
+        }
+    };
     const getStatusBadge = (status: "pending" | "processing" | "processed" | "approved" | "rejected" | "failed") => {
         switch (status) {
             case "pending":
@@ -165,13 +207,24 @@ export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
                                     <TableCell>{job.invoiceCount || 0}</TableCell>
                                     <TableCell>{getStatusBadge(job.jobStatus)}</TableCell>
                                     <TableCell className="text-right">
-                                        <Button
-                                            size="sm"
-                                            onClick={() => onReviewJob(job.id)}
-                                            className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold"
-                                        >
-                                            Open Mission
-                                        </Button>
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button
+                                                size="sm"
+                                                onClick={() => onReviewJob(job.id)}
+                                                disabled={job.invoiceCount === 0}
+                                                className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                Open Job
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={(e) => handleDeleteClick(e, job.id, job.filename)}
+                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -179,6 +232,40 @@ export function JobsTable({ jobs, isLoading, onReviewJob }: JobsTableProps) {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog({ open })}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Job</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Are you sure you want to delete this job? This will also delete all associated invoices and cannot be undone.
+                            {deleteDialog.filename && (
+                                <div className="mt-2 text-sm font-medium">
+                                    <strong>Job:</strong> {deleteDialog.filename}
+                                </div>
+                            )}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleDeleteConfirm}
+                            disabled={isDeleting}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                            {isDeleting ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                    Deleting...
+                                </>
+                            ) : (
+                                "Delete"
+                            )}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

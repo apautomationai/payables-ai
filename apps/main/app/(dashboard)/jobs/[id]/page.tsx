@@ -358,7 +358,7 @@ export default function JobDetailPage() {
                                 <ChevronLeft className="h-4 w-4" />
                             </Button>
                             <span className="text-sm font-medium px-2">
-                                Invoice {currentInvoiceIndex + 1} of {invoicesList.length}
+                                Page {currentInvoiceIndex + 1} of {invoicesList.length}
                             </span>
                             <Button
                                 variant="ghost"

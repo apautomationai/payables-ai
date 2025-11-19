@@ -88,7 +88,7 @@ export default function JobsPage() {
                 />
             </div>
 
-            <JobsTable jobs={jobs} isLoading={isLoading} onReviewJob={handleReviewJob} />
+            <JobsTable jobs={jobs} isLoading={isLoading} onReviewJob={handleReviewJob} onJobDeleted={refetch} />
 
             <JobsPagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
 

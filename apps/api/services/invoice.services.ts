@@ -134,8 +134,19 @@ export class InvoiceServices {
     }
   }
 
-  async getAllInvoices(userId: number, page: number, limit: number) {
+  async getAllInvoices(userId: number, page: number, limit: number, attachmentId?: number) {
     const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(invoiceModel.userId, userId),
+      eq(invoiceModel.isDeleted, false)
+    ];
+
+    // Add attachmentId filter if provided
+    if (attachmentId !== undefined) {
+      whereConditions.push(eq(invoiceModel.attachmentId, attachmentId));
+    }
 
     const allInvoices = await db
       .select({
@@ -156,12 +167,7 @@ export class InvoiceServices {
         attachmentsModel,
         eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
-      .where(
-        and(
-          eq(invoiceModel.userId, userId),
-          eq(invoiceModel.isDeleted, false)
-        )
-      )
+      .where(and(...whereConditions))
       .orderBy(desc(invoiceModel.createdAt))
       .limit(limit)
       .offset(offset);
@@ -169,12 +175,7 @@ export class InvoiceServices {
     const [totalResult] = await db
       .select({ count: count() })
       .from(invoiceModel)
-      .where(
-        and(
-          eq(invoiceModel.userId, userId),
-          eq(invoiceModel.isDeleted, false)
-        )
-      );
+      .where(and(...whereConditions));
 
     return {
       invoices: allInvoices,

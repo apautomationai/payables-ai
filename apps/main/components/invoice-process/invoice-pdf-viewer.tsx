@@ -53,27 +53,7 @@ export default function InvoicePdfViewer({
       {/* Controls */}
       <div className="flex items-center justify-between border-b px-3 py-2 bg-muted/30">
         <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goToPrevPage}
-            disabled={pageNumber <= 1}
-            className="h-8 w-8"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-medium min-w-[80px] text-center">
-            {numPages > 0 ? `${pageNumber} / ${numPages}` : "Loading..."}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={goToNextPage}
-            disabled={pageNumber >= numPages}
-            className="h-8 w-8"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+
         </div>
 
         <div className="flex items-center gap-2">

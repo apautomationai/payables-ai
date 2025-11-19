@@ -60,11 +60,13 @@ class InvoiceController {
       const userId = req.user.id;
       const page = parseInt(req.query.page as string) || 1;
       const limit = parseInt(req.query.limit as string) || 20;
+      const attachmentId = req.query.attachmentId ? parseInt(req.query.attachmentId as string) : undefined;
 
       const { invoices, totalCount } = await invoiceServices.getAllInvoices(
         userId,
         page,
-        limit
+        limit,
+        attachmentId
       );
 
       return res.json({

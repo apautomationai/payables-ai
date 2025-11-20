@@ -10,6 +10,7 @@ import {
 } from "@workspace/ui/components/accordion";
 import { Label } from "@workspace/ui/components/label";
 import { Input } from "@workspace/ui/components/input";
+import { Button } from "@workspace/ui/components/button";
 
 import { InvoiceDetails, LineItem } from "@/lib/types/invoice";
 import ConfirmationModals from "./confirmation-modals";
@@ -19,8 +20,15 @@ import { formatLabel, formatDate } from "@/lib/utility/formatters";
 import { client } from "@/lib/axios-client";
 import { Loader2 } from "lucide-react";
 import { DatePicker } from "@/components/ui/date-picker";
-import { LineItemEditor } from "./line-item-editor";
+import { LineItemsTable } from "./line-items-table";
 import { AddLineItemDialog } from "./add-line-item-dialog";
+import { toast } from "sonner";
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@workspace/ui/components/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
+import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
+import { fetchQuickBooksAccounts, fetchQuickBooksItems } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
 
 const FormField = ({
   fieldKey,
@@ -121,6 +129,11 @@ interface InvoiceDetailsFormProps {
   onApprovalSuccess?: () => void;
   onInvoiceDetailsUpdate?: (updatedDetails: InvoiceDetails) => void;
   onFieldChange?: () => void;
+  setInvoicesList?: (invoices: any[]) => void;
+  setSelectedInvoiceId?: (id: number) => void;
+  setInvoiceDetails?: (details: InvoiceDetails) => void;
+  setOriginalInvoiceDetails?: (details: InvoiceDetails) => void;
+  setInvoiceDetailsCache?: (cache: any) => void;
   lineItemChangesRef?: React.MutableRefObject<{
     saveLineItemChanges: () => Promise<void>;
     hasChanges: () => boolean;
@@ -142,14 +155,28 @@ export default function InvoiceDetailsForm({
   onApprovalSuccess,
   onInvoiceDetailsUpdate,
   onFieldChange,
+  setInvoicesList,
+  setSelectedInvoiceId,
+  setInvoiceDetails: setInvoiceDetailsFromParent,
+  setOriginalInvoiceDetails: setOriginalInvoiceDetailsFromParent,
+  setInvoiceDetailsCache,
   lineItemChangesRef,
 }: InvoiceDetailsFormProps) {
-
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [isLoadingLineItems, setIsLoadingLineItems] = useState(false);
   const [localInvoiceDetails, setLocalInvoiceDetails] = useState<InvoiceDetails>(invoiceDetails);
   const [isQuickBooksConnected, setIsQuickBooksConnected] = useState<boolean | null>(null);
   const [lineItemChanges, setLineItemChanges] = useState<Record<number, Partial<LineItem>>>({});
+  const [selectedLineItems, setSelectedLineItems] = useState<Set<number>>(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showChangeTypeDialog, setShowChangeTypeDialog] = useState(false);
+  const [bulkItemType, setBulkItemType] = useState<'account' | 'product' | null>(null);
+  const [bulkResourceId, setBulkResourceId] = useState<string | null>(null);
+  const [isApplyingBulkChange, setIsApplyingBulkChange] = useState(false);
+  const [bulkAccounts, setBulkAccounts] = useState<any[]>([]);
+  const [bulkItems, setBulkItems] = useState<any[]>([]);
+  const [isLoadingBulkData, setIsLoadingBulkData] = useState(false);
 
   const handleLineItemUpdate = (updatedLineItem: LineItem) => {
     setLineItems((prevItems) =>
@@ -232,6 +259,115 @@ export default function InvoiceDetailsForm({
     } catch (error) {
       console.error("Error saving line item changes:", error);
       throw error; // Re-throw to let parent handle the error
+    }
+  };
+
+  // Method to delete selected line items
+  const handleDeleteLineItems = async () => {
+    if (selectedLineItems.size === 0) return;
+
+    setIsDeleting(true);
+    try {
+      // Delete all selected line items in parallel
+      await Promise.all(
+        Array.from(selectedLineItems).map((lineItemId) =>
+          client.delete(`/api/v1/invoice/line-items/${lineItemId}`)
+        )
+      );
+
+      toast.success(`${selectedLineItems.size} line item(s) deleted successfully`);
+      setSelectedLineItems(new Set());
+      setShowDeleteDialog(false);
+
+      // Refresh line items to get updated data
+      if (invoiceDetails?.id) {
+        const response: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        if (response.success) {
+          const sortedLineItems = [...response.data].sort((a, b) => {
+            const nameA = (a.item_name || '').toLowerCase();
+            const nameB = (b.item_name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          setLineItems(sortedLineItems);
+        }
+      }
+    } catch (error) {
+      console.error("Error deleting line items:", error);
+      toast.error("Failed to delete line items");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Load QuickBooks accounts for bulk change
+  const loadBulkAccounts = async () => {
+    setIsLoadingBulkData(true);
+    try {
+      const accountsData = await fetchQuickBooksAccounts();
+      setBulkAccounts(accountsData);
+    } catch (error) {
+      console.error("Error loading accounts:", error);
+      toast.error("Failed to load accounts");
+    } finally {
+      setIsLoadingBulkData(false);
+    }
+  };
+
+  // Load QuickBooks items for bulk change
+  const loadBulkItems = async () => {
+    setIsLoadingBulkData(true);
+    try {
+      const itemsData = await fetchQuickBooksItems();
+      setBulkItems(itemsData);
+    } catch (error) {
+      console.error("Error loading products/services:", error);
+      toast.error("Failed to load products/services");
+    } finally {
+      setIsLoadingBulkData(false);
+    }
+  };
+
+  // Method to apply bulk item type change
+  const handleApplyBulkChange = async () => {
+    if (selectedLineItems.size === 0 || !bulkItemType) return;
+
+    setIsApplyingBulkChange(true);
+    try {
+      // Update all selected line items in parallel
+      await Promise.all(
+        Array.from(selectedLineItems).map((lineItemId) =>
+          client.patch(`/api/v1/invoice/line-items/${lineItemId}`, {
+            itemType: bulkItemType,
+            resourceId: bulkResourceId,
+          })
+        )
+      );
+
+      toast.success(`${selectedLineItems.size} line item(s) updated successfully`);
+
+      // Refresh line items to get updated data
+      if (invoiceDetails?.id) {
+        const response: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceDetails.id}`);
+        if (response.success) {
+          const sortedLineItems = [...response.data].sort((a, b) => {
+            const nameA = (a.item_name || '').toLowerCase();
+            const nameB = (b.item_name || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+          });
+          setLineItems(sortedLineItems);
+        }
+      }
+
+      // Clear state after successful update
+      setSelectedLineItems(new Set());
+      setShowChangeTypeDialog(false);
+      setBulkItemType(null);
+      setBulkResourceId(null);
+    } catch (error) {
+      console.error("Error updating line items:", error);
+      toast.error("Failed to update line items");
+    } finally {
+      setIsApplyingBulkChange(false);
     }
   };
 
@@ -383,38 +519,113 @@ export default function InvoiceDetailsForm({
           </AccordionItem>
 
           {/* Section 2: Line Items */}
-          <AccordionItem value="line-items" className="border rounded-lg bg-card flex-1 min-h-0 overflow-y-auto">
-            <AccordionTrigger className="px-4 py-2 hover:no-underline">
-              <div className="flex items-center justify-between w-full pr-2">
+          <div className="border rounded-lg bg-card flex-1 min-h-0 overflow-y-auto flex flex-col">
+            <div className="flex items-center justify-between px-4 py-2 border-b">
+              <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm font-semibold">Line Items ({lineItems.length})</span>
-                {isLoadingLineItems && (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                {selectedLineItems.size > 0 && (
+                  <div className="flex items-center gap-2 ml-4">
+                    <span className="text-xs text-muted-foreground">({selectedLineItems.size} selected)</span>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={async () => {
+                        if (selectedLineItems.size === 0) return;
+
+                        try {
+                          const response: any = await client.post(
+                            `/api/v1/invoice/invoices/${invoiceDetails.id}/split`,
+                            { lineItemIds: Array.from(selectedLineItems) }
+                          );
+
+                          if (response.success) {
+                            toast.success("Invoice split successfully");
+                            setSelectedLineItems(new Set());
+
+                            // Refresh the invoices list filtered by attachmentId
+                            const attachmentId = invoiceDetails.attachmentId;
+                            const refreshResponse = await client.get(`/api/v1/invoice/invoices?attachmentId=${attachmentId}`);
+                            const invoiceData = refreshResponse.data?.data?.invoices || refreshResponse.data?.invoices || [];
+
+                            if (setInvoicesList) {
+                              setInvoicesList(invoiceData);
+                            }
+
+                            // Find and select the new split invoice (first one in the list)
+                            if (invoiceData.length > 0 && setSelectedInvoiceId) {
+                              const firstInvoice = invoiceData[0];
+                              setSelectedInvoiceId(firstInvoice.id);
+
+                              // Fetch details for the first invoice
+                              const detailsResponse = await client.get(`/api/v1/invoice/invoices/${firstInvoice.id}`);
+                              const newDetails = detailsResponse.data;
+
+                              if (setInvoiceDetailsFromParent) {
+                                setInvoiceDetailsFromParent(newDetails);
+                              }
+                              if (setOriginalInvoiceDetailsFromParent) {
+                                setOriginalInvoiceDetailsFromParent(newDetails);
+                              }
+                              if (setInvoiceDetailsCache) {
+                                setInvoiceDetailsCache((prev: any) => ({
+                                  ...prev,
+                                  [newDetails.id]: newDetails
+                                }));
+                              }
+                            }
+                          }
+                        } catch (error) {
+                          console.error("Error splitting invoice:", error);
+                          toast.error("Failed to split invoice");
+                        }
+                      }}
+                    >
+                      Split
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
+                      onClick={() => {
+                        setShowDeleteDialog(true);
+                      }}
+                    >
+                      Delete
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      onClick={() => {
+                        setShowChangeTypeDialog(true);
+                      }}
+                    >
+                      Change Type
+                    </Button>
+                  </div>
                 )}
               </div>
-            </AccordionTrigger>
-            <AccordionContent className="px-4 pb-3">
-              <div className="flex flex-col max-h-[400px]">
-                <ScrollArea className="flex-1 pr-2">
-                  {lineItems.length > 0 ? (
-                    <div className="space-y-2">
-                      {lineItems.map((item) => (
-                        <LineItemEditor
-                          key={item.id}
-                          lineItem={item}
-                          onUpdate={handleLineItemUpdate}
-                          onChange={handleLineItemChange}
-                          onDelete={handleLineItemDelete}
-                          isEditing={true}
-                          isQuickBooksConnected={isQuickBooksConnected}
-                        />
-                      ))}
+              {isLoadingLineItems && (
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              )}
+            </div>
+            <div className="px-2 pb-3 flex-1 flex flex-col min-h-0">
+              <div className="flex flex-col flex-1 min-h-0">
+                <ScrollArea className="flex-1">
+                  {isLoadingLineItems ? (
+                    <div className="text-center py-8">
+                      <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                     </div>
                   ) : (
-                    !isLoadingLineItems && (
-                      <p className="text-sm text-muted-foreground text-center py-3">
-                        No line items found
-                      </p>
-                    )
+                    <LineItemsTable
+                      key={lineItems.map(item => `${item.id}-${item.itemType}-${item.resourceId}`).join(',')}
+                      lineItems={lineItems}
+                      onUpdate={handleLineItemUpdate}
+                      onChange={handleLineItemChange}
+                      onDelete={handleLineItemDelete}
+                      isEditing={true}
+                      isQuickBooksConnected={isQuickBooksConnected}
+                      selectedItems={selectedLineItems}
+                      onSelectionChange={setSelectedLineItems}
+                    />
                   )}
                 </ScrollArea>
 
@@ -428,8 +639,8 @@ export default function InvoiceDetailsForm({
                   </div>
                 )}
               </div>
-            </AccordionContent>
-          </AccordionItem>
+            </div>
+          </div>
         </Accordion>
       </div>
 
@@ -450,6 +661,125 @@ export default function InvoiceDetailsForm({
           onFieldChange={onFieldChange}
         />
       </div>
+
+      <DeleteConfirmationDialog
+        open={showDeleteDialog}
+        onOpenChange={setShowDeleteDialog}
+        onConfirm={handleDeleteLineItems}
+        title="Delete Line Items"
+        description={`Are you sure you want to delete ${selectedLineItems.size} selected line item(s)? This action cannot be undone.`}
+        isDeleting={isDeleting}
+        confirmText="Delete"
+      />
+
+      <Dialog
+        open={showChangeTypeDialog}
+        onOpenChange={(open) => {
+          setShowChangeTypeDialog(open);
+          if (open && bulkItemType) {
+            // Load data when dialog opens based on current type
+            if (bulkItemType === 'account' && bulkAccounts.length === 0) {
+              loadBulkAccounts();
+            } else if (bulkItemType === 'product' && bulkItems.length === 0) {
+              loadBulkItems();
+            }
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Change Item Type</DialogTitle>
+            <DialogDescription>
+              Select the item type and category to apply to {selectedLineItems.size} selected line item(s).
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Item Type</Label>
+              <Select
+                value={bulkItemType || ""}
+                onValueChange={(value) => {
+                  const newType = value as 'account' | 'product';
+                  setBulkItemType(newType);
+                  setBulkResourceId(null); // Reset resource when type changes
+
+                  // Load data for the selected type
+                  if (newType === 'account' && bulkAccounts.length === 0) {
+                    loadBulkAccounts();
+                  } else if (newType === 'product' && bulkItems.length === 0) {
+                    loadBulkItems();
+                  }
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select item type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="account">Account</SelectItem>
+                  <SelectItem value="product">Product/Service</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {bulkItemType && (
+              <div className="space-y-2">
+                <Label>{bulkItemType === 'account' ? 'Account' : 'Product/Service'}</Label>
+                {bulkItemType === 'account' ? (
+                  <LineItemAutocomplete
+                    items={bulkAccounts}
+                    value={bulkResourceId}
+                    onSelect={(id) => setBulkResourceId(id)}
+                    placeholder="Search accounts..."
+                    isLoading={isLoadingBulkData}
+                    getDisplayName={(account: QuickBooksAccount) =>
+                      `${account.Name}${account.AccountType ? ` (${account.AccountType})` : ''}`
+                    }
+                  />
+                ) : (
+                  <LineItemAutocomplete
+                    items={bulkItems}
+                    value={bulkResourceId}
+                    onSelect={(id) => setBulkResourceId(id)}
+                    placeholder="Search products/services..."
+                    isLoading={isLoadingBulkData}
+                    getDisplayName={(item: QuickBooksItem) =>
+                      `${item.Name}${item.Type ? ` (${item.Type})` : ''}`
+                    }
+                  />
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowChangeTypeDialog(false);
+                setBulkItemType(null);
+                setBulkResourceId(null);
+              }}
+              disabled={isApplyingBulkChange}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleApplyBulkChange}
+              disabled={!bulkItemType || isApplyingBulkChange}
+            >
+              {isApplyingBulkChange ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Applying...
+                </>
+              ) : (
+                'Apply to Selected'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -26,6 +26,9 @@ router.patch("/:id/status", authenticate, requireSubscriptionAccess, invoiceCont
 // Clone an invoice
 router.post("/invoices/:id/clone", authenticate, requireSubscriptionAccess, invoiceController.cloneInvoice);
 
+// Split an invoice with selected line items
+router.post("/invoices/:id/split", authenticate, requireSubscriptionAccess, invoiceController.splitInvoice);
+
 // Delete an invoice
 router.delete("/invoices/:id", authenticate, requireSubscriptionAccess, invoiceController.deleteInvoice);
 

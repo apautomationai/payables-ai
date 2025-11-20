@@ -341,7 +341,7 @@ class InvoiceController {
       //@ts-ignore
       const userId = req.user.id;
       const { id } = req.params;
-      const { itemType, resourceId, quantity, rate, amount } = req.body;
+      const { itemType, resourceId, quantity, rate, amount, item_name, description } = req.body;
 
       if (!id) {
         throw new BadRequestError("Line item ID is required");
@@ -363,6 +363,8 @@ class InvoiceController {
         quantity?: string;
         rate?: string;
         amount?: string;
+        item_name?: string;
+        description?: string;
       } = {};
 
       if (itemType !== undefined) {
@@ -379,6 +381,12 @@ class InvoiceController {
       }
       if (amount !== undefined) {
         updateData.amount = String(amount);
+      }
+      if (item_name !== undefined) {
+        updateData.item_name = String(item_name);
+      }
+      if (description !== undefined) {
+        updateData.description = String(description);
       }
 
       const updatedLineItem = await invoiceServices.updateLineItem(lineItemId, updateData);
@@ -485,6 +493,42 @@ class InvoiceController {
       });
     } catch (error: any) {
       console.error("Error cloning invoice:", error);
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
+  async splitInvoice(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { id } = req.params;
+      const { lineItemIds } = req.body;
+
+      if (!id) {
+        throw new BadRequestError("Invoice ID is required");
+      }
+
+      if (!lineItemIds || !Array.isArray(lineItemIds) || lineItemIds.length === 0) {
+        throw new BadRequestError("Line item IDs are required");
+      }
+
+      const invoiceId = parseInt(id, 10);
+      if (isNaN(invoiceId)) {
+        throw new BadRequestError("Invoice ID must be a valid number");
+      }
+
+      const splitInvoice = await invoiceServices.splitInvoice(invoiceId, userId, lineItemIds);
+
+      return res.status(201).json({
+        success: true,
+        data: splitInvoice,
+        message: "Invoice split successfully",
+      });
+    } catch (error: any) {
+      console.error("Error splitting invoice:", error);
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,

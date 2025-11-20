@@ -341,7 +341,7 @@ export default function JobDetailPage() {
             </div>
 
             {/* Main Content - Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_500px] gap-4 h-[calc(100%-4rem)] ">
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_800px] gap-4 h-[calc(100%-4rem)] ">
                 {/* Left Side - Invoice Preview with Carousel */}
                 <div className="flex flex-col h-full gap-4 min-w-0 overflow-hidden">
                     {/* Carousel Controls with Current Invoice Status and Actions */}
@@ -393,14 +393,14 @@ export default function JobDetailPage() {
                                 <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
                                         <Copy className="h-4 w-4 mr-2" />
-                                        Clone Page
+                                        Clone Invoice
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="text-destructive"
                                         onClick={() => setShowDeleteDialog(true)}
                                     >
                                         <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete Job
+                                        Delete Invoice
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
@@ -439,6 +439,7 @@ export default function JobDetailPage() {
                             onCancel={handleCancelEdit}
                             onFieldChange={() => { }}
                             lineItemChangesRef={lineItemChangesRef}
+                            setInvoicesList={setInvoicesList}
                             onApprovalSuccess={() => {
                                 router.push("/jobs");
                             }}

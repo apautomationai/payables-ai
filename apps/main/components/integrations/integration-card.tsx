@@ -19,12 +19,12 @@ import {
 import { Button } from "@workspace/ui/components/button";
 import {
   Power,
-  Clock,
   CircleHelp,
   PauseCircle,
   PlayCircle,
   AlertTriangle,
   RefreshCcw,
+  Mail,
 } from "lucide-react";
 import client from "@/lib/axios-client";
 import type { Integration } from "./types";
@@ -43,7 +43,6 @@ import { IntegrationInfoRow } from "./integration-info-row";
 import { IntegrationMetadataSection } from "./integration-metadata-section";
 import {
   isIntegrationConnected,
-  getTokenExpiration,
   formatDate,
 } from "./integration-utils";
 
@@ -75,6 +74,7 @@ export function IntegrationCard({
     createdAt,
     metadata,
     errorMessage,
+    email,
   } = integration;
 
   const isConnected = isIntegrationConnected(status);
@@ -84,7 +84,6 @@ export function IntegrationCard({
   const IntegrationLogo = INTEGRATION_LOGOS[name];
   const [isSyncing, setIsSyncing] = useState(false);
 
-  const tokenExpiresAt = getTokenExpiration(metadata);
   const connectedTime = formatDate(createdAt);
 
   const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -159,15 +158,17 @@ export function IntegrationCard({
               label="Connected"
               value={connectedTime}
             />
-            <IntegrationInfoRow
-              icon={Clock}
-              label="Token Expires"
-              value={tokenExpiresAt ? formatDate(tokenExpiresAt) : "Never"}
-            />
+            {email && (
+              <IntegrationInfoRow
+                icon={Mail}
+                label="Email"
+                value={email}
+              />
+            )}
           </div>
         )}
 
-        <IntegrationMetadataSection metadata={metadata} />
+        <IntegrationMetadataSection metadata={metadata} backendName={backendName} />
       </CardContent>
 
       <CardFooter className="p-1 sm:p-2 pt-1">
@@ -201,7 +202,7 @@ export function IntegrationCard({
 
           {status === "success" && (
             <>
-              {isGmail && !integration.startReading && (
+              {isGmail && !metadata?.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -237,7 +238,7 @@ export function IntegrationCard({
 
           {status === "paused" && (
             <>
-              {isGmail && !integration.startReading && (
+              {isGmail && !metadata?.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}

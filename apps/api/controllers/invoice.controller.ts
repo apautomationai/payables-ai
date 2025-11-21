@@ -167,7 +167,7 @@ class InvoiceController {
         data: response,
       });
     } catch (error: any) {
-      console.log(error);
+      console.error("Error updating invoice:", error);
       return res.status(error.statusCode || 500).json({
         success: false,
         error: error.message,

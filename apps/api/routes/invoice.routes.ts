@@ -14,6 +14,9 @@ router.post("/invoices", authenticate, requireSubscriptionAccess, invoiceControl
 // Get all invoices (paginated)
 router.get("/invoices", authenticate, requireSubscriptionAccess, invoiceController.getAllInvoices);
 
+// Get lightweight invoices list (only IDs and statuses)
+router.get("/invoices-list", authenticate, requireSubscriptionAccess, invoiceController.getInvoicesList);
+
 // Get a single invoice by its ID
 router.get("/invoices/:id", authenticate, requireSubscriptionAccess, invoiceController.getInvoice);
 

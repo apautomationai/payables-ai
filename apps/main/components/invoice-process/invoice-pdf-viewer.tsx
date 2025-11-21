@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Document, Page, pdfjs } from "react-pdf";
 import { Button } from "@workspace/ui/components/button";
 import { ZoomIn, ZoomOut, Loader2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
@@ -21,7 +21,16 @@ export default function InvoicePdfViewer({
   const [scale, setScale] = useState<number>(1.0);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const pageRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [key, setKey] = useState<string>(fileUrl);
+
+  // Reset state when fileUrl changes
+  useEffect(() => {
+    setIsLoading(true);
+    setNumPages(0);
+    setCurrentPage(1);
+    setKey(fileUrl); // Force Document remount
+  }, [fileUrl]);
 
   function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
     setNumPages(numPages);
@@ -140,6 +149,7 @@ export default function InvoicePdfViewer({
         <div className="flex flex-col items-center gap-4 p-4">
           {fileUrl ? (
             <Document
+              key={key}
               file={fileUrl}
               onLoadSuccess={onDocumentLoadSuccess}
               onLoadError={onDocumentLoadError}

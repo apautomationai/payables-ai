@@ -76,8 +76,8 @@ export default function JobDetailPage() {
                     toast.error("Failed to load job details");
                 }
 
-                // Fetch invoices
-                const response = await client.get(`/api/v1/invoice/invoices?attachmentId=${jobId}`);
+                // Fetch lightweight invoices list (only IDs and statuses)
+                const response = await client.get(`/api/v1/invoice/invoices-list?attachmentId=${jobId}`);
                 const invoiceData = response.data?.data?.invoices || response.data?.invoices || [];
                 setInvoicesList(invoiceData);
 
@@ -126,11 +126,15 @@ export default function JobDetailPage() {
         }
     };
 
-    // Update details when invoice changes
+    // Update details when invoice changes (with debounce to prevent rapid API calls)
     useEffect(() => {
-        if (currentInvoiceId) {
+        if (!currentInvoiceId) return;
+
+        const timeoutId = setTimeout(() => {
             fetchInvoiceDetails(currentInvoiceId);
-        }
+        }, 150); // 150ms debounce
+
+        return () => clearTimeout(timeoutId);
     }, [currentInvoiceId]);
 
     const handleBack = () => {

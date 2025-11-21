@@ -89,6 +89,33 @@ class InvoiceController {
     }
   }
 
+  // Lightweight endpoint that only returns invoice IDs and statuses
+  async getInvoicesList(req: Request, res: Response) {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const attachmentId = req.query.attachmentId ? parseInt(req.query.attachmentId as string) : undefined;
+
+      if (!attachmentId) {
+        throw new BadRequestError("Attachment ID is required");
+      }
+
+      const invoicesList = await invoiceServices.getInvoicesListByAttachment(userId, attachmentId);
+
+      return res.json({
+        success: true,
+        data: {
+          invoices: invoicesList,
+        },
+      });
+    } catch (error: any) {
+      return res.status(error.statusCode || 500).json({
+        success: false,
+        error: error.message,
+      });
+    }
+  }
+
   async getDashboardMetrics(req: Request, res: Response) {
     try {
       //@ts-ignore

@@ -183,6 +183,28 @@ export class InvoiceServices {
     };
   }
 
+  // Lightweight method that only returns invoice IDs and statuses
+  async getInvoicesListByAttachment(userId: number, attachmentId: number) {
+    const invoicesList = await db
+      .select({
+        id: invoiceModel.id,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        status: invoiceModel.status,
+        createdAt: invoiceModel.createdAt,
+      })
+      .from(invoiceModel)
+      .where(
+        and(
+          eq(invoiceModel.userId, userId),
+          eq(invoiceModel.attachmentId, attachmentId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      )
+      .orderBy(desc(invoiceModel.createdAt));
+
+    return invoicesList;
+  }
+
   async getInvoice(invoiceId: number) {
     const [response] = await db
       .select({

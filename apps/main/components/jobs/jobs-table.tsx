@@ -25,9 +25,18 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
-import { Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, FileText } from "lucide-react";
 import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
+
+interface Invoice {
+    id: number;
+    invoiceNumber: string;
+    vendorName: string | null;
+    totalAmount: string | null;
+    status: string | null;
+    createdAt: string;
+}
 
 export interface Job {
     id: string;
@@ -49,7 +58,7 @@ export interface Job {
 interface JobsTableProps {
     jobs: Job[];
     isLoading: boolean;
-    onReviewJob: (jobId: string) => void;
+    onReviewJob: (jobId: string, invoiceId?: number) => void;
     onJobDeleted?: () => void;
     sortBy: string;
     sortOrder: "asc" | "desc";
@@ -59,10 +68,52 @@ interface JobsTableProps {
 export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, sortOrder, onSort }: JobsTableProps) {
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; jobId?: string; filename?: string }>({ open: false });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+    const [invoicesCache, setInvoicesCache] = useState<Record<string, Invoice[]>>({});
+    const [loadingInvoices, setLoadingInvoices] = useState<Set<string>>(new Set());
 
     const handleDeleteClick = (e: React.MouseEvent, jobId: string, filename: string) => {
         e.stopPropagation();
         setDeleteDialog({ open: true, jobId, filename });
+    };
+
+    const toggleRowExpansion = async (jobId: string) => {
+        const newExpandedRows = new Set(expandedRows);
+
+        if (expandedRows.has(jobId)) {
+            newExpandedRows.delete(jobId);
+        } else {
+            newExpandedRows.add(jobId);
+
+            // Fetch invoices if not already cached
+            if (!invoicesCache[jobId]) {
+                setLoadingInvoices(prev => new Set(prev).add(jobId));
+                try {
+                    const response = await client.get(`/api/v1/invoice/invoices?attachmentId=${jobId}`);
+                    const invoiceData = response.data?.data?.invoices || response.data?.invoices || [];
+                    setInvoicesCache(prev => ({ ...prev, [jobId]: invoiceData }));
+                } catch (error) {
+                    console.error("Failed to fetch invoices:", error);
+                    toast.error("Failed to load invoices");
+                } finally {
+                    setLoadingInvoices(prev => {
+                        const newSet = new Set(prev);
+                        newSet.delete(jobId);
+                        return newSet;
+                    });
+                }
+            }
+        }
+
+        setExpandedRows(newExpandedRows);
+    };
+
+    const handleRowClick = (jobId: string, job: Job) => {
+        // Don't expand if no invoices or if status is pending/processing
+        if (job.invoiceCount === 0 || job.jobStatus === "pending" || job.jobStatus === "processing") {
+            return;
+        }
+        toggleRowExpansion(jobId);
     };
 
     const handleDeleteConfirm = async () => {
@@ -146,13 +197,26 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, 
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[250px] max-w-[250px] p-0">
+                            <TableHead className="w-[120px] max-w-[120px] p-0">
                                 <button
                                     onClick={() => onSort("job")}
                                     className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
                                 >
                                     Job
                                     {sortBy === "job" ? (
+                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
+                                    ) : (
+                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
+                                    )}
+                                </button>
+                            </TableHead>
+                            <TableHead className="min-w-[180px] p-0">
+                                <button
+                                    onClick={() => onSort("received")}
+                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
+                                >
+                                    Received
+                                    {sortBy === "received" ? (
                                         sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                                     ) : (
                                         <ArrowUpDown className="h-4 w-4 opacity-50" />
@@ -192,19 +256,6 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, 
                                 >
                                     Email
                                     {sortBy === "email" ? (
-                                        sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
-                                    ) : (
-                                        <ArrowUpDown className="h-4 w-4 opacity-50" />
-                                    )}
-                                </button>
-                            </TableHead>
-                            <TableHead className="min-w-[120px] p-0">
-                                <button
-                                    onClick={() => onSort("received")}
-                                    className="flex items-center gap-1 hover:text-foreground w-full h-full px-4 py-3"
-                                >
-                                    Received
-                                    {sortBy === "received" ? (
                                         sortOrder === "asc" ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />
                                     ) : (
                                         <ArrowUpDown className="h-4 w-4 opacity-50" />
@@ -256,77 +307,195 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, 
                             </TableRow>
                         ) : (
                             jobs.map((job) => (
-                                <TableRow key={job.id} className="hover:bg-muted/50">
-                                    <TableCell className="font-medium w-[250px] max-w-[250px]">
-                                        <TooltipProvider delayDuration={300}>
-                                            <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                    <div
-                                                        className="truncate cursor-pointer"
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            onReviewJob(job.id);
-                                                        }}
-                                                    >
-                                                        {job.id}
-                                                    </div>
-                                                </TooltipTrigger>
-                                                <TooltipContent
-                                                    side="top"
-                                                    className="max-w-[400px] break-words z-50"
-                                                    sideOffset={5}
-                                                >
-                                                    {job.id}
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
-                                    </TableCell>
-                                    <TableCell>{job.vendorName || "—"}</TableCell>
-                                    <TableCell>{getSourceDisplay(job.provider)}</TableCell>
-                                    <TableCell className="max-w-[200px] truncate">
-                                        {job.sender || "—"}
-                                    </TableCell>
-                                    <TableCell>
-                                        {new Date(job.created_at).toLocaleDateString("en-US", {
-                                            month: "2-digit",
-                                            day: "2-digit",
-                                            year: "numeric",
-                                        })}
-                                    </TableCell>
-                                    <TableCell>{job.invoiceCount || 0}</TableCell>
-                                    <TableCell>
-                                        {job.invoiceStatusCounts ? (
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <span className="text-green-600">✓ {job.invoiceStatusCounts.approved}</span>
-                                                <span className="text-red-600">✗ {job.invoiceStatusCounts.rejected}</span>
-                                                <span className="text-yellow-600">⏳ {job.invoiceStatusCounts.pending}</span>
+                                <React.Fragment key={job.id}>
+                                    <TableRow
+                                        className={`hover:bg-muted/50 ${job.invoiceCount > 0 && job.jobStatus !== "pending" && job.jobStatus !== "processing" ? "cursor-pointer" : "cursor-default"}`}
+                                        onClick={() => handleRowClick(job.id, job)}
+                                    >
+                                        <TableCell className="font-medium w-[120px] max-w-[120px]">
+                                            <div className="flex items-center gap-2">
+                                                {expandedRows.has(job.id) ? (
+                                                    <ChevronDown className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                ) : (
+                                                    <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                )}
+                                                <TooltipProvider delayDuration={300}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <div className="truncate">
+                                                                {job.id}
+                                                            </div>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent
+                                                            side="top"
+                                                            className="max-w-[400px] break-words z-50"
+                                                            sideOffset={5}
+                                                        >
+                                                            {job.id}
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                </TooltipProvider>
                                             </div>
-                                        ) : (
-                                            <span className="text-muted-foreground">—</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>{getStatusBadge(job.jobStatus)}</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                size="sm"
-                                                onClick={() => onReviewJob(job.id)}
-                                                disabled={job.invoiceCount === 0}
-                                                className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                                            >
-                                                Open Job
-                                            </Button>
-                                            <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                onClick={(e) => handleDeleteClick(e, job.id, job.filename)}
-                                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex flex-col">
+                                                <span className="text-sm">
+                                                    {new Date(job.created_at).toLocaleDateString("en-US", {
+                                                        month: "2-digit",
+                                                        day: "2-digit",
+                                                        year: "numeric",
+                                                    })}
+                                                </span>
+                                                <span className="text-xs text-muted-foreground">
+                                                    {new Date(job.created_at).toLocaleTimeString("en-US", {
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                        hour12: true,
+                                                    })}
+                                                </span>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>{job.vendorName || "—"}</TableCell>
+                                        <TableCell>{getSourceDisplay(job.provider)}</TableCell>
+                                        <TableCell className="max-w-[200px] truncate">
+                                            {job.sender || "—"}
+                                        </TableCell>
+                                        <TableCell>{job.invoiceCount || 0}</TableCell>
+                                        <TableCell>
+                                            {job.invoiceStatusCounts ? (
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className="text-green-600">✓ {job.invoiceStatusCounts.approved}</span>
+                                                    <span className="text-red-600">✗ {job.invoiceStatusCounts.rejected}</span>
+                                                    <span className="text-yellow-600">⏳ {job.invoiceStatusCounts.pending}</span>
+                                                </div>
+                                            ) : (
+                                                <span className="text-muted-foreground">—</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell>{getStatusBadge(job.jobStatus)}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                <TooltipProvider delayDuration={300}>
+                                                    <Tooltip>
+                                                        <TooltipTrigger asChild>
+                                                            <span>
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => onReviewJob(job.id)}
+                                                                    disabled={job.invoiceCount === 0 || job.jobStatus === "processing" || job.jobStatus === "pending"}
+                                                                    className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                                                                >
+                                                                    Open Job
+                                                                </Button>
+                                                            </span>
+                                                        </TooltipTrigger>
+                                                        {(job.jobStatus === "processing" || job.jobStatus === "pending") && (
+                                                            <TooltipContent side="top" className="z-50">
+                                                                Job is still {job.jobStatus}. Please wait for it to complete.
+                                                            </TooltipContent>
+                                                        )}
+                                                        {job.invoiceCount === 0 && job.jobStatus !== "processing" && job.jobStatus !== "pending" && (
+                                                            <TooltipContent side="top" className="z-50">
+                                                                No invoices available for this job
+                                                            </TooltipContent>
+                                                        )}
+                                                    </Tooltip>
+                                                </TooltipProvider>
+                                                <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    onClick={(e) => handleDeleteClick(e, job.id, job.filename)}
+                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+
+                                    {/* Expanded Row - Invoice List */}
+                                    {expandedRows.has(job.id) && (
+                                        <TableRow>
+                                            <TableCell colSpan={9} className="bg-muted/30 p-0">
+                                                <div className="p-4">
+                                                    {loadingInvoices.has(job.id) ? (
+                                                        <div className="flex items-center justify-center py-4">
+                                                            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+                                                            <span className="text-sm text-muted-foreground">Loading invoices...</span>
+                                                        </div>
+                                                    ) : (invoicesCache[job.id]?.length ?? 0) > 0 ? (
+                                                        <div className="space-y-2">
+                                                            <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
+                                                                <FileText className="h-4 w-4" />
+                                                                Invoices ({invoicesCache[job.id]?.length || 0})
+                                                            </h4>
+                                                            <div className="grid gap-2">
+                                                                {invoicesCache[job.id]?.map((invoice) => (
+                                                                    <div
+                                                                        key={invoice.id}
+                                                                        className="flex items-center justify-between p-3 bg-background rounded-lg border hover:border-primary/50 transition-colors cursor-pointer"
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            onReviewJob(job.id, invoice.id);
+                                                                        }}
+                                                                    >
+                                                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                                                            <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                                                            <div className="flex-1 min-w-0">
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-sm font-medium truncate">
+                                                                                        {invoice.invoiceNumber || `Invoice #${invoice.id}`}
+                                                                                    </span>
+                                                                                    {invoice.status && (
+                                                                                        <Badge
+                                                                                            variant="outline"
+                                                                                            className={
+                                                                                                invoice.status === "approved"
+                                                                                                    ? "bg-green-500/10 text-green-500 border-green-500/20"
+                                                                                                    : invoice.status === "rejected"
+                                                                                                        ? "bg-red-500/10 text-red-500 border-red-500/20"
+                                                                                                        : "bg-yellow-500/10 text-yellow-500 border-yellow-500/20"
+                                                                                            }
+                                                                                        >
+                                                                                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                                                                        </Badge>
+                                                                                    )}
+                                                                                </div>
+                                                                                <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                                                                                    {invoice.vendorName && (
+                                                                                        <span className="truncate">{invoice.vendorName}</span>
+                                                                                    )}
+                                                                                    {invoice.totalAmount && (
+                                                                                        <span className="flex-shrink-0">${invoice.totalAmount}</span>
+                                                                                    )}
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                        <Button
+                                                                            size="sm"
+                                                                            variant="ghost"
+                                                                            className="flex-shrink-0"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                onReviewJob(job.id, invoice.id);
+                                                                            }}
+                                                                        >
+                                                                            View
+                                                                        </Button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="text-center py-4 text-sm text-muted-foreground">
+                                                            No invoices found for this job
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </React.Fragment>
                             ))
                         )}
                     </TableBody>

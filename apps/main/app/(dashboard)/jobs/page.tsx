@@ -68,8 +68,12 @@ export default function JobsPage() {
         }
     };
 
-    const handleReviewJob = (jobId: string) => {
-        router.push(`/jobs/${jobId}`);
+    const handleReviewJob = (jobId: string, invoiceId?: number) => {
+        if (invoiceId) {
+            router.push(`/jobs/${jobId}?invoiceId=${invoiceId}`);
+        } else {
+            router.push(`/jobs/${jobId}`);
+        }
     };
 
     return (

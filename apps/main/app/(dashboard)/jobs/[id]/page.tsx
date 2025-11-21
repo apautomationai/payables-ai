@@ -1,11 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@workspace/ui/components/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, MoreVertical, Trash2, Copy } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
 import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -31,7 +32,11 @@ import type { InvoiceDetails, InvoiceListItem, Attachment } from "@/lib/types/in
 export default function JobDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const jobId = params.id as string;
+
+    // Get invoice ID from URL query params
+    const invoiceIdFromUrl = searchParams.get('invoiceId');
 
     const [activeTab, setActiveTab] = useState<"invoice" | "attachment">("invoice");
     const [attachment, setAttachment] = useState<Attachment | null>(null);
@@ -76,9 +81,22 @@ export default function JobDetailPage() {
                 const invoiceData = response.data?.data?.invoices || response.data?.invoices || [];
                 setInvoicesList(invoiceData);
 
-                // Load details for first invoice
+                // Load details for specific invoice from URL or first invoice
                 if (invoiceData.length > 0) {
-                    await fetchInvoiceDetails(invoiceData[0].id);
+                    if (invoiceIdFromUrl) {
+                        const targetInvoiceId = parseInt(invoiceIdFromUrl);
+                        const invoiceIndex = invoiceData.findIndex((inv: InvoiceListItem) => inv.id === targetInvoiceId);
+
+                        if (invoiceIndex !== -1) {
+                            setCurrentInvoiceIndex(invoiceIndex);
+                            await fetchInvoiceDetails(targetInvoiceId);
+                        } else {
+                            // Invoice not found, load first one
+                            await fetchInvoiceDetails(invoiceData[0].id);
+                        }
+                    } else {
+                        await fetchInvoiceDetails(invoiceData[0].id);
+                    }
                 }
             } catch (error) {
                 console.error("Failed to fetch data:", error);
@@ -89,7 +107,7 @@ export default function JobDetailPage() {
         };
 
         fetchData();
-    }, [jobId]);
+    }, [jobId, invoiceIdFromUrl]);
 
     // Fetch full invoice details
     const fetchInvoiceDetails = async (invoiceId: number) => {
@@ -374,7 +392,7 @@ export default function JobDetailPage() {
                         <div className="flex items-center justify-between gap-4 bg-card rounded-lg border px-4 py-3">
                             {/* Left: Navigation */}
                             {invoicesList.length > 1 ? (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-3">
                                     <Button
                                         variant="outline"
                                         size="icon"
@@ -384,9 +402,48 @@ export default function JobDetailPage() {
                                     >
                                         <ChevronLeft className="h-5 w-5" />
                                     </Button>
-                                    <span className="text-sm font-semibold px-3">
-                                        Invoice {currentInvoiceIndex + 1} of {invoicesList.length}
-                                    </span>
+
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold whitespace-nowrap">
+                                            Invoice {currentInvoiceIndex + 1} of {invoicesList.length}
+                                        </span>
+                                        <span className="text-muted-foreground">•</span>
+                                        <Select
+                                            value={String(currentInvoiceIndex)}
+                                            onValueChange={(value) => {
+                                                const newIndex = parseInt(value);
+                                                setCurrentInvoiceIndex(newIndex);
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-9 w-[160px]">
+                                                <SelectValue placeholder="Select invoice" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {invoicesList.map((invoice, index) => (
+                                                    <SelectItem key={invoice.id} value={String(index)}>
+                                                        <div className="flex items-center justify-between gap-3 w-full">
+                                                            <span className="font-medium">
+                                                                {index + 1}
+                                                            </span>
+                                                            {invoice.status && (
+                                                                <span
+                                                                    className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${invoice.status === "approved"
+                                                                        ? "bg-green-100 text-green-700"
+                                                                        : invoice.status === "rejected"
+                                                                            ? "bg-red-100 text-red-700"
+                                                                            : "bg-yellow-100 text-yellow-700"
+                                                                        }`}
+                                                                >
+                                                                    {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
                                     <Button
                                         variant="outline"
                                         size="icon"
@@ -398,7 +455,17 @@ export default function JobDetailPage() {
                                     </Button>
                                 </div>
                             ) : (
-                                <div className="text-sm font-semibold">Invoice Information</div>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold">Invoice 1 of 1</span>
+                                    {invoicesList.length > 0 && (
+                                        <>
+                                            <span className="text-muted-foreground">•</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {invoicesList[0]?.invoiceNumber || `Invoice #${invoicesList[0]?.id}`}
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
                             )}
 
                             {/* Right: Current Invoice Status and Actions */}
@@ -497,6 +564,10 @@ export default function JobDetailPage() {
                             onInvoiceDetailsUpdate={(updatedDetails) => {
                                 setInvoiceDetails(updatedDetails);
                                 setOriginalInvoiceDetails(updatedDetails);
+                                // Update the invoice in the list to reflect status change
+                                setInvoicesList(prev => prev.map(inv =>
+                                    inv.id === updatedDetails.id ? { ...inv, status: updatedDetails.status } : inv
+                                ));
                             }}
                         />
                     ) : (

@@ -16,7 +16,8 @@ export default function JobsPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState<string>("all");
-    const [sortBy, setSortBy] = useState<string>("newest");
+    const [sortBy, setSortBy] = useState<string>("received");
+    const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
     const [currentPage, setCurrentPage] = useState(1);
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
     const [isSyncing, setIsSyncing] = useState(false);
@@ -35,6 +36,7 @@ export default function JobsPage() {
         page: currentPage,
         status: statusFilter,
         sortBy,
+        sortOrder,
         search: debouncedSearch,
     });
 
@@ -66,8 +68,12 @@ export default function JobsPage() {
         }
     };
 
-    const handleReviewJob = (jobId: string) => {
-        router.push(`/jobs/${jobId}`);
+    const handleReviewJob = (jobId: string, invoiceId?: number) => {
+        if (invoiceId) {
+            router.push(`/jobs/${jobId}?invoiceId=${invoiceId}`);
+        } else {
+            router.push(`/jobs/${jobId}`);
+        }
     };
 
     return (
@@ -79,8 +85,6 @@ export default function JobsPage() {
                     onSearchChange={setSearchQuery}
                     statusFilter={statusFilter}
                     onStatusFilterChange={setStatusFilter}
-                    sortBy={sortBy}
-                    onSortChange={setSortBy}
                     onCreateJob={handleCreateJob}
                     onSyncEmails={handleSyncEmails}
                     isSyncing={isSyncing}
@@ -88,7 +92,22 @@ export default function JobsPage() {
                 />
             </div>
 
-            <JobsTable jobs={jobs} isLoading={isLoading} onReviewJob={handleReviewJob} onJobDeleted={refetch} />
+            <JobsTable
+                jobs={jobs}
+                isLoading={isLoading}
+                onReviewJob={handleReviewJob}
+                onJobDeleted={refetch}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSort={(field) => {
+                    if (sortBy === field) {
+                        setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+                    } else {
+                        setSortBy(field);
+                        setSortOrder("asc");
+                    }
+                }}
+            />
 
             <JobsPagination currentPage={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
 

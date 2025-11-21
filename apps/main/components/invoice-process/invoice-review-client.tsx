@@ -988,6 +988,11 @@ export default function InvoiceReviewClient({
                       onCancel={handleCancelEdit}
                       onFieldChange={() => setHasUnsavedChanges(true)}
                       lineItemChangesRef={lineItemChangesRef}
+                      setInvoicesList={setInvoicesList}
+                      setSelectedInvoiceId={setSelectedInvoiceId}
+                      setInvoiceDetails={setInvoiceDetails}
+                      setOriginalInvoiceDetails={setOriginalInvoiceDetails}
+                      setInvoiceDetailsCache={setInvoiceDetailsCache}
                       onApprovalSuccess={() => {
                         // Update the invoice status in the list for real-time UI update
                         if (invoiceDetails) {

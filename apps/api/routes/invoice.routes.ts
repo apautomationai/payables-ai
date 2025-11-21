@@ -14,6 +14,9 @@ router.post("/invoices", authenticate, requireSubscriptionAccess, invoiceControl
 // Get all invoices (paginated)
 router.get("/invoices", authenticate, requireSubscriptionAccess, invoiceController.getAllInvoices);
 
+// Get lightweight invoices list (only IDs and statuses)
+router.get("/invoices-list", authenticate, requireSubscriptionAccess, invoiceController.getInvoicesList);
+
 // Get a single invoice by its ID
 router.get("/invoices/:id", authenticate, requireSubscriptionAccess, invoiceController.getInvoice);
 
@@ -25,6 +28,9 @@ router.patch("/:id/status", authenticate, requireSubscriptionAccess, invoiceCont
 
 // Clone an invoice
 router.post("/invoices/:id/clone", authenticate, requireSubscriptionAccess, invoiceController.cloneInvoice);
+
+// Split an invoice with selected line items
+router.post("/invoices/:id/split", authenticate, requireSubscriptionAccess, invoiceController.splitInvoice);
 
 // Delete an invoice
 router.delete("/invoices/:id", authenticate, requireSubscriptionAccess, invoiceController.deleteInvoice);

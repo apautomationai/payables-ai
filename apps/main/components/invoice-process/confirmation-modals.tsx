@@ -435,7 +435,7 @@ export default function ConfirmationModals({
           </Dialog>
           <Button
             onClick={handleApproveClick}
-            variant="default"
+            className="bg-green-600 text-white hover:bg-green-700"
             disabled={isApproving || isSaving}
           >
             {isApproving ? "Approving..." : "Approve"}

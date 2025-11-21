@@ -13,6 +13,12 @@ export interface Job {
     created_at: string;
     invoiceCount: number;
     jobStatus: "pending" | "processing" | "processed" | "approved" | "rejected" | "failed";
+    vendorName?: string | null;
+    invoiceStatusCounts?: {
+        approved: number;
+        rejected: number;
+        pending: number;
+    };
 }
 
 interface JobsApiResponse {
@@ -38,10 +44,11 @@ interface UseJobsParams {
     page: number;
     status?: string;
     sortBy?: string;
+    sortOrder?: string;
     search?: string;
 }
 
-export function useJobs({ page, status = "all", sortBy = "newest", search = "" }: UseJobsParams) {
+export function useJobs({ page, status = "all", sortBy = "received", sortOrder = "desc", search = "" }: UseJobsParams) {
     const [jobs, setJobs] = useState<Job[]>([]);
     const [statusCounts, setStatusCounts] = useState({
         all: 0,
@@ -49,7 +56,6 @@ export function useJobs({ page, status = "all", sortBy = "newest", search = "" }
         processing: 0,
         processed: 0,
         approved: 0,
-        rejected: 0,
         failed: 0,
     });
     const [totalPages, setTotalPages] = useState(1);
@@ -65,6 +71,7 @@ export function useJobs({ page, status = "all", sortBy = "newest", search = "" }
                 limit: "10",
                 status,
                 sortBy,
+                sortOrder,
             });
 
             if (search) {
@@ -97,7 +104,7 @@ export function useJobs({ page, status = "all", sortBy = "newest", search = "" }
         } finally {
             setIsLoading(false);
         }
-    }, [page, status, sortBy, search]);
+    }, [page, status, sortBy, sortOrder, search]);
 
     // Initial fetch
     useEffect(() => {

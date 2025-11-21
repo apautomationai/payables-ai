@@ -2,7 +2,7 @@ import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
-import { count, desc, eq, getTableColumns, and, sql, gte, lt } from "drizzle-orm";
+import { count, desc, eq, getTableColumns, and, sql, gte, lt, inArray } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
@@ -181,6 +181,28 @@ export class InvoiceServices {
       invoices: allInvoices,
       totalCount: totalResult.count,
     };
+  }
+
+  // Lightweight method that only returns invoice IDs and statuses
+  async getInvoicesListByAttachment(userId: number, attachmentId: number) {
+    const invoicesList = await db
+      .select({
+        id: invoiceModel.id,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        status: invoiceModel.status,
+        createdAt: invoiceModel.createdAt,
+      })
+      .from(invoiceModel)
+      .where(
+        and(
+          eq(invoiceModel.userId, userId),
+          eq(invoiceModel.attachmentId, attachmentId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      )
+      .orderBy(desc(invoiceModel.createdAt));
+
+    return invoicesList;
   }
 
   async getInvoice(invoiceId: number) {
@@ -747,6 +769,109 @@ export class InvoiceServices {
     }
   }
 
+  async splitInvoice(invoiceId: number, userId: number, lineItemIds: number[]) {
+    try {
+      // Get the original invoice
+      const [originalInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, invoiceId),
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        );
+
+      if (!originalInvoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Get only the selected line items
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false),
+            inArray(lineItemsModel.id, lineItemIds)
+          )
+        );
+
+      if (lineItems.length === 0) {
+        throw new BadRequestError("No valid line items found to split");
+      }
+
+      // Generate new invoice number with suffix logic
+      const originalNumber = originalInvoice.invoiceNumber || "INV";
+      const suffixMatch = originalNumber.match(/^(.+)-(\d+)$/);
+
+      let newInvoiceNumber: string;
+      if (suffixMatch) {
+        const basePart = suffixMatch[1];
+        const suffixPart = suffixMatch[2];
+        const currentNum = parseInt(suffixPart, 10);
+        const newNum = currentNum + 1;
+        const paddedNum = String(newNum).padStart(suffixPart.length, '0');
+        newInvoiceNumber = `${basePart}-${paddedNum}`;
+      } else {
+        newInvoiceNumber = `${originalNumber}-001`;
+      }
+
+      // Calculate total amount from selected line items
+      const totalAmount = lineItems.reduce((sum, item) => {
+        return sum + parseFloat(item.amount || "0");
+      }, 0).toFixed(2);
+
+      // Create new invoice
+      const [newInvoice] = await db
+        .insert(invoiceModel)
+        .values({
+          userId: originalInvoice.userId,
+          attachmentId: originalInvoice.attachmentId,
+          invoiceNumber: newInvoiceNumber,
+          vendorName: originalInvoice.vendorName,
+          vendorAddress: originalInvoice.vendorAddress,
+          vendorPhone: originalInvoice.vendorPhone,
+          vendorEmail: originalInvoice.vendorEmail,
+          customerName: originalInvoice.customerName,
+          invoiceDate: originalInvoice.invoiceDate,
+          dueDate: originalInvoice.dueDate,
+          totalAmount: totalAmount,
+          currency: originalInvoice.currency,
+          totalTax: originalInvoice.totalTax,
+          description: originalInvoice.description,
+          fileUrl: originalInvoice.fileUrl,
+          fileKey: originalInvoice.fileKey,
+          s3JsonKey: originalInvoice.s3JsonKey,
+          status: "pending",
+          isDeleted: false,
+        })
+        .returning();
+
+      // Clone only the selected line items to the new invoice
+      await db.insert(lineItemsModel).values(
+        lineItems.map((item) => ({
+          invoiceId: newInvoice.id,
+          item_name: item.item_name,
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount,
+          itemType: item.itemType,
+          resourceId: item.resourceId,
+          isDeleted: false,
+        }))
+      );
+
+      return newInvoice;
+    } catch (error) {
+      console.error("Error splitting invoice:", error);
+      throw error;
+    }
+  }
+
   async createLineItem(
     lineItemData: {
       invoiceId: number;
@@ -755,6 +880,8 @@ export class InvoiceServices {
       quantity: string;
       rate: string;
       amount: string;
+      itemType?: 'account' | 'product' | null;
+      resourceId?: string | null;
     },
     userId: number
   ) {
@@ -784,6 +911,8 @@ export class InvoiceServices {
           quantity: lineItemData.quantity,
           rate: lineItemData.rate,
           amount: lineItemData.amount,
+          itemType: lineItemData.itemType || null,
+          resourceId: lineItemData.resourceId || null,
           isDeleted: false,
         })
         .returning();
@@ -803,6 +932,8 @@ export class InvoiceServices {
       quantity?: string;
       rate?: string;
       amount?: string;
+      item_name?: string;
+      description?: string;
     }
   ) {
     try {
@@ -837,6 +968,14 @@ export class InvoiceServices {
 
       if (updateData.amount !== undefined) {
         updateFields.amount = updateData.amount;
+      }
+
+      if (updateData.item_name !== undefined) {
+        updateFields.item_name = updateData.item_name;
+      }
+
+      if (updateData.description !== undefined) {
+        updateFields.description = updateData.description;
       }
 
       // If itemType is being changed, clear resourceId if it doesn't match

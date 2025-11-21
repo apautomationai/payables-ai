@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@workspace/ui/components/button";
 import { Input } from "@workspace/ui/components/input";
 import { Label } from "@workspace/ui/components/label";
 import { Textarea } from "@workspace/ui/components/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import {
     Dialog,
     DialogContent,
@@ -18,22 +19,67 @@ import { Plus, Loader2 } from "lucide-react";
 import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
 import type { LineItem } from "@/lib/types/invoice";
+import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
+import { fetchQuickBooksAccounts, fetchQuickBooksItems } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
 
 interface AddLineItemDialogProps {
     invoiceId: number;
     onLineItemAdded: (newLineItem: LineItem) => void;
+    isQuickBooksConnected?: boolean | null;
 }
 
-export function AddLineItemDialog({ invoiceId, onLineItemAdded }: AddLineItemDialogProps) {
+export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConnected = null }: AddLineItemDialogProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
+    const [items, setItems] = useState<QuickBooksItem[]>([]);
+    const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
+    const [isLoadingItems, setIsLoadingItems] = useState(false);
     const [formData, setFormData] = useState({
         item_name: "",
         description: "",
         quantity: "1",
         rate: "0",
         amount: "0",
+        itemType: null as 'account' | 'product' | null,
+        resourceId: null as string | null,
     });
+
+    // Load accounts and items when type is selected
+    useEffect(() => {
+        if (formData.itemType === 'account' && accounts.length === 0 && !isLoadingAccounts) {
+            loadAccounts();
+        } else if (formData.itemType === 'product' && items.length === 0 && !isLoadingItems) {
+            loadItems();
+        }
+    }, [formData.itemType]);
+
+    const loadAccounts = async () => {
+        setIsLoadingAccounts(true);
+        try {
+            const fetchedAccounts = await fetchQuickBooksAccounts();
+            setAccounts(fetchedAccounts);
+        } catch (error) {
+            console.error("Error loading accounts:", error);
+            toast.error("Failed to load accounts");
+        } finally {
+            setIsLoadingAccounts(false);
+        }
+    };
+
+    const loadItems = async () => {
+        setIsLoadingItems(true);
+        try {
+            const fetchedItems = await fetchQuickBooksItems();
+            setItems(fetchedItems);
+        } catch (error) {
+            console.error("Error loading items:", error);
+            toast.error("Failed to load products/services");
+        } finally {
+            setIsLoadingItems(false);
+        }
+    };
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -70,6 +116,8 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded }: AddLineItemDia
                 quantity: formData.quantity,
                 rate: formData.rate,
                 amount: formData.amount,
+                itemType: formData.itemType,
+                resourceId: formData.resourceId,
             });
 
             if (response.success) {
@@ -83,6 +131,8 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded }: AddLineItemDia
                     quantity: "1",
                     rate: "0",
                     amount: "0",
+                    itemType: null,
+                    resourceId: null,
                 });
             }
         } catch (error) {
@@ -91,6 +141,14 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded }: AddLineItemDia
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const getAccountDisplayName = (account: QuickBooksAccount) => {
+        return account.FullyQualifiedName || account.Name;
+    };
+
+    const getItemDisplayName = (item: QuickBooksItem) => {
+        return item.FullyQualifiedName || item.Name;
     };
 
     return (
@@ -180,6 +238,67 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded }: AddLineItemDia
                                     disabled={isSubmitting}
                                     className="bg-muted"
                                 />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="itemType">Type</Label>
+                                {isQuickBooksConnected === false ? (
+                                    <div className="text-xs text-muted-foreground p-2 border rounded-md bg-muted">
+                                        Connect QuickBooks to use types
+                                    </div>
+                                ) : isQuickBooksConnected === null ? (
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 border rounded-md bg-muted">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Loading...
+                                    </div>
+                                ) : (
+                                    <Select
+                                        value={formData.itemType || undefined}
+                                        onValueChange={(value) => setFormData(prev => ({
+                                            ...prev,
+                                            itemType: value as 'account' | 'product',
+                                            resourceId: null // Reset category when type changes
+                                        }))}
+                                        disabled={isSubmitting}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select type..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="account">Account</SelectItem>
+                                            <SelectItem value="product">Product</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="category">Category</Label>
+                                {!formData.itemType ? (
+                                    <div className="text-xs text-muted-foreground p-2 border rounded-md bg-muted">
+                                        Select type first
+                                    </div>
+                                ) : formData.itemType === 'account' ? (
+                                    <LineItemAutocomplete
+                                        items={accounts}
+                                        value={formData.resourceId}
+                                        onSelect={(id) => setFormData(prev => ({ ...prev, resourceId: id }))}
+                                        isLoading={isLoadingAccounts}
+                                        disabled={isSubmitting}
+                                        getDisplayName={getAccountDisplayName}
+                                    />
+                                ) : (
+                                    <LineItemAutocomplete
+                                        items={items}
+                                        value={formData.resourceId}
+                                        onSelect={(id) => setFormData(prev => ({ ...prev, resourceId: id }))}
+                                        isLoading={isLoadingItems}
+                                        disabled={isSubmitting}
+                                        getDisplayName={getItemDisplayName}
+                                    />
+                                )}
                             </div>
                         </div>
                     </div>

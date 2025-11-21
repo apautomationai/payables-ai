@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@workspace/ui/components/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Loader2, MoreVertical, Trash2, Copy } from "lucide-react";
 import { Badge } from "@workspace/ui/components/badge";
+import { Tabs, TabsList, TabsTrigger } from "@workspace/ui/components/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -25,13 +27,19 @@ import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
 import InvoicePdfViewer from "@/components/invoice-process/invoice-pdf-viewer";
 import InvoiceDetailsForm from "@/components/invoice-process/invoice-details-form";
-import type { InvoiceDetails, InvoiceListItem } from "@/lib/types/invoice";
+import type { InvoiceDetails, InvoiceListItem, Attachment } from "@/lib/types/invoice";
 
 export default function JobDetailPage() {
     const params = useParams();
     const router = useRouter();
+    const searchParams = useSearchParams();
     const jobId = params.id as string;
 
+    // Get invoice ID from URL query params
+    const invoiceIdFromUrl = searchParams.get('invoiceId');
+
+    const [activeTab, setActiveTab] = useState<"invoice" | "attachment">("invoice");
+    const [attachment, setAttachment] = useState<Attachment | null>(null);
     const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>([]);
     const [currentInvoiceIndex, setCurrentInvoiceIndex] = useState(0);
     const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(null);
@@ -52,29 +60,54 @@ export default function JobDetailPage() {
 
     const currentInvoiceId = invoicesList[currentInvoiceIndex]?.id;
 
-    // Fetch invoice list for this job
+    // Fetch attachment and invoice list for this job
     useEffect(() => {
-        const fetchInvoices = async () => {
+        const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const response = await client.get(`/api/v1/invoice/invoices?attachmentId=${jobId}`);
+
+                // Fetch attachment data
+                try {
+                    const jobResponse = await client.get(`/api/v1/jobs/${jobId}`);
+                    const jobData = jobResponse.data?.data || jobResponse.data;
+                    setAttachment(jobData);
+                } catch (error: any) {
+                    console.error("Failed to fetch job:", error);
+                    toast.error("Failed to load job details");
+                }
+
+                // Fetch lightweight invoices list (only IDs and statuses)
+                const response = await client.get(`/api/v1/invoice/invoices-list?attachmentId=${jobId}`);
                 const invoiceData = response.data?.data?.invoices || response.data?.invoices || [];
                 setInvoicesList(invoiceData);
 
-                // Load details for first invoice
+                // Load details for specific invoice from URL or first invoice
                 if (invoiceData.length > 0) {
-                    await fetchInvoiceDetails(invoiceData[0].id);
+                    if (invoiceIdFromUrl) {
+                        const targetInvoiceId = parseInt(invoiceIdFromUrl);
+                        const invoiceIndex = invoiceData.findIndex((inv: InvoiceListItem) => inv.id === targetInvoiceId);
+
+                        if (invoiceIndex !== -1) {
+                            setCurrentInvoiceIndex(invoiceIndex);
+                            await fetchInvoiceDetails(targetInvoiceId);
+                        } else {
+                            // Invoice not found, load first one
+                            await fetchInvoiceDetails(invoiceData[0].id);
+                        }
+                    } else {
+                        await fetchInvoiceDetails(invoiceData[0].id);
+                    }
                 }
             } catch (error) {
-                console.error("Failed to fetch invoices:", error);
-                toast.error("Failed to load invoices");
+                console.error("Failed to fetch data:", error);
+                toast.error("Failed to load data");
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchInvoices();
-    }, [jobId]);
+        fetchData();
+    }, [jobId, invoiceIdFromUrl]);
 
     // Fetch full invoice details
     const fetchInvoiceDetails = async (invoiceId: number) => {
@@ -93,11 +126,15 @@ export default function JobDetailPage() {
         }
     };
 
-    // Update details when invoice changes
+    // Update details when invoice changes (with debounce to prevent rapid API calls)
     useEffect(() => {
-        if (currentInvoiceId) {
+        if (!currentInvoiceId) return;
+
+        const timeoutId = setTimeout(() => {
             fetchInvoiceDetails(currentInvoiceId);
-        }
+        }, 150); // 150ms debounce
+
+        return () => clearTimeout(timeoutId);
     }, [currentInvoiceId]);
 
     const handleBack = () => {
@@ -145,6 +182,12 @@ export default function JobDetailPage() {
 
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: updatedData.status } : inv
+            ));
+
             setIsEditing(false);
         } catch (err) {
             toast.error("Failed to save changes");
@@ -161,6 +204,12 @@ export default function JobDetailPage() {
             const updatedData = response.data.data;
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: "approved" } : inv
+            ));
+
             toast.success("Invoice has been approved");
         } catch (err) {
             toast.error("Failed to approve invoice");
@@ -177,6 +226,12 @@ export default function JobDetailPage() {
             const updatedData = response.data.data;
             setInvoiceDetails(updatedData);
             setOriginalInvoiceDetails(updatedData);
+
+            // Update the invoice in the list
+            setInvoicesList(prev => prev.map(inv =>
+                inv.id === invoiceDetails.id ? { ...inv, status: "rejected" } : inv
+            ));
+
             toast.success("Invoice has been rejected");
         } catch (err) {
             toast.error("Failed to reject invoice");
@@ -304,85 +359,187 @@ export default function JobDetailPage() {
         <div className="space-y-4 h-full">
             {/* Header */}
             <div className="flex items-center justify-between gap-4 bg-muted/30 rounded-lg px-4 py-3 border">
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     <Button variant="secondary" size="icon" onClick={handleBack} className="h-9 w-9">
                         <ArrowLeft className="h-4 w-4" />
                     </Button>
+
+                    {/* Tabs */}
+                    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "invoice" | "attachment")}>
+                        <TabsList>
+                            <TabsTrigger value="invoice">Invoice</TabsTrigger>
+                            <TabsTrigger value="attachment">Attachment</TabsTrigger>
+                        </TabsList>
+                    </Tabs>
                 </div>
 
-                <div className="flex items-center gap-3">
-                    {invoiceDetails && invoiceDetails.status && (
-                        <Badge variant="outline" className={getStatusColor(invoiceDetails.status)}>
-                            {invoiceDetails.status.charAt(0).toUpperCase() + invoiceDetails.status.slice(1)}
-                        </Badge>
-                    )}
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" className="h-9">
-                                <MoreVertical className="h-4 w-4 mr-2" />
-                                Actions
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
-                                <Copy className="h-4 w-4 mr-2" />
-                                Clone Page
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                                className="text-destructive"
-                                onClick={() => setShowDeleteDialog(true)}
-                            >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Delete Job
-                            </DropdownMenuItem>
-                        </DropdownMenuContent>
-                    </DropdownMenu>
+                {/* Status Counts */}
+                <div className="flex items-center gap-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 font-medium text-sm px-3 py-1">
+                        Approved: {invoicesList.filter(inv => inv.status === "approved").length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 font-medium text-sm px-3 py-1">
+                        Rejected: {invoicesList.filter(inv => inv.status === "rejected").length}
+                    </Badge>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 font-medium text-sm px-3 py-1">
+                        Pending: {invoicesList.filter(inv => inv.status === "pending").length}
+                    </Badge>
                 </div>
             </div>
 
             {/* Main Content - Two Column Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_500px] gap-4 h-[calc(100%-4rem)] ">
-                {/* Left Side - Invoice Preview with Carousel */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_800px] gap-4 h-[calc(100%-4rem)] ">
+                {/* Left Side - Preview with Carousel (conditionally shown) */}
                 <div className="flex flex-col h-full gap-4 min-w-0 overflow-hidden">
-                    {/* Carousel Controls */}
-                    {invoicesList.length > 1 && (
-                        <div className="flex items-center justify-center gap-2 bg-card rounded-lg border px-4 py-2">
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handlePreviousInvoice}
-                                disabled={currentInvoiceIndex === 0}
-                                className="h-8 w-8"
-                            >
-                                <ChevronLeft className="h-4 w-4" />
-                            </Button>
-                            <span className="text-sm font-medium px-2">
-                                Page {currentInvoiceIndex + 1} of {invoicesList.length}
-                            </span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={handleNextInvoice}
-                                disabled={currentInvoiceIndex === invoicesList.length - 1}
-                                className="h-8 w-8"
-                            >
-                                <ChevronRight className="h-4 w-4" />
-                            </Button>
+                    {/* Carousel Controls - Only show for invoice tab */}
+                    {activeTab === "invoice" && (
+                        <div className="flex items-center justify-between gap-4 bg-card rounded-lg border px-4 py-3">
+                            {/* Left: Navigation */}
+                            {invoicesList.length > 1 ? (
+                                <div className="flex items-center gap-3">
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={handlePreviousInvoice}
+                                        disabled={currentInvoiceIndex === 0}
+                                        className="h-9 w-9 bg-primary/10 hover:bg-primary/20"
+                                    >
+                                        <ChevronLeft className="h-5 w-5" />
+                                    </Button>
+
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm font-semibold whitespace-nowrap">
+                                            Invoice {currentInvoiceIndex + 1} of {invoicesList.length}
+                                        </span>
+                                        <span className="text-muted-foreground">•</span>
+                                        <Select
+                                            value={String(currentInvoiceIndex)}
+                                            onValueChange={(value) => {
+                                                const newIndex = parseInt(value);
+                                                setCurrentInvoiceIndex(newIndex);
+                                            }}
+                                        >
+                                            <SelectTrigger className="h-9 w-[160px]">
+                                                <SelectValue placeholder="Select invoice" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {invoicesList.map((invoice, index) => (
+                                                    <SelectItem key={invoice.id} value={String(index)}>
+                                                        <div className="flex items-center justify-between gap-3 w-full">
+                                                            <span className="font-medium">
+                                                                {index + 1}
+                                                            </span>
+                                                            {invoice.status && (
+                                                                <span
+                                                                    className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${invoice.status === "approved"
+                                                                        ? "bg-green-100 text-green-700"
+                                                                        : invoice.status === "rejected"
+                                                                            ? "bg-red-100 text-red-700"
+                                                                            : "bg-yellow-100 text-yellow-700"
+                                                                        }`}
+                                                                >
+                                                                    {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+
+                                    <Button
+                                        variant="outline"
+                                        size="icon"
+                                        onClick={handleNextInvoice}
+                                        disabled={currentInvoiceIndex === invoicesList.length - 1}
+                                        className="h-9 w-9 bg-primary/10 hover:bg-primary/20"
+                                    >
+                                        <ChevronRight className="h-5 w-5" />
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-sm font-semibold">Invoice 1 of 1</span>
+                                    {invoicesList.length > 0 && (
+                                        <>
+                                            <span className="text-muted-foreground">•</span>
+                                            <span className="text-sm text-muted-foreground">
+                                                {invoicesList[0]?.invoiceNumber || `Invoice #${invoicesList[0]?.id}`}
+                                            </span>
+                                        </>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Right: Current Invoice Status and Actions */}
+                            <div className="flex items-center gap-3">
+                                {invoiceDetails && invoiceDetails.status && (
+                                    <Badge variant="outline" className={getStatusColor(invoiceDetails.status)}>
+                                        {invoiceDetails.status.charAt(0).toUpperCase() + invoiceDetails.status.slice(1)}
+                                    </Badge>
+                                )}
+
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="h-9">
+                                            <MoreVertical className="h-4 w-4 mr-2" />
+                                            Actions
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                        <DropdownMenuItem onClick={() => setShowCloneDialog(true)}>
+                                            <Copy className="h-4 w-4 mr-2" />
+                                            Clone Invoice
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            className="text-destructive"
+                                            onClick={() => setShowDeleteDialog(true)}
+                                        >
+                                            <Trash2 className="h-4 w-4 mr-2" />
+                                            Delete Invoice
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
                         </div>
                     )}
 
                     {/* PDF Preview */}
                     <div className="flex-1 min-h-0 overflow-hidden">
-                        {invoiceDetails ? (
-                            <InvoicePdfViewer
-                                fileUrl={invoiceDetails.fileUrl}
-                                sourcePdfUrl={invoiceDetails.sourcePdfUrl}
-                            />
+                        {activeTab === "invoice" ? (
+                            // Show invoice preview
+                            invoiceDetails ? (
+                                <InvoicePdfViewer
+                                    fileUrl={invoiceDetails.fileUrl}
+                                    sourcePdfUrl={invoiceDetails.sourcePdfUrl}
+                                />
+                            ) : (
+                                <div className="flex items-center justify-center h-full rounded-lg border bg-card">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                </div>
+                            )
                         ) : (
-                            <div className="flex items-center justify-center h-full rounded-lg border bg-card">
-                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                            </div>
+                            // Show attachment preview
+                            isLoading ? (
+                                <div className="flex items-center justify-center h-full rounded-lg border bg-card">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : attachment && attachment.fileUrl ? (
+                                <InvoicePdfViewer
+                                    fileUrl={attachment.fileUrl}
+                                    sourcePdfUrl={null}
+                                />
+                            ) : (
+                                <div className="flex flex-col items-center justify-center h-full rounded-lg border bg-card gap-2">
+                                    <p className="text-muted-foreground">No attachment available</p>
+                                    {attachment && (
+                                        <p className="text-xs text-muted-foreground">
+                                            Attachment ID: {jobId}
+                                        </p>
+                                    )}
+                                </div>
+                            )
                         )}
                     </div>
                 </div>
@@ -404,12 +561,17 @@ export default function JobDetailPage() {
                             onCancel={handleCancelEdit}
                             onFieldChange={() => { }}
                             lineItemChangesRef={lineItemChangesRef}
+                            setInvoicesList={setInvoicesList}
                             onApprovalSuccess={() => {
                                 router.push("/jobs");
                             }}
                             onInvoiceDetailsUpdate={(updatedDetails) => {
                                 setInvoiceDetails(updatedDetails);
                                 setOriginalInvoiceDetails(updatedDetails);
+                                // Update the invoice in the list to reflect status change
+                                setInvoicesList(prev => prev.map(inv =>
+                                    inv.id === updatedDetails.id ? { ...inv, status: updatedDetails.status } : inv
+                                ));
                             }}
                         />
                     ) : (

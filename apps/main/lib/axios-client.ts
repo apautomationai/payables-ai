@@ -1,5 +1,6 @@
 import axios from "axios";
-import { getCookie } from 'cookies-next';
+import { getCookie, deleteCookie } from 'cookies-next';
+import { toast } from "sonner";
 
 // 1. Create the Axios instance with a base configuration.
 // The baseURL will be automatically prepended to all request URLs.
@@ -25,7 +26,7 @@ client.interceptors.request.use(
       }
 
     }
-    
+
     // Important: return the config object for the request to proceed
     return config;
   },
@@ -48,6 +49,29 @@ client.interceptors.response.use(
     // Any status codes outside the range of 2xx will trigger this function.
     // You can handle errors here, such as redirecting to a login page on 401 errors.
     console.error("Response Error:", error);
+
+    // Handle authentication errors
+    if (error.response) {
+      const { status, data } = error.response;
+
+      // Check for 401 Unauthorized or "No token provided" error
+      if (status === 401 || data?.error === "No token provided" || data?.message === "No token provided") {
+        // Only handle on client side
+        if (typeof window !== "undefined") {
+          // Clear the token cookie
+          deleteCookie('token');
+
+          // Show toast notification
+          toast.error("Session expired. Please sign in again.");
+
+          // Redirect to login page after a short delay
+          setTimeout(() => {
+            window.location.href = "/sign-in";
+          }, 1000);
+        }
+      }
+    }
+
     return Promise.reject(error);
   }
 );

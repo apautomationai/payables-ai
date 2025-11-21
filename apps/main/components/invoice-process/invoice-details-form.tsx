@@ -635,6 +635,7 @@ export default function InvoiceDetailsForm({
                     <AddLineItemDialog
                       invoiceId={invoiceDetails.id}
                       onLineItemAdded={handleLineItemAdded}
+                      isQuickBooksConnected={isQuickBooksConnected}
                     />
                   </div>
                 )}

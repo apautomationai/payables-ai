@@ -858,6 +858,8 @@ export class InvoiceServices {
       quantity: string;
       rate: string;
       amount: string;
+      itemType?: 'account' | 'product' | null;
+      resourceId?: string | null;
     },
     userId: number
   ) {
@@ -887,6 +889,8 @@ export class InvoiceServices {
           quantity: lineItemData.quantity,
           rate: lineItemData.rate,
           amount: lineItemData.amount,
+          itemType: lineItemData.itemType || null,
+          resourceId: lineItemData.resourceId || null,
           isDeleted: false,
         })
         .returning();

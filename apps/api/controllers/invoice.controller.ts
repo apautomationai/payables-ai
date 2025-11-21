@@ -302,7 +302,7 @@ class InvoiceController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      const { invoiceId, item_name, description, quantity, rate, amount } = req.body;
+      const { invoiceId, item_name, description, quantity, rate, amount, itemType, resourceId } = req.body;
 
       if (!invoiceId) {
         throw new BadRequestError("Invoice ID is required");
@@ -319,6 +319,8 @@ class InvoiceController {
         quantity: quantity ? String(quantity) : "1",
         rate: rate ? String(rate) : "0",
         amount: amount ? String(amount) : "0",
+        itemType: itemType || null,
+        resourceId: resourceId || null,
       };
 
       const newLineItem = await invoiceServices.createLineItem(lineItemData, userId);

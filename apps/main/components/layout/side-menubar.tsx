@@ -18,7 +18,6 @@ import {
   PanelRightClose,
   ChevronRight,
   Menu,
-  Briefcase,
 } from "lucide-react";
 import {
   Avatar,
@@ -252,26 +251,12 @@ export default function SideMenuBar({
                 Overview
               </NavLink>
               <NavLink
-                href="/invoice-review"
-                icon={FileText}
-                isActive={pathname.startsWith("/invoice-review")}
-                isCollapsed={isCollapsed}
-              >
-                Invoices
-                {/* <span className={cn(
-                  "ml-2 px-1.5 py-0.5 text-xs bg-primary text-primary-foreground rounded-full",
-                  isCollapsed && "hidden"
-                )}>
-                  12
-                </span> */}
-              </NavLink>
-              <NavLink
                 href="/jobs"
-                icon={Briefcase}
+                icon={FileText}
                 isActive={pathname.startsWith("/jobs")}
                 isCollapsed={isCollapsed}
               >
-                Jobs
+                Invoices
               </NavLink>
               <NavLink
                 href="/integrations"

@@ -27,6 +27,7 @@ interface IntegrationsPageProps {
 async function getIntegrations(): Promise<IntegrationData[]> {
   try {
     const response = await client.get("api/v1/settings/integrations");
+    // console.log("response", response.data.some(i => i.name=='gmail'));
     return response?.data || [];
   } catch (error) {
     return [];

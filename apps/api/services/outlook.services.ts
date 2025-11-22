@@ -1,6 +1,6 @@
-import { google } from "googleapis";
-import { Credentials, OAuth2Client } from "google-auth-library";
-import { extractEmail, getHeader } from "@/helpers/email-helpers";
+import { Client } from "@microsoft/microsoft-graph-client";
+import { ConfidentialClientApplication } from "@azure/msal-node";
+import { extractEmail } from "@/helpers/email-helpers";
 import crypto from "crypto";
 import { uploadBufferToS3 } from "@/helpers/s3upload";
 import db from "@/lib/db";
@@ -9,74 +9,106 @@ import { and, count, desc, eq } from "drizzle-orm";
 import { BadRequestError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
 import { sendAttachmentMessage } from "@/helpers/sqs";
+import axios from "axios";
 
-const oAuth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
-);
 
-export class GoogleServices {
-  generateAuthUrl = (state?: string): string => {
-    return oAuth2Client.generateAuthUrl({
-      access_type: "offline",
-      prompt: "consent",
-      scope: [
-        "https://www.googleapis.com/auth/gmail.readonly",
-        "https://www.googleapis.com/auth/gmail.modify",
-        "https://www.googleapis.com/auth/userinfo.email",
-      ],
+export class OutlookServices {
+    private clientId: string;
+    private clientSecret: string;
+    private redirectUri: string;
+    private pca: ConfidentialClientApplication;
+
+    constructor() {
+        this.clientId = process.env.MICROSOFT_CLIENT_ID || '';
+        this.clientSecret = process.env.MICROSOFT_CLIENT_SECRET || '';
+        this.redirectUri = process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:5000/api/v1/outlook/callback';
+        console.log('clientId', this.clientId);
+        console.log('clientSecret', this.clientSecret);
+        console.log('redirectUri', this.redirectUri);
+
+        const msalConfig = {
+          auth: {
+            clientId: this.clientId,
+            clientSecret: this.clientSecret,
+            authority: "https://login.microsoftonline.com/common",
+          },
+        };
+        
+        this.pca = new ConfidentialClientApplication(msalConfig);
+    }
+
+  generateAuthUrl = async (state?: string): Promise<string> => {
+    const scopes = ["Mail.Read", "offline_access", "User.Read"];
+    const redirectUri = this.redirectUri;
+
+    const authCodeUrlParameters = {
+      scopes,
+      redirectUri,
       ...(state && { state }),
+    };
+
+    return await this.pca.getAuthCodeUrl(authCodeUrlParameters);
+  };
+
+  getTokensFromCode = async (code: string): Promise<any> => {
+    const redirectUri = this.redirectUri;
+    
+    // Use direct OAuth2 token endpoint to get refresh token
+    const tokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+    const params = new URLSearchParams();
+    params.append("client_id", this.clientId);
+    params.append("client_secret", this.clientSecret);
+    params.append("code", code);
+    params.append("redirect_uri", redirectUri);
+    params.append("grant_type", "authorization_code");
+    params.append("scope", "Mail.Read offline_access User.Read");
+
+    const response = await axios.post(tokenEndpoint, params, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
     });
-  };
 
-  getTokensFromCode = async (code: string): Promise<Credentials> => {
-    const { tokens } = await oAuth2Client.getToken(code);
-    return tokens;
-  };
+    const expiresIn = response.data.expires_in || 3600;
+    const expiryDateMs = Date.now() + expiresIn * 1000;
 
-  getUserInfo = async (tokens: Credentials): Promise<{ email: string; providerId: string }> => {
-    const auth = this.getOAuthClient(tokens);
-    const oauth2 = google.oauth2({ version: "v2", auth });
-    const userInfo = await oauth2.userinfo.get();
     return {
-      email: userInfo.data.email || "",
-      providerId: userInfo.data.id || "",
+      access_token: response.data.access_token,
+      refresh_token: response.data.refresh_token,
+      token_type: response.data.token_type || "Bearer",
+      expiry_date: expiryDateMs,
     };
   };
 
-  setCredentials = (refreshToken: string): OAuth2Client => {
-    oAuth2Client.setCredentials({ refresh_token: refreshToken });
-
-    //@ts-ignore
-    return oAuth2Client;
+  getUserInfo = async (tokens: any): Promise<{ email: string; providerId: string }> => {
+    const client = this.getGraphClient(tokens);
+    const user = await client.api("/me").get();
+    return {
+      email: user.mail || user.userPrincipalName || "",
+      providerId: user.id || "",
+    };
   };
 
-  getOAuthClient = (tokens: any) => {
-    const oAuth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-    oAuth2Client.setCredentials(tokens);
-    return oAuth2Client;
+  getGraphClient = (tokens: any): Client => {
+    const client = Client.init({
+      authProvider: (done) => {
+        done(null, tokens.access_token);
+      },
+    });
+    return client;
   };
 
   private extractErrorMessage = (
     error: any,
     fallback = "An unknown error occurred"
   ): string => {
-    const responseData: any = error?.response?.data || {};
-    const googleErrors: any[] =
-      error?.errors || error?.response?.data?.error?.errors || [];
-    const googleMessage =
-      googleErrors.length > 0 && googleErrors[0]?.message
-        ? googleErrors[0].message
-        : null;
+    const responseData: any = error?.response?.data || error?.body || {};
+    const microsoftError = error?.error || error?.code || "";
     return (
       responseData.error_description ||
-      responseData.error ||
-      googleMessage ||
+      responseData.error?.message ||
+      responseData.message ||
+      microsoftError ||
       error?.message ||
       String(error) ||
       fallback
@@ -89,20 +121,19 @@ export class GoogleServices {
       .toString()
       .toLowerCase();
     const status =
-      error?.response?.status ??
-      error?.status ??
-      (typeof error?.code === "number" ? error.code : undefined);
-    const errorCode =
-      (error?.response?.data?.error || error?.code || "")
-        .toString()
-        .toLowerCase();
+      error?.statusCode ?? error?.response?.status ?? error?.status;
+    const errorCode = (error?.error?.code || error?.code || "")
+      .toString()
+      .toLowerCase();
 
     if (message.includes("invalid_grant")) return true;
     if (message.includes("invalid_token")) return true;
     if (message.includes("unauthorized")) return true;
-    if (message.includes("auth") && message.includes("fail")) return true;
+    if (message.includes("authentication_failed")) return true;
+    if (message.includes("token_expired")) return true;
     if (errorCode.includes("invalid_grant") || errorCode.includes("invalid_token"))
       return true;
+    if (errorCode.includes("unauthorized_client")) return true;
     if (status === 401 || status === 403) return true;
     return false;
   };
@@ -206,10 +237,9 @@ export class GoogleServices {
     }
   ): Promise<{
     success: boolean;
-    client?: OAuth2Client;
+    client?: Client;
     message?: string;
   }> {
-    const auth = this.getOAuthClient(tokens);
     const expiryMs = this.normalizeExpiryDate(tokens.expiry_date);
     const needsRefresh =
       !tokens.access_token ||
@@ -217,7 +247,7 @@ export class GoogleServices {
       expiryMs <= Date.now() + 60 * 1000;
 
     if (!needsRefresh) {
-      return { success: true, client: auth };
+      return { success: true, client: this.getGraphClient(tokens) };
     }
 
     if (!tokens.refresh_token) {
@@ -228,60 +258,62 @@ export class GoogleServices {
       });
       await this.pauseIntegrationWithError(
         integrationId,
-        "Gmail access token expired and refresh token is unavailable",
+        "Outlook access token expired and refresh token is unavailable",
         metadata
       );
       return {
         success: false,
-        message: "Gmail access token expired and refresh token is unavailable",
+        message: "Outlook access token expired and refresh token is unavailable",
       };
     }
 
     try {
-      const accessTokenResponse = await auth.getAccessToken();
-      const responseData: any =
-        typeof accessTokenResponse === "object"
-          ? accessTokenResponse?.res?.data || {}
-          : {};
-      const accessToken =
-        typeof accessTokenResponse === "string"
-          ? accessTokenResponse
-          : accessTokenResponse?.token || responseData.access_token;
-      if (!accessToken) {
+      // Refresh token using Microsoft OAuth2 token endpoint
+      const tokenEndpoint = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
+      const params = new URLSearchParams();
+      params.append("client_id", this.clientId);
+      params.append("client_secret", this.clientSecret);
+      params.append("refresh_token", tokens.refresh_token);
+      params.append("grant_type", "refresh_token");
+      params.append("scope", "Mail.Read offline_access User.Read");
+
+      const response = await axios.post(tokenEndpoint, params, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
+
+      if (!response.data?.access_token) {
         throw new Error("No access token received from refresh");
       }
 
-      let expiryDateMs =
-        this.normalizeExpiryDate(auth.credentials.expiry_date) ||
-        (typeof responseData.expires_in === "number"
-          ? Date.now() + responseData.expires_in * 1000
-          : null);
+      const expiresIn = response.data.expires_in || 3600; // Default to 1 hour
+      const expiryDateMs = Date.now() + expiresIn * 1000;
 
-      tokens.access_token = accessToken;
+      tokens.access_token = response.data.access_token;
       tokens.expiry_date = expiryDateMs;
-      auth.setCredentials({
-        ...auth.credentials,
-        access_token: accessToken,
-        expiry_date: expiryDateMs || undefined,
-      });
+      if (response.data.refresh_token) {
+        tokens.refresh_token = response.data.refresh_token;
+      }
       metadata.tokenRefreshed = true;
 
       await integrationsService.updateIntegration(integrationId, {
-        accessToken,
-        expiryDate: expiryDateMs ? new Date(expiryDateMs) : null,
+        accessToken: response.data.access_token,
+        refreshToken: response.data.refresh_token || tokens.refresh_token,
+        expiryDate: new Date(expiryDateMs),
         metadata: {
           lastErrorMessage: null,
           lastErrorAt: new Date().toISOString(),
         },
       });
 
-      return { success: true, client: auth };
+      return { success: true, client: this.getGraphClient(tokens) };
     } catch (error: any) {
       metadata.failures++;
       metadata.errors.push({
         stage: "tokenRefresh",
         error:
-          error?.message || "Failed to refresh Gmail integration access token",
+          error?.message || "Failed to refresh Outlook integration access token",
         stack:
           process.env.NODE_ENV === "development" ? error?.stack : undefined,
       });
@@ -289,12 +321,12 @@ export class GoogleServices {
         error,
         integrationId,
         metadata,
-        error?.message || "Failed to refresh Gmail integration access token"
+        error?.message || "Failed to refresh Outlook integration access token"
       );
       return {
         success: false,
         message:
-          error?.message || "Failed to refresh Gmail integration access token",
+          error?.message || "Failed to refresh Outlook integration access token",
       };
     }
   }
@@ -352,72 +384,104 @@ export class GoogleServices {
           success: false,
           message:
             authResult.message ||
-            "Unable to authenticate with Gmail for this integration",
+            "Unable to authenticate with Outlook for this integration",
           data: [],
           metadata,
         };
       }
 
-      const gmail = google.gmail({ version: "v1", auth: authResult.client });
-      const afterTimestamp = Math.floor(startDate.getTime() / 1000);
+      const client = authResult.client;
+      const startDateTime = startDate.toISOString();
 
-      const query = `invoice has:attachment label:INBOX after:${afterTimestamp}`;
-      const res = await gmail.users.messages.list({
-        userId: "me",
-        q: query,
-      });
-      const messages = res.data.messages || [];
+      // Get messages from inbox with attachments, then filter for "invoice" in subject/body
+      let messages: any[] = [];
+      try {
+        // Get messages from inbox with attachments
+        const messagesResponse = await client
+          .api("/me/mailFolders/inbox/messages")
+          .filter(`hasAttachments eq true and receivedDateTime ge ${startDateTime}`)
+          .select("id,subject,receivedDateTime,hasAttachments,from,toRecipients,body")
+          .top(100)
+          .get();
+
+        const allMessages = messagesResponse.value || [];
+        // Filter for "invoice" in subject or body
+        messages = allMessages.filter((msg: any) => {
+          const subject = (msg.subject || "").toLowerCase();
+          const body = (msg.body?.content || "").toLowerCase();
+          return subject.includes("invoice") || body.includes("invoice");
+        });
+      } catch (searchError: any) {
+        // If search fails, try a simpler approach
+        metadata.errors.push({
+          stage: "listMessages",
+          messageId: undefined,
+          filename: null,
+          error: this.extractErrorMessage(searchError, "Failed to search messages"),
+          stack:
+            process.env.NODE_ENV === "development" ? searchError?.stack : undefined,
+        });
+        throw searchError;
+      }
+
       metadata.totalMessages = messages.length;
 
       for (const msg of messages) {
         metadata.processedMessages++;
         metadata.lastProcessedMessageId = msg.id || null;
         try {
-          const message = await gmail.users.messages.get({
-            userId: "me",
-            id: msg.id!,
-            format: "full",
-          });
+          // Get full message with attachments
+          const message = await client
+            .api(`/me/messages/${msg.id}`)
+            .expand("attachments")
+            .get();
 
-          const headers = message.data.payload?.headers || [];
-          const sender = extractEmail(getHeader(headers, "from"));
-          const receiver = extractEmail(getHeader(headers, "to"));
+          const sender = extractEmail(
+            message.from?.emailAddress?.address || message.from?.emailAddress?.name || ""
+          );
+          const receiver = extractEmail(
+            message.toRecipients?.[0]?.emailAddress?.address ||
+              message.toRecipients?.[0]?.emailAddress?.name ||
+              ""
+          );
 
-          const parts = message.data.payload?.parts || [];
+          const attachments = message.attachments || [];
 
-          for (const part of parts) {
-            if (!part.filename || !part.body?.attachmentId) {
+          for (const attachment of attachments) {
+            // Only process file attachments (not item attachments)
+            if (attachment["@odata.type"] !== "#microsoft.graph.fileAttachment") {
               continue;
             }
+
             metadata.totalAttachments++;
             try {
-              const emailAttachment = await gmail.users.messages.attachments.get({
-                userId: "me",
-                messageId: msg.id!,
-                id: part.body.attachmentId,
-              });
-              const data = emailAttachment.data.data;
-              if (!data) {
-                throw new Error("Attachment payload missing");
+              // Get attachment content
+              const attachmentData = await client
+                .api(`/me/messages/${msg.id}/attachments/${attachment.id}`)
+                .get();
+
+              if (!attachmentData.contentBytes) {
+                throw new Error("Attachment content missing");
               }
-              const partInfo = `${msg.id}-${part.filename}-${part.mimeType}-${part.body?.size}`;
+
+              const partInfo = `${msg.id}-${attachment.name}-${attachment.contentType}-${attachment.size}`;
               const hashId = crypto
                 .createHash("sha256")
                 .update(partInfo)
                 .digest("hex");
 
-              const isExists = await googleServices.getAttachmentWithId(hashId, userId);
+              const isExists = await this.getAttachmentWithId(hashId, userId);
               if (isExists.length > 0) {
                 metadata.duplicatesSkipped++;
                 continue;
               }
 
-              const buffer = Buffer.from(data, "base64url");
-              const key = `attachments/${hashId}-${part.filename}`;
+              const buffer = Buffer.from(attachmentData.contentBytes, "base64");
+              const key = `attachments/${hashId}-${attachment.name}`;
               const s3Url = await uploadBufferToS3(
                 buffer,
                 key,
-                part.mimeType || "application/pdf"
+                attachment.contentType || "application/pdf"
               );
               const s3Key = s3Url!.split(".amazonaws.com/")[1];
               //@ts-ignore
@@ -425,11 +489,11 @@ export class GoogleServices {
                 hashId,
                 userId,
                 emailId: msg.id!,
-                filename: part.filename,
-                mimeType: part.mimeType || "application/octet-stream",
+                filename: attachment.name,
+                mimeType: attachment.contentType || "application/octet-stream",
                 sender,
                 receiver,
-                provider: "gmail" as const,
+                provider: "outlook",
                 fileUrl: s3Url,
                 fileKey: s3Key,
               }).returning();
@@ -441,13 +505,13 @@ export class GoogleServices {
               results.push({
                 hashId,
                 emailId: msg.id,
-                filename: part.filename,
-                mimeType: part.mimeType,
+                filename: attachment.name,
+                mimeType: attachment.contentType,
                 sender,
                 receiver,
                 fileUrl: s3Url,
                 fileKey: s3Key,
-                provider: "gmail" as const,
+                provider: "outlook",
               });
               metadata.storedAttachments++;
             } catch (partError: any) {
@@ -455,7 +519,7 @@ export class GoogleServices {
               metadata.errors.push({
                 stage: "attachment",
                 messageId: msg.id || undefined,
-                filename: part.filename || null,
+                filename: attachment.name || null,
                 error: this.extractErrorMessage(
                   partError,
                   "Failed to process attachment"
@@ -524,17 +588,17 @@ export class GoogleServices {
         const currentIntegration: any = await integrationsService.getIntegrations(userId);
         const integration = (currentIntegration.data || []).find((i: any) => i.id === integrationId);
         const currentMetadata = (integration?.metadata as any) || {};
-        
+
         const updatedMetadata: any = {
           ...currentMetadata,
           lastReadAt: new Date().toISOString(),
         };
-        
+
         // Update lastProcessedAt if any attachments were successfully sent to queue
         if (metadata.storedAttachments > 0) {
           updatedMetadata.lastProcessedAt = new Date().toISOString();
         }
-        
+
         await integrationsService.updateIntegration(integrationId, {
           metadata: updatedMetadata,
         });
@@ -605,6 +669,7 @@ export class GoogleServices {
         .where(
           and(
             eq(attachmentsModel.userId, userId),
+            eq(attachmentsModel.provider, "outlook"),
             eq(attachmentsModel.isDeleted, false)
           )
         )
@@ -617,6 +682,7 @@ export class GoogleServices {
         .where(
           and(
             eq(attachmentsModel.userId, userId),
+            eq(attachmentsModel.provider, "outlook"),
             eq(attachmentsModel.isDeleted, false)
           )
         );
@@ -630,6 +696,7 @@ export class GoogleServices {
       return result;
     }
   };
+
   getAttachmentWithId = async (hashId: string, userId: number) => {
     try {
       const response = await db
@@ -648,4 +715,6 @@ export class GoogleServices {
     }
   };
 }
-export const googleServices = new GoogleServices();
+
+export const outlookServices = new OutlookServices();
+

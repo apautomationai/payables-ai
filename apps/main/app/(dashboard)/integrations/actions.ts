@@ -69,15 +69,17 @@ export async function updateStartTimeAction(
   formData: FormData,
 ): Promise<ActionState> {
   const name = formData.get("name") as string;
-  const startTime = formData.get("startTime") as string;
+  const startReading = formData.get("startReading") as string;
 
-  if (!name || !startTime) {
+  console.log("name from action", name);
+  if (!name || !startReading) {
     return { error: "Missing integration name or start time." };
   }
+  console.log("startReading from action", startReading);
 
   try {
     await client.patch("api/v1/settings/update-start", {
-      startTime: startTime,
+      startReading: startReading,
     });
 
     revalidatePath("/integrations");

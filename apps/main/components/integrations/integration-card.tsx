@@ -32,6 +32,7 @@ import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
 import { syncQuickBooksData } from "@/lib/services/quickbooks.service";
 import { syncGmailData } from "@/lib/services/gmail.service";
+import { syncOutlookData } from "@/lib/services/outlook.service";
 import {
   Alert,
   AlertDescription,
@@ -80,6 +81,7 @@ export function IntegrationCard({
   const isConnected = isIntegrationConnected(status);
   const formId = `form-${backendName}`;
   const isGmail = name.toLowerCase() === "gmail";
+  const isOutlook = name.toLowerCase() === "outlook";
   const isQuickBooks = name.toLowerCase() === "quickbooks";
   const IntegrationLogo = INTEGRATION_LOGOS[name];
   const [isSyncing, setIsSyncing] = useState(false);
@@ -108,6 +110,11 @@ export function IntegrationCard({
       if (isGmail) {
         const result = await syncGmailData();
         toast.success("Gmail sync completed successfully", {
+          description: result.message || "Emails synced successfully",
+        });
+      } else if (isOutlook) {
+        const result = await syncOutlookData();
+        toast.success("Outlook sync completed successfully", {
           description: result.message || "Emails synced successfully",
         });
       } else if (isQuickBooks) {
@@ -202,7 +209,7 @@ export function IntegrationCard({
 
           {status === "success" && (
             <>
-              {isGmail && !metadata?.startReading && (
+              {(isGmail || isOutlook) && !metadata?.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -210,7 +217,7 @@ export function IntegrationCard({
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
               )}
-              {(isGmail || isQuickBooks) && (
+              {(isGmail || isOutlook || isQuickBooks) && (
                 <Button
                   size="sm"
                   variant="outline"
@@ -238,7 +245,7 @@ export function IntegrationCard({
 
           {status === "paused" && (
             <>
-              {isGmail && !metadata?.startReading && (
+              {(isGmail || isOutlook) && !metadata?.startReading && (
                 <ConfigureDialog
                   backendName={backendName}
                   updateStartTimeAction={updateStartTimeAction}
@@ -246,7 +253,7 @@ export function IntegrationCard({
                   onOpenChange={(open) => !open && onConfigDialogClose?.()}
                 />
               )}
-              {(isGmail || isQuickBooks) && (
+              {(isGmail || isOutlook || isQuickBooks) && (
                 <Button
                   size="sm"
                   variant="outline"

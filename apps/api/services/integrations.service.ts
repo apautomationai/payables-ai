@@ -73,6 +73,26 @@ class IntegrationsService {
     }
   }
 
+  async getOutlookIntegration() {
+    try {
+      const integrations = await db
+        .select()
+        .from(integrationsModel)
+        .where(and(eq(integrationsModel.name, "outlook"), eq(integrationsModel.status, "success")));
+      return {
+        success: true,
+        data: integrations || [],
+      };
+    }
+    catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
+
   async getIntegrations(useId: number) {
     try {
       // @ts-ignore
@@ -282,9 +302,10 @@ class IntegrationsService {
     }
   }
 
-  async updateStartTime(userId: number, name: string, startTime: string) {
+  async updateStartReading(userId: number, name: string, startReading: string) {
     try {
-      const timestamp = new Date(startTime);
+      console.log("startReading from service", startReading);
+      const timestamp = new Date(startReading);
       const integrations = await this.getIntegrations(userId);
       //@ts-ignore
       const integration = integrations?.data?.find(
@@ -299,6 +320,8 @@ class IntegrationsService {
         ...currentMetadata,
         startReading: timestamp.toISOString(),
       };
+      console.log("updatedMetadata", updatedMetadata);
+      console.log("integration", integration);
 
       const [updateStartTime] = await db
         .update(integrationsModel)

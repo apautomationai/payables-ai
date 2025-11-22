@@ -20,7 +20,7 @@ const INITIAL_INTEGRATIONS: Omit<
       name: "Outlook",
       path: "outlook/auth",
       category: "Email Processing & Automation",
-      allowCollection: false,
+      allowCollection: true,
     },
     {
       name: "QuickBooks",

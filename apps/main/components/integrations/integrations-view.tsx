@@ -53,7 +53,6 @@ export default function IntegrationsView({
   const needsGmailConfig = integrations.some(
     (i) => i.name === "gmail" && i.status === "success" && !i.metadata?.startReading,
   );
-
   useEffect(() => {
     if (message && type) {
       // Check if this is a successful Gmail integration that needs configuration

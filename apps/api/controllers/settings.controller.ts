@@ -114,24 +114,25 @@ class SettingsController {
       return result;
     }
   }
-  async updateStartTime(req: Request, res: Response) {
+  async updateStartReading(req: Request, res: Response) {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      const { startTime } = req.body;
+      const { startReading } = req.body;
       // const userId = 33;
       if (!userId) {
         throw new BadRequestError("Need valid userId");
       }
-      const updateStartTime = await integrationsService.updateStartTime(
+      console.log("startReading from controller", startReading);
+      const updateStartReading = await integrationsService.updateStartReading(
         userId,
         "gmail",
-        startTime
+        startReading
       );
       const result = {
         success: true,
         //@ts-ignore
-        data: updateStartTime.data,
+        data: updateStartReading.data,
       };
       return res.send(result);
     } catch (error: any) {

@@ -127,7 +127,7 @@ export function ConfigureDialog({ backendName, updateStartTimeAction, defaultOpe
         </DialogHeader>
         <form action={formAction} className="grid gap-4 py-4">
           <input type="hidden" name="name" value={backendName} />
-          <input type="hidden" name="startTime" value={dateString} />
+          <input type="hidden" name="startReading" value={dateString} />
           <div className="flex justify-center">
             <Calendar
               mode="single"

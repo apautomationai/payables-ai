@@ -432,13 +432,13 @@ export class OutlookServices {
         // Get messages from inbox with attachments
         const messagesResponse = await client
           .api("/me/mailFolders/inbox/messages")
-          // .filter(`hasAttachments eq true and receivedDateTime ge ${startDateTime}`)
-          .filter(`hasAttachments eq true`)
+          .filter(`hasAttachments eq true and receivedDateTime ge ${startDateTime}`)
+          // .filter(`hasAttachments eq true`)
           .select("id,subject,receivedDateTime,hasAttachments,from,toRecipients,body")
           .top(100)
           .get();
 
-        console.log(messagesResponse);
+        // console.log(messagesResponse);
 
         const allMessages = messagesResponse.value || [];
         // Filter for "invoice" in subject or body

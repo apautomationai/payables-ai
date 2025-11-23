@@ -2,7 +2,15 @@ import { config } from "@/lib/config";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 // Initialize SQS client
-const sqsClient = new SQSClient();
+const sqsClient = new SQSClient({
+  region: config.sqs.region,
+  credentials: config.aws.accessKeyId && config.aws.secretAccessKey
+    ? {
+        accessKeyId: config.aws.accessKeyId,
+        secretAccessKey: config.aws.secretAccessKey,
+      }
+    : undefined, // If not provided, SDK will try to load from default credential chain
+});
 
 /**
  * Send a message to SQS queue

@@ -12,5 +12,6 @@ router.get(
   uploadController.uploadAttachment
 );
 router.post("/create-record", authenticate, requireSubscriptionAccess, uploadController.createDbRecord);
+router.post("/regenerate", authenticate, requireSubscriptionAccess, uploadController.regenerate);
 
 export default router;

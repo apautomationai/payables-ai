@@ -1,6 +1,7 @@
-import { BadRequestError } from "@/helpers/errors";
+import { BadRequestError, NotFoundError, ForbiddenError } from "@/helpers/errors";
 import { uploadServices } from "@/services/upload.services";
 import { sendAttachmentMessage } from "@/helpers/sqs";
+import { attachmentServices } from "@/services/attachment.services";
 import { Request, Response } from "express";
 
 export class UploadController {
@@ -92,6 +93,70 @@ export class UploadController {
       console.error("UNEXPECTED_ERROR in createDbRecord:", error);
       return res.status(500).json({
         status: "error",
+        message: "Internal server error",
+      });
+    }
+  };
+
+  regenerate = async (req: Request, res: Response) => {
+    try {
+      //@ts-ignore
+      const userId = req.user.id;
+      const { attachmentId } = req.body;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!attachmentId) {
+        throw new BadRequestError("Attachment ID is required");
+      }
+
+      // Validate and parse attachment ID
+      const attachmentIdNumber = parseInt(attachmentId, 10);
+      if (isNaN(attachmentIdNumber) || attachmentIdNumber <= 0) {
+        throw new BadRequestError("Attachment ID must be a valid positive number");
+      }
+
+      // Get attachment to verify ownership
+      const attachment = await attachmentServices.getAttachmentById(attachmentIdNumber);
+
+      if (!attachment) {
+        throw new NotFoundError("Attachment not found");
+      }
+
+      if (attachment.userId !== userId) {
+        throw new ForbiddenError("Not authorized to regenerate this attachment");
+      }
+
+      // Send attachment ID to queue
+      const success = await sendAttachmentMessage(attachmentIdNumber);
+
+      if (!success) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to send attachment to processing queue",
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Attachment sent to processing queue successfully",
+        data: {
+          attachmentId: attachmentIdNumber,
+        },
+      });
+    } catch (error: any) {
+      if (error.isOperational) {
+        const statusCode = error.statusCode || 400;
+        return res.status(statusCode).json({
+          success: false,
+          message: error.message,
+        });
+      }
+      console.error("UNEXPECTED_ERROR in regenerate:", error);
+      return res.status(500).json({
+        success: false,
         message: "Internal server error",
       });
     }

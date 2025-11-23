@@ -50,16 +50,24 @@ class SettingsController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      // const userId = 24;
-      const name = "gmail";
+      const name = (req.query.name as string) || "gmail"; // Default to gmail for backward compatibility
 
       if (!userId) {
         throw new BadRequestError("Need a valid userId");
       }
 
+      // Validate integration name
+      const validNames = ["gmail", "outlook", "quickbooks"];
+      if (!validNames.includes(name.toLowerCase())) {
+        return res.status(400).send({
+          status: false,
+          data: `Invalid integration name. Must be one of: ${validNames.join(", ")}`,
+        });
+      }
+
       const integrations = await integrationsService.getStartedReadingAt(
         userId,
-        name
+        name.toLowerCase()
       );
       //@ts-ignore
       const readingStartedAt = integrations[0]?.startReading;
@@ -77,11 +85,10 @@ class SettingsController {
       };
       return res.status(200).send(result);
     } catch (error: any) {
-      const result = {
+      return res.status(500).send({
         status: false,
-        data: error.message,
-      };
-      return result;
+        data: error.message || "Failed to get started reading date",
+      });
     }
   };
 
@@ -146,17 +153,41 @@ class SettingsController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      const { startReading } = req.body;
-      // const userId = 33;
+      const { name, startReading } = req.body;
+
       if (!userId) {
         throw new BadRequestError("Need valid userId");
       }
-      console.log("startReading from controller", startReading);
+
+      if (!name) {
+        return res.status(400).send({
+          success: false,
+          message: "Integration name is required",
+        });
+      }
+
+      // Validate integration name
+      const validNames = ["gmail", "outlook", "quickbooks"];
+      if (!validNames.includes(name.toLowerCase())) {
+        return res.status(400).send({
+          success: false,
+          message: `Invalid integration name. Must be one of: ${validNames.join(", ")}`,
+        });
+      }
+
+      if (!startReading) {
+        return res.status(400).send({
+          success: false,
+          message: "Start reading date is required",
+        });
+      }
+
       const updateStartReading = await integrationsService.updateStartReading(
         userId,
-        "gmail",
+        name.toLowerCase(),
         startReading
       );
+      
       const result = {
         success: true,
         //@ts-ignore
@@ -164,11 +195,10 @@ class SettingsController {
       };
       return res.send(result);
     } catch (error: any) {
-      const result = {
+      return res.status(500).send({
         success: false,
-        message: error.message,
-      };
-      return res.send(result);
+        message: error.message || "Failed to update start reading date",
+      });
     }
   }
 

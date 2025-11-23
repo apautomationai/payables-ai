@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { settingsService } from "@/services/settings.service";
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import { integrationsService } from "@/services/integrations.service";
+import { quickbooksService } from "@/services/quickbooks.service";
 
 class SettingsController {
   async getIntegrations(req: Request, res: Response) {
@@ -88,13 +89,41 @@ class SettingsController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      // const userId = 33;
+      const name = req.query.name as string;
+
+      if (!name) {
+        return res.status(400).send({
+          success: false,
+          error: "Integration name is required",
+        });
+      }
+
+      // Validate integration name
+      const validNames = ["gmail", "outlook", "quickbooks"];
+      if (!validNames.includes(name.toLowerCase())) {
+        return res.status(400).send({
+          success: false,
+          error: `Invalid integration name. Must be one of: ${validNames.join(", ")}`,
+        });
+      }
+
+      // Handle QuickBooks-specific disconnect logic if needed
+      if (name.toLowerCase() === "quickbooks") {
+        await quickbooksService.disconnectIntegration(userId);
+        return res.send({
+          success: true,
+          data: { message: `Successfully disconnected ${name} integration` },
+        });
+      }
+
+      // For other integrations, use the generic delete method
       const deleted = await integrationsService.deleteIntegration(
         userId,
-        "gmail"
+        name.toLowerCase()
       );
+      
       if (!deleted.success) {
-        return res.send({
+        return res.status(404).send({
           success: false,
           //@ts-ignore
           error: deleted.message,
@@ -107,11 +136,10 @@ class SettingsController {
         data: deleted.data,
       });
     } catch (error: any) {
-      const result = {
+      return res.status(500).send({
         success: false,
-        message: error.message,
-      };
-      return result;
+        message: error.message || "Failed to disconnect integration",
+      });
     }
   }
   async updateStartReading(req: Request, res: Response) {

@@ -64,7 +64,16 @@ export class OutlookController {
         return res.redirect(redirectUrl);
       }
 
-      const tokens = await outlookServices.getTokensFromCode(code);
+      let tokens;
+      try {
+        tokens = await outlookServices.getTokensFromCode(code);
+      } catch (error: any) {
+        console.error("Failed to exchange authorization code for tokens:", error);
+        const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+        const errorMessage = error.message || "Failed to authenticate with Microsoft. Please check your Microsoft OAuth configuration.";
+        const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+        return res.redirect(redirectUrl);
+      }
 
       // Fetch user info from Microsoft to get email and provider_id
       let userInfo;

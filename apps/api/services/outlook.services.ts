@@ -21,10 +21,21 @@ export class OutlookServices {
     constructor() {
         this.clientId = process.env.MICROSOFT_CLIENT_ID || '';
         this.clientSecret = process.env.MICROSOFT_CLIENT_SECRET || '';
-        this.redirectUri = process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:5000/api/v1/outlook/callback';
-        console.log('clientId', this.clientId);
-        console.log('clientSecret', this.clientSecret);
-        console.log('redirectUri', this.redirectUri);
+        this.redirectUri = process.env.MICROSOFT_REDIRECT_URI || 'http://localhost:3000/api/callback/outlook';
+        
+        // Validate required environment variables
+        if (!this.clientId) {
+            throw new Error('MICROSOFT_CLIENT_ID environment variable is required');
+        }
+        if (!this.clientSecret) {
+            throw new Error('MICROSOFT_CLIENT_SECRET environment variable is required');
+        }
+        
+        // Warn if client secret looks like a UUID (secret ID instead of secret value)
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(this.clientSecret)) {
+            console.warn('WARNING: MICROSOFT_CLIENT_SECRET appears to be a secret ID (UUID) rather than the actual secret value. Please use the secret VALUE from Azure AD, not the secret ID.');
+        }
 
         const msalConfig = {
           auth: {
@@ -63,21 +74,43 @@ export class OutlookServices {
     params.append("grant_type", "authorization_code");
     params.append("scope", "Mail.Read offline_access User.Read");
 
-    const response = await axios.post(tokenEndpoint, params, {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-      },
-    });
+    try {
+      const response = await axios.post(tokenEndpoint, params, {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+      });
 
-    const expiresIn = response.data.expires_in || 3600;
-    const expiryDateMs = Date.now() + expiresIn * 1000;
+      const expiresIn = response.data.expires_in || 3600;
+      const expiryDateMs = Date.now() + expiresIn * 1000;
 
-    return {
-      access_token: response.data.access_token,
-      refresh_token: response.data.refresh_token,
-      token_type: response.data.token_type || "Bearer",
-      expiry_date: expiryDateMs,
-    };
+      return {
+        access_token: response.data.access_token,
+        refresh_token: response.data.refresh_token,
+        token_type: response.data.token_type || "Bearer",
+        expiry_date: expiryDateMs,
+      };
+    } catch (error: any) {
+      // Handle specific Microsoft OAuth errors
+      if (error.response?.data?.error === 'invalid_client') {
+        const errorDescription = error.response.data.error_description || '';
+        if (errorDescription.includes('client secret')) {
+          throw new Error(
+            'Invalid Microsoft client secret. Please ensure MICROSOFT_CLIENT_SECRET is set to the actual secret VALUE (not the secret ID) from your Azure AD app registration. ' +
+            'The secret value is only shown once when you create it in Azure Portal.'
+          );
+        }
+        throw new Error(`Microsoft OAuth error: ${errorDescription || error.response.data.error}`);
+      }
+      
+      // Re-throw with more context
+      if (error.response?.data) {
+        const errorDescription = error.response.data.error_description || error.response.data.error || 'Unknown error';
+        throw new Error(`Failed to exchange authorization code for tokens: ${errorDescription}`);
+      }
+      
+      throw error;
+    }
   };
 
   getUserInfo = async (tokens: any): Promise<{ email: string; providerId: string }> => {

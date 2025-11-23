@@ -33,13 +33,8 @@ export async function updateIntegrationStatusAction(
 
   try {
     if (status === "disconnected") {
-      // Handle QuickBooks disconnect with specific endpoint
-      if (name === "quickbooks") {
-        await client.delete("api/v1/quickbooks/disconnect");
-      } else {
-        // Handle other integrations with generic endpoint
-        await client.delete(`api/v1/settings/integration?name=${name}`);
-      }
+      // Use unified disconnect endpoint for all integrations
+      await client.delete(`api/v1/settings/integration?name=${name}`);
       revalidatePath("/integrations");
       return {
         success: true,

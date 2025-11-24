@@ -25,9 +25,15 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@workspace/ui/components/alert-dialog";
-import { Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, FileText } from "lucide-react";
+import { Trash2, Loader2, ArrowUpDown, ArrowUp, ArrowDown, ChevronDown, ChevronRight, FileText, MoreVertical, RefreshCcw } from "lucide-react";
 import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@workspace/ui/components/dropdown-menu";
 
 interface Invoice {
     id: number;
@@ -68,6 +74,7 @@ interface JobsTableProps {
 export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, sortOrder, onSort }: JobsTableProps) {
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; jobId?: string; filename?: string }>({ open: false });
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState<string | null>(null);
     const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
     const [invoicesCache, setInvoicesCache] = useState<Record<string, Invoice[]>>({});
     const [loadingInvoices, setLoadingInvoices] = useState<Set<string>>(new Set());
@@ -134,6 +141,23 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, 
             toast.error("Failed to delete job");
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleRegenerate = async (e: React.MouseEvent, jobId: string) => {
+        e.stopPropagation();
+        setIsRegenerating(jobId);
+        try {
+            await client.post("/api/v1/upload/regenerate", {
+                attachmentId: parseInt(jobId, 10),
+            });
+            toast.success("Attachment sent to processing queue successfully");
+        } catch (error: any) {
+            console.error("Failed to regenerate attachment:", error);
+            const errorMessage = error?.response?.data?.message || "Failed to regenerate attachment";
+            toast.error(errorMessage);
+        } finally {
+            setIsRegenerating(null);
         }
     };
     const getStatusBadge = (status: "pending" | "processing" | "processed" | "approved" | "rejected" | "failed") => {
@@ -401,14 +425,45 @@ export function JobsTable({ jobs, isLoading, onReviewJob, onJobDeleted, sortBy, 
                                                         )}
                                                     </Tooltip>
                                                 </TooltipProvider>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={(e) => handleDeleteClick(e, job.id, job.filename)}
-                                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            className="h-8 w-8 p-0"
+                                                        >
+                                                            <MoreVertical className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => handleRegenerate(e, job.id)}
+                                                            disabled={isRegenerating === job.id}
+                                                            className="cursor-pointer"
+                                                        >
+                                                            {isRegenerating === job.id ? (
+                                                                <>
+                                                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                                    Regenerating...
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <RefreshCcw className="h-4 w-4 mr-2" />
+                                                                    Regenerate
+                                                                </>
+                                                            )}
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem
+                                                            onClick={(e) => handleDeleteClick(e, job.id, job.filename)}
+                                                            disabled={isDeleting}
+                                                            className="cursor-pointer text-destructive focus:text-destructive"
+                                                        >
+                                                            <Trash2 className="h-4 w-4 mr-2" />
+                                                            Delete
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
                                             </div>
                                         </TableCell>
                                     </TableRow>

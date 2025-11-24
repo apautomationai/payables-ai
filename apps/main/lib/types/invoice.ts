@@ -71,6 +71,7 @@ export interface LineItem {
   amount: string | null;
   itemType?: 'account' | 'product' | null;
   resourceId?: string | null;
+  customerId?: string | null;
 }
 /**
  *

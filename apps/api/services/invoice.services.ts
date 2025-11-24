@@ -882,6 +882,7 @@ export class InvoiceServices {
       amount: string;
       itemType?: 'account' | 'product' | null;
       resourceId?: string | null;
+      customerId?: string | null;
     },
     userId: number
   ) {
@@ -913,6 +914,7 @@ export class InvoiceServices {
           amount: lineItemData.amount,
           itemType: lineItemData.itemType || null,
           resourceId: lineItemData.resourceId || null,
+          customerId: lineItemData.customerId || null,
           isDeleted: false,
         })
         .returning();
@@ -929,6 +931,7 @@ export class InvoiceServices {
     updateData: {
       itemType?: 'account' | 'product' | null;
       resourceId?: string | null;
+      customerId?: string | null;
       quantity?: string;
       rate?: string;
       amount?: string;
@@ -956,6 +959,10 @@ export class InvoiceServices {
 
       if (updateData.resourceId !== undefined) {
         updateFields.resourceId = updateData.resourceId;
+      }
+
+      if (updateData.customerId !== undefined) {
+        updateFields.customerId = updateData.customerId;
       }
 
       if (updateData.quantity !== undefined) {

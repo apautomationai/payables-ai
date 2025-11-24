@@ -133,6 +133,7 @@ export const lineItems = pgTable("line_items", {
 	amount: numeric(),
 	itemType: itemType("item_type"),
 	resourceId: integer("resource_id"),
+	customerId: integer("customer_id"),
 });
 
 

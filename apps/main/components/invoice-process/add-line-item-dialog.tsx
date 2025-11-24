@@ -20,8 +20,8 @@ import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
 import type { LineItem } from "@/lib/types/invoice";
 import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
-import { fetchQuickBooksAccounts, fetchQuickBooksItems } from "@/lib/services/quickbooks.service";
-import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
+import { fetchQuickBooksAccounts, fetchQuickBooksItems, fetchQuickBooksCustomers } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem, QuickBooksCustomer } from "@/lib/services/quickbooks.service";
 
 interface AddLineItemDialogProps {
     invoiceId: number;
@@ -34,8 +34,10 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
     const [items, setItems] = useState<QuickBooksItem[]>([]);
+    const [customers, setCustomers] = useState<QuickBooksCustomer[]>([]);
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
     const [isLoadingItems, setIsLoadingItems] = useState(false);
+    const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
     const [formData, setFormData] = useState({
         item_name: "",
         description: "",
@@ -44,7 +46,17 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
         amount: "0",
         itemType: null as 'account' | 'product' | null,
         resourceId: null as string | null,
+        customerId: null as string | null,
     });
+
+    // Load accounts, items, and customers when dialog opens
+    useEffect(() => {
+        if (isOpen && isQuickBooksConnected) {
+            if (customers.length === 0 && !isLoadingCustomers) {
+                loadCustomers();
+            }
+        }
+    }, [isOpen, isQuickBooksConnected]);
 
     // Load accounts and items when type is selected
     useEffect(() => {
@@ -78,6 +90,19 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
             toast.error("Failed to load products/services");
         } finally {
             setIsLoadingItems(false);
+        }
+    };
+
+    const loadCustomers = async () => {
+        setIsLoadingCustomers(true);
+        try {
+            const fetchedCustomers = await fetchQuickBooksCustomers();
+            setCustomers(fetchedCustomers);
+        } catch (error) {
+            console.error("Error loading customers:", error);
+            toast.error("Failed to load customers");
+        } finally {
+            setIsLoadingCustomers(false);
         }
     };
 
@@ -118,6 +143,7 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
                 amount: formData.amount,
                 itemType: formData.itemType,
                 resourceId: formData.resourceId,
+                customerId: formData.customerId,
             });
 
             if (response.success) {
@@ -133,6 +159,7 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
                     amount: "0",
                     itemType: null,
                     resourceId: null,
+                    customerId: null,
                 });
             }
         } catch (error) {
@@ -149,6 +176,10 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
 
     const getItemDisplayName = (item: QuickBooksItem) => {
         return item.FullyQualifiedName || item.Name;
+    };
+
+    const getCustomerDisplayName = (customer: QuickBooksCustomer) => {
+        return customer.DisplayName || customer.FullyQualifiedName || customer.CompanyName || 'Unknown';
     };
 
     return (
@@ -300,6 +331,30 @@ export function AddLineItemDialog({ invoiceId, onLineItemAdded, isQuickBooksConn
                                     />
                                 )}
                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="customer">Customer</Label>
+                            {isQuickBooksConnected === false ? (
+                                <div className="text-xs text-muted-foreground p-2 border rounded-md bg-muted">
+                                    Connect QuickBooks to select customers
+                                </div>
+                            ) : isQuickBooksConnected === null ? (
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground p-2 border rounded-md bg-muted">
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    Loading...
+                                </div>
+                            ) : (
+                                <LineItemAutocomplete<QuickBooksCustomer>
+                                    items={customers}
+                                    value={formData.customerId}
+                                    onSelect={(id) => setFormData(prev => ({ ...prev, customerId: id }))}
+                                    isLoading={isLoadingCustomers}
+                                    disabled={isSubmitting}
+                                    getDisplayName={getCustomerDisplayName}
+                                    placeholder="Select customer..."
+                                />
+                            )}
                         </div>
                     </div>
                     <DialogFooter>

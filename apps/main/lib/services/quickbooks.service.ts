@@ -34,6 +34,24 @@ export interface QuickBooksItem {
   TrackQtyOnHand?: boolean;
 }
 
+// QuickBooks Customer type
+export interface QuickBooksCustomer {
+  Id: string;
+  DisplayName: string;
+  FullyQualifiedName?: string;
+  CompanyName?: string;
+  GivenName?: string;
+  FamilyName?: string;
+  Active: boolean;
+  PrimaryEmailAddr?: {
+    Address: string;
+  };
+  PrimaryPhone?: {
+    FreeFormNumber: string;
+  };
+  Balance?: number;
+}
+
 // API Response types
 interface QuickBooksAccountsResponse {
   success: boolean;
@@ -49,6 +67,15 @@ interface QuickBooksItemsResponse {
   data: {
     QueryResponse?: {
       Item?: QuickBooksItem[];
+    };
+  };
+}
+
+interface QuickBooksCustomersResponse {
+  success: boolean;
+  data: {
+    QueryResponse?: {
+      Customer?: QuickBooksCustomer[];
     };
   };
 }
@@ -115,6 +142,39 @@ export async function fetchQuickBooksItems(): Promise<QuickBooksItem[]> {
     return [];
   } catch (error) {
     console.error("Error fetching QuickBooks items:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch all customers from QuickBooks
+ */
+export async function fetchQuickBooksCustomers(): Promise<QuickBooksCustomer[]> {
+  try {
+    const response = await client.get<QuickBooksCustomersResponse>("/api/v1/quickbooks/customers");
+
+    // Handle nested response structure: { success: true, data: { QueryResponse: { Customer: [...] } } }
+    if (response.data?.success && response.data?.data?.QueryResponse?.Customer) {
+      return response.data.data.QueryResponse.Customer;
+    }
+
+    // Handle direct QueryResponse structure: { QueryResponse: { Customer: [...] } }
+    if ((response.data as any)?.QueryResponse?.Customer) {
+      return (response.data as any).QueryResponse.Customer;
+    }
+
+    // Fallback: try direct array access
+    if (Array.isArray(response.data?.data)) {
+      return response.data.data as QuickBooksCustomer[];
+    }
+
+    if (Array.isArray(response.data)) {
+      return response.data as QuickBooksCustomer[];
+    }
+
+    return [];
+  } catch (error) {
+    console.error("Error fetching QuickBooks customers:", error);
     throw error;
   }
 }

@@ -492,16 +492,16 @@ export default function InvoiceDetailsForm({
   return (
     <div className="h-full flex flex-col gap-2">
       {/* Accordion Sections */}
-      <div className="flex-1 overflow-y-auto min-h-0">
-        <Accordion type="multiple" defaultValue={["invoice-info", "line-items"]} className="space-y-2 h-full flex flex-col overflow-hidden">
-          {/* Section 1: Invoice Information */}
-          <AccordionItem value="invoice-info" className="border rounded-lg bg-card flex-shrink-0">
-            <AccordionTrigger className="px-4 py-2 hover:no-underline">
+      <div className="flex-1 overflow-hidden min-h-0">
+        <Accordion type="multiple" defaultValue={["invoice-info", "line-items"]} className="h-full flex flex-col gap-2">
+          {/* Section 1: Invoice Information - 50% height when expanded */}
+          <AccordionItem value="invoice-info" className="border rounded-lg bg-card flex-1 min-h-0 flex flex-col data-[state=closed]:flex-none overflow-hidden">
+            <AccordionTrigger className="px-4 py-2 hover:no-underline border-b flex-shrink-0">
               <span className="text-sm font-semibold">Invoice Information</span>
             </AccordionTrigger>
-            <AccordionContent className="px-4 pb-3">
-              <ScrollArea className="h-[220px] pr-2">
-                <div className="space-y-2.5">
+            <AccordionContent className="px-4 pb-3 flex-1 min-h-0 overflow-hidden data-[state=open]:flex data-[state=open]:flex-col h-full">
+              <ScrollArea className="flex-1 pr-2 h-full">
+                <div className="space-y-2.5 py-2">
                   {fieldsToDisplay.map((key) => (
                     <FormField
                       key={key}
@@ -518,9 +518,9 @@ export default function InvoiceDetailsForm({
             </AccordionContent>
           </AccordionItem>
 
-          {/* Section 2: Line Items */}
-          <div className="border rounded-lg bg-card flex-1 min-h-0 overflow-y-auto flex flex-col">
-            <div className="flex items-center justify-between px-4 py-2 border-b">
+          {/* Section 2: Line Items - 50% height when expanded */}
+          <AccordionItem value="line-items" className="border rounded-lg bg-card flex-1 min-h-0 flex flex-col data-[state=closed]:flex-none overflow-hidden">
+            <AccordionTrigger className="px-4 py-2 hover:no-underline border-b flex-shrink-0">
               <div className="flex items-center gap-2 flex-1">
                 <span className="text-sm font-semibold">Line Items ({lineItems.length})</span>
                 {selectedLineItems.size > 0 && (
@@ -606,9 +606,9 @@ export default function InvoiceDetailsForm({
               {isLoadingLineItems && (
                 <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
               )}
-            </div>
-            <div className="px-2 pb-3 flex-1 flex flex-col min-h-0">
-              <div className="flex flex-col flex-1 min-h-0">
+            </AccordionTrigger>
+            <AccordionContent className="px-2 pb-3 flex-1 min-h-0 overflow-hidden data-[state=open]:flex data-[state=open]:flex-col h-full">
+              <div className="flex flex-col flex-1 min-h-0 h-full">
                 <ScrollArea className="flex-1">
                   {isLoadingLineItems ? (
                     <div className="text-center py-8">
@@ -640,8 +640,8 @@ export default function InvoiceDetailsForm({
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
 
@@ -781,7 +781,7 @@ export default function InvoiceDetailsForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   );
 }
 

@@ -8,6 +8,7 @@ class SettingsService {
       // Get all integrations from the generic integrations table
       const integrations = await db
         .select({
+          id: integrationsModel.id,
           name: integrationsModel.name,
           status: integrationsModel.status,
           updatedAt: integrationsModel.updatedAt,
@@ -36,6 +37,7 @@ class SettingsService {
         transformedIntegrations.push({
           name: "quickbooks",
           status: "not_connected",
+          id: 0,
           updatedAt: null,
           createdAt: null,
           email: null,

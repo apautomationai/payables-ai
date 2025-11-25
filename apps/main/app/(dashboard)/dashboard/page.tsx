@@ -1,8 +1,9 @@
-import React from "react";
+import React, { Suspense } from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
-import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
 import { ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
+
+export const dynamic = 'force-dynamic';
 
 function getErrorMessage(error: any): string | null {
   const message = error?.error?.message || error?.message || "";
@@ -37,17 +38,28 @@ async function DashboardContent() {
   };
 
   return (
-    <DashboardClient
-      initialMetrics={dashboardData?.metrics || defaultMetrics}
-      integrationError={integrationError}
-    />
+    <Suspense fallback={<DashboardSkeleton />}>
+      <DashboardClient
+        initialMetrics={dashboardData?.metrics || defaultMetrics}
+        integrationError={integrationError}
+      />
+    </Suspense>
+  );
+}
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="h-8 w-48 bg-muted rounded animate-pulse"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="h-32 bg-muted rounded animate-pulse"></div>
+        ))}
+      </div>
+    </div>
   );
 }
 
 export default function DashboardPage() {
-  return (
-    <SubscriptionGuard requiresAccess={true}>
-      <DashboardContent />
-    </SubscriptionGuard>
-  );
+  return <DashboardContent />;
 }

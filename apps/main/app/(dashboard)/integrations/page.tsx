@@ -1,6 +1,5 @@
 import React, { Suspense } from "react";
 import IntegrationsView from "@/components/integrations/integrations-view";
-import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
 import {
   updateIntegrationStatusAction,
@@ -41,16 +40,14 @@ export default async function IntegrationsPage({
   const integrations = await getIntegrations();
 
   return (
-    <SubscriptionGuard requiresAccess={true} loadingType="skeleton">
-      <Suspense fallback={<IntegrationsSkeleton />}>
-        <IntegrationsView
-          integrations={integrations}
-          searchParams={searchParams}
-          updateIntegrationStatusAction={updateIntegrationStatusAction}
-          updateStartTimeAction={updateStartTimeAction}
-        />
-      </Suspense>
-    </SubscriptionGuard>
+    <Suspense fallback={<IntegrationsSkeleton />}>
+      <IntegrationsView
+        integrations={integrations}
+        searchParams={searchParams}
+        updateIntegrationStatusAction={updateIntegrationStatusAction}
+        updateStartTimeAction={updateStartTimeAction}
+      />
+    </Suspense>
   );
 }
 

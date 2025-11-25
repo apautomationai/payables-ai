@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useEffect, useCallback, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { DashboardMetrics } from "@/lib/types";
 import { useRealtimeInvoices } from "@/hooks/use-realtime-invoices";
 import DashboardDataView from "./dashboard-data-view";
@@ -19,6 +21,18 @@ export default function DashboardClient({
 }: DashboardClientProps) {
   const [metrics, setMetrics] = useState<DashboardMetrics>(initialMetrics);
   const [isLoading, setIsLoading] = useState(false);
+  const searchParams = useSearchParams();
+
+  // Show success toast if payment was completed
+  useEffect(() => {
+    if (searchParams.get('payment') === 'success') {
+      toast.success("Payment setup complete!", {
+        description: "Your subscription is now active. Welcome to the dashboard!",
+      });
+      // Clean up URL
+      window.history.replaceState({}, '', '/dashboard');
+    }
+  }, [searchParams]);
 
   // Function to fetch dashboard data based on date range
   const fetchDashboardData = useCallback(async (dateRange: DateRangeType) => {

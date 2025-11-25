@@ -27,6 +27,7 @@ import { client } from "@/lib/axios-client";
 import { toast } from "sonner";
 import InvoicePdfViewer from "@/components/invoice-process/invoice-pdf-viewer";
 import InvoiceDetailsForm from "@/components/invoice-process/invoice-details-form";
+import { QuickBooksDataProvider } from "@/components/invoice-process/quickbooks-data-provider";
 import type { InvoiceDetails, InvoiceListItem, Attachment } from "@/lib/types/invoice";
 
 export default function JobDetailPage() {
@@ -547,33 +548,36 @@ export default function JobDetailPage() {
                 {/* Right Side - Invoice Details Form */}
                 <div className="flex flex-col h-full min-w-0 overflow-hidden">
                     {invoiceDetails && originalInvoiceDetails ? (
-                        <InvoiceDetailsForm
-                            invoiceDetails={invoiceDetails}
-                            originalInvoiceDetails={originalInvoiceDetails}
-                            isEditing={isEditing}
-                            setIsEditing={setIsEditing}
-                            onDetailsChange={handleDetailsChange}
-                            selectedFields={selectedFields}
-                            setSelectedFields={setSelectedFields}
-                            onSave={handleSaveChanges}
-                            onReject={handleReject}
-                            onApprove={handleApprove}
-                            onCancel={handleCancelEdit}
-                            onFieldChange={() => { }}
-                            lineItemChangesRef={lineItemChangesRef}
-                            setInvoicesList={setInvoicesList}
-                            onApprovalSuccess={() => {
-                                router.push("/jobs");
-                            }}
-                            onInvoiceDetailsUpdate={(updatedDetails) => {
-                                setInvoiceDetails(updatedDetails);
-                                setOriginalInvoiceDetails(updatedDetails);
-                                // Update the invoice in the list to reflect status change
-                                setInvoicesList(prev => prev.map(inv =>
-                                    inv.id === updatedDetails.id ? { ...inv, status: updatedDetails.status } : inv
-                                ));
-                            }}
-                        />
+                        <QuickBooksDataProvider autoLoad={true}>
+                            <InvoiceDetailsForm
+                                invoiceDetails={invoiceDetails}
+                                originalInvoiceDetails={originalInvoiceDetails}
+                                isEditing={isEditing}
+                                setIsEditing={setIsEditing}
+                                onDetailsChange={handleDetailsChange}
+                                selectedFields={selectedFields}
+                                setSelectedFields={setSelectedFields}
+                                onSave={handleSaveChanges}
+                                onReject={handleReject}
+                                onApprove={handleApprove}
+                                onCancel={handleCancelEdit}
+                                onFieldChange={() => { }}
+                                lineItemChangesRef={lineItemChangesRef}
+                                setInvoicesList={setInvoicesList}
+                                onApprovalSuccess={() => {
+                                    // Stay on the same page after approval
+                                    // Invoice status will be updated via onInvoiceDetailsUpdate
+                                }}
+                                onInvoiceDetailsUpdate={(updatedDetails) => {
+                                    setInvoiceDetails(updatedDetails);
+                                    setOriginalInvoiceDetails(updatedDetails);
+                                    // Update the invoice in the list to reflect status change
+                                    setInvoicesList(prev => prev.map(inv =>
+                                        inv.id === updatedDetails.id ? { ...inv, status: updatedDetails.status } : inv
+                                    ));
+                                }}
+                            />
+                        </QuickBooksDataProvider>
                     ) : (
                         <div className="flex items-center justify-center h-full rounded-lg border bg-card">
                             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

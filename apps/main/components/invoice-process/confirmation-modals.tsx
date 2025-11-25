@@ -170,29 +170,30 @@ export default function ConfirmationModals({
       const dbLineItemsResponse: any = await client.get(`/api/v1/invoice/line-items/invoice/${invoiceId}`);
 
       if (dbLineItemsResponse.success && dbLineItemsResponse.data.length > 0) {
-        // Step 2: Search for customer and create if needed
-        const customerName = invoiceDetails.customerName;
-        let customer = null;
+        // // Step 2: Search for customer and create if needed
+        // const customerName = invoiceDetails.customerName;
+        // let customer = null;
 
-        if (customerName) {
-          const customerSearchResponse: any = await client.get("/api/v1/quickbooks/search-customers", {
-            params: { searchTerm: customerName }
-          });
+        // if (customerName) {
+        //   const customerSearchResponse: any = await client.get("/api/v1/quickbooks/search-customers", {
+        //     params: { searchTerm: customerName }
+        //   });
 
-          if (customerSearchResponse.success && customerSearchResponse.data.results.length > 0) {
-            // Found customer with 95%+ match
-            customer = customerSearchResponse.data.results[0];
-          } else {
-            // No customer found with 95%+ match, create new customer
-            const createCustomerResponse: any = await client.post("/api/v1/quickbooks/create-customer", {
-              name: customerName
-            });
-            // Handle create customer response format: data.Customer
-            customer = createCustomerResponse.data?.Customer || createCustomerResponse.data;
-          }
-        }
+        //   if (customerSearchResponse.success && customerSearchResponse.data.results.length > 0) {
+        //     // Found customer with 95%+ match
+        //     customer = customerSearchResponse.data.results[0];
+        //   } else {
+        //     // No customer found with 95%+ match, create new customer
+        //     const createCustomerResponse: any = await client.post("/api/v1/quickbooks/create-customer", {
+        //       name: customerName
+        //     });
+        //     // Handle create customer response format: data.Customer
+        //     customer = createCustomerResponse.data?.Customer || createCustomerResponse.data;
+        //   }
+        // }
 
-        // Step 4: Hierarchical vendor search (email → phone → address → name)
+        // // Step 4: Hierarchical vendor search (email → phone → address → name)
+        // Step 2: Hierarchical vendor search (email → phone → address → name)
         const vendorSearchResponse: any = await client.get("/api/v1/quickbooks/hierarchical-vendor-search", {
           params: {
             email: invoiceDetails.vendorEmail,

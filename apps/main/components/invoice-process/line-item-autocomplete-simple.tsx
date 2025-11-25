@@ -5,19 +5,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@workspace/ui/component
 import { Button } from "@workspace/ui/components/button";
 import { Check, ChevronsUpDown, Loader2 } from "lucide-react";
 import { cn } from "@workspace/ui/lib/utils";
-import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem, QuickBooksCustomer } from "@/lib/services/quickbooks.service";
 
-interface AutocompleteProps<T extends QuickBooksAccount | QuickBooksItem> {
+interface AutocompleteProps<T extends QuickBooksAccount | QuickBooksItem | QuickBooksCustomer> {
     items: T[];
     value: string | null;
-    onSelect: (id: string, item: T) => void;
+    onSelect: (id: string, item?: T) => void;
     placeholder?: string;
     isLoading?: boolean;
     disabled?: boolean;
     getDisplayName: (item: T) => string;
 }
 
-export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksItem>({
+export function LineItemAutocomplete<T extends QuickBooksAccount | QuickBooksItem | QuickBooksCustomer>({
     items,
     value,
     onSelect,

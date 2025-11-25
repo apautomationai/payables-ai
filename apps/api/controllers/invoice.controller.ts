@@ -329,7 +329,7 @@ class InvoiceController {
     try {
       //@ts-ignore
       const userId = req.user.id;
-      const { invoiceId, item_name, description, quantity, rate, amount, itemType, resourceId } = req.body;
+      const { invoiceId, item_name, description, quantity, rate, amount, itemType, resourceId, customerId } = req.body;
 
       if (!invoiceId) {
         throw new BadRequestError("Invoice ID is required");
@@ -348,6 +348,7 @@ class InvoiceController {
         amount: amount ? String(amount) : "0",
         itemType: itemType || null,
         resourceId: resourceId || null,
+        customerId: customerId || null,
       };
 
       const newLineItem = await invoiceServices.createLineItem(lineItemData, userId);
@@ -370,7 +371,7 @@ class InvoiceController {
       //@ts-ignore
       const userId = req.user.id;
       const { id } = req.params;
-      const { itemType, resourceId, quantity, rate, amount, item_name, description } = req.body;
+      const { itemType, resourceId, customerId, quantity, rate, amount, item_name, description } = req.body;
 
       if (!id) {
         throw new BadRequestError("Line item ID is required");
@@ -389,6 +390,7 @@ class InvoiceController {
       const updateData: {
         itemType?: 'account' | 'product' | null;
         resourceId?: string | null;
+        customerId?: string | null;
         quantity?: string;
         rate?: string;
         amount?: string;
@@ -401,6 +403,9 @@ class InvoiceController {
       }
       if (resourceId !== undefined) {
         updateData.resourceId = resourceId ? String(resourceId) : null;
+      }
+      if (customerId !== undefined) {
+        updateData.customerId = customerId ? String(customerId) : null;
       }
       if (quantity !== undefined) {
         updateData.quantity = String(quantity);

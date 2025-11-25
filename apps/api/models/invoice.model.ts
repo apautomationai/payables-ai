@@ -65,6 +65,7 @@ export const lineItemsModel = pgTable("line_items", {
   amount: numeric("amount"),
   itemType: itemTypeEnum("item_type"),
   resourceId: varchar("resource_id", { length: 50 }),
+  customerId: varchar("customer_id", { length: 50 }),
   isDeleted: boolean("is_deleted").notNull().default(false),
   deletedAt: timestamp("deleted_at"),
 });

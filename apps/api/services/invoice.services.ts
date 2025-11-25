@@ -9,7 +9,10 @@ import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { streamToBuffer } from "@/lib/utils/steamToBuffer";
 import { Readable } from "stream";
 import { generateS3PublicUrl } from "@/lib/utils/s3";
+import { QuickBooksService } from "@/services/quickbooks.service";
 const { v4: uuidv4 } = require("uuid");
+
+const quickbooksService = new QuickBooksService();
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -112,13 +115,45 @@ export class InvoiceServices {
 
         // Handle line items - always add new line items to existing invoice
         if (lineItemsData && lineItemsData.length > 0) {
-          const lineItemsToInsert = lineItemsData.map((item) => ({
-            invoiceId: invoice.id,
-            item_name: item.item_name,
-            quantity: item.quantity.toString(),
-            rate: item.rate.toString(),
-            amount: item.amount.toString(),
-          }));
+          // Search for each line item in QuickBooks products to get quickbooks_id
+          const lineItemsToInsert = await Promise.all(
+            lineItemsData.map(async (item) => {
+              let resourceId: string | null = null;
+              let itemType: 'account' | 'product' | null = null;
+
+              // Search for the product in QuickBooks using hybrid search
+              if (item.item_name) {
+                try {
+                  const searchResults = await quickbooksService.hybridSearchProducts(
+                    invoiceData.userId,
+                    item.item_name,
+                    1 // Get top 1 match
+                  );
+
+                  if (searchResults && searchResults.length > 0) {
+                    const topMatch = searchResults[0];
+                    // Use quickbooks_id as resourceId
+                    resourceId = topMatch.quickbooksId;
+                    itemType = 'product' as const;
+                    console.log(`Found QuickBooks product for "${item.item_name}": ${topMatch.name} (ID: ${resourceId})`);
+                  }
+                } catch (error) {
+                  console.error(`Error searching for product "${item.item_name}":`, error);
+                  // Continue without resourceId if search fails
+                }
+              }
+
+              return {
+                invoiceId: invoice.id,
+                item_name: item.item_name,
+                quantity: item.quantity.toString(),
+                rate: item.rate.toString(),
+                amount: item.amount.toString(),
+                itemType: itemType,
+                resourceId: resourceId,
+              };
+            })
+          );
 
           await tx.insert(lineItemsModel).values(lineItemsToInsert);
         }
@@ -882,6 +917,7 @@ export class InvoiceServices {
       amount: string;
       itemType?: 'account' | 'product' | null;
       resourceId?: string | null;
+      customerId?: string | null;
     },
     userId: number
   ) {
@@ -913,6 +949,7 @@ export class InvoiceServices {
           amount: lineItemData.amount,
           itemType: lineItemData.itemType || null,
           resourceId: lineItemData.resourceId || null,
+          customerId: lineItemData.customerId || null,
           isDeleted: false,
         })
         .returning();
@@ -929,6 +966,7 @@ export class InvoiceServices {
     updateData: {
       itemType?: 'account' | 'product' | null;
       resourceId?: string | null;
+      customerId?: string | null;
       quantity?: string;
       rate?: string;
       amount?: string;
@@ -956,6 +994,10 @@ export class InvoiceServices {
 
       if (updateData.resourceId !== undefined) {
         updateFields.resourceId = updateData.resourceId;
+      }
+
+      if (updateData.customerId !== undefined) {
+        updateFields.customerId = updateData.customerId;
       }
 
       if (updateData.quantity !== undefined) {

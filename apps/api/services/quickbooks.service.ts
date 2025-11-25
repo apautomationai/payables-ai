@@ -439,6 +439,7 @@ export class QuickBooksService {
       amount: number;
       itemType: 'account' | 'product';
       resourceId: string;
+      customerId?: string;
     }>;
     totalAmount: number;
     totalTax?: number;

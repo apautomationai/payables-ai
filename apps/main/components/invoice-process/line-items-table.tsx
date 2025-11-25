@@ -14,8 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@workspace/ui/components/input";
 import { Button } from "@workspace/ui/components/button";
 import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
-import { fetchQuickBooksAccounts, fetchQuickBooksItems } from "@/lib/services/quickbooks.service";
-import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
+import { fetchQuickBooksAccounts, fetchQuickBooksItems, fetchQuickBooksCustomers } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem, QuickBooksCustomer } from "@/lib/services/quickbooks.service";
 import type { LineItem } from "@/lib/types/invoice";
 import { toast } from "sonner";
 import { client } from "@/lib/axios-client";
@@ -60,8 +60,10 @@ export function LineItemsTable({
     const router = useRouter();
     const [accounts, setAccounts] = useState<QuickBooksAccount[]>([]);
     const [items, setItems] = useState<QuickBooksItem[]>([]);
+    const [customers, setCustomers] = useState<QuickBooksCustomer[]>([]);
     const [isLoadingAccounts, setIsLoadingAccounts] = useState(false);
     const [isLoadingItems, setIsLoadingItems] = useState(false);
+    const [isLoadingCustomers, setIsLoadingCustomers] = useState(false);
     const [isQuickBooksErrorOpen, setIsQuickBooksErrorOpen] = useState(false);
     const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; lineItem?: LineItem }>({ open: false });
     const [isDeleting, setIsDeleting] = useState(false);
@@ -82,6 +84,7 @@ export function LineItemsTable({
             amount: string;
             itemType: 'account' | 'product' | null;
             resourceId: string | null;
+            customerId: string | null;
         }> = {};
         lineItems.forEach(item => {
             initialStates[item.id] = {
@@ -91,6 +94,7 @@ export function LineItemsTable({
                 amount: item.amount || "0",
                 itemType: item.itemType || null,
                 resourceId: item.resourceId ? String(item.resourceId) : null,
+                customerId: item.customerId ? String(item.customerId) : null,
             };
         });
         return initialStates;
@@ -103,7 +107,7 @@ export function LineItemsTable({
         setLineItemStates(getInitialStates());
     }, [lineItems.length]); // Only re-initialize when items are added/removed
 
-    // Load accounts and items when needed
+    // Load accounts, items, and customers when needed
     useEffect(() => {
         if (isQuickBooksConnected) {
             const needsAccounts = lineItems.some(item => item.itemType === 'account');
@@ -114,6 +118,10 @@ export function LineItemsTable({
             }
             if (needsItems && items.length === 0 && !isLoadingItems) {
                 loadItems();
+            }
+            // Always load customers if connected and not already loaded
+            if (customers.length === 0 && !isLoadingCustomers) {
+                loadCustomers();
             }
         }
     }, [lineItems, isQuickBooksConnected]);
@@ -144,6 +152,19 @@ export function LineItemsTable({
         }
     };
 
+    const loadCustomers = async () => {
+        setIsLoadingCustomers(true);
+        try {
+            const fetchedCustomers = await fetchQuickBooksCustomers();
+            setCustomers(fetchedCustomers);
+        } catch (error) {
+            console.error("Error loading customers:", error);
+            toast.error("Failed to load customers");
+        } finally {
+            setIsLoadingCustomers(false);
+        }
+    };
+
     const updateLineItemState = (lineItemId: number, updates: Partial<typeof lineItemStates[number]>) => {
         setLineItemStates(prev => {
             const current = prev[lineItemId] || {
@@ -153,6 +174,7 @@ export function LineItemsTable({
                 amount: "0",
                 itemType: null,
                 resourceId: null,
+                customerId: null,
             };
             return {
                 ...prev,
@@ -239,6 +261,14 @@ export function LineItemsTable({
         }
     };
 
+    const handleCustomerSelect = (lineItemId: number, customerId: string) => {
+        updateLineItemState(lineItemId, { customerId });
+
+        if (onChange) {
+            onChange(lineItemId, { customerId });
+        }
+    };
+
     const handleSelectAll = (checked: boolean) => {
         if (checked) {
             setSelectedItems(new Set(lineItems.map(item => item.id)));
@@ -285,6 +315,10 @@ export function LineItemsTable({
         return item.FullyQualifiedName || item.Name;
     };
 
+    const getCustomerDisplayName = (customer: QuickBooksCustomer) => {
+        return customer.DisplayName || customer.FullyQualifiedName || customer.CompanyName || 'Unknown';
+    };
+
     if (lineItems.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground text-sm">
@@ -301,19 +335,20 @@ export function LineItemsTable({
                         <Table className="table-fixed">
                             <TableHeader>
                                 <TableRow>
-                                    <TableHead className="w-[5%] px-2 py-2">
+                                    <TableHead className="w-[4%] px-2 py-2">
                                         <Checkbox
                                             checked={selectedItems.size === lineItems.length && lineItems.length > 0}
                                             onCheckedChange={handleSelectAll}
                                         />
                                     </TableHead>
-                                    <TableHead className="w-[18%] px-2 py-2">Item Name</TableHead>
-                                    <TableHead className="w-[11%] px-2 py-2">Qty</TableHead>
-                                    <TableHead className="w-[11%] px-2 py-2">Rate</TableHead>
-                                    <TableHead className="w-[11%] px-2 py-2">Amount</TableHead>
-                                    <TableHead className="w-[14%] px-2 py-2">Type</TableHead>
-                                    <TableHead className="w-[22%] px-2 py-2">Category</TableHead>
-                                    {isEditing && <TableHead className="w-[8%] px-2 py-2"></TableHead>}
+                                    <TableHead className="w-[14%] px-2 py-2">Item Name</TableHead>
+                                    <TableHead className="w-[8%] px-2 py-2">Qty</TableHead>
+                                    <TableHead className="w-[8%] px-2 py-2">Rate</TableHead>
+                                    <TableHead className="w-[8%] px-2 py-2">Amount</TableHead>
+                                    <TableHead className="w-[12%] px-2 py-2">Type</TableHead>
+                                    <TableHead className="w-[18%] px-2 py-2">Category</TableHead>
+                                    <TableHead className="w-[18%] px-2 py-2">Customer</TableHead>
+                                    {isEditing && <TableHead className="w-[6%] px-2 py-2"></TableHead>}
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -325,6 +360,7 @@ export function LineItemsTable({
                                         amount: lineItem.amount || "0",
                                         itemType: lineItem.itemType || null,
                                         resourceId: lineItem.resourceId ? String(lineItem.resourceId) : null,
+                                        customerId: lineItem.customerId ? String(lineItem.customerId) : null,
                                     };
 
                                     return (
@@ -487,6 +523,41 @@ export function LineItemsTable({
                                                                 ? `Account: ${accounts.find(a => String(a.Id) === state.resourceId)?.FullyQualifiedName || 'Selected'}`
                                                                 : `Product: ${items.find(i => String(i.Id) === state.resourceId)?.FullyQualifiedName || 'Selected'}`
                                                         ) : 'No category selected'}
+                                                    </TooltipContent>
+                                                </Tooltip>
+                                            </TableCell>
+                                            <TableCell className="px-2 py-2">
+                                                <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                        <div className="relative">
+                                                            {isQuickBooksConnected === false ? (
+                                                                <div
+                                                                    className="h-8 px-2 border border-input bg-background rounded-md text-xs text-muted-foreground cursor-pointer hover:bg-accent flex items-center"
+                                                                    onClick={() => setIsQuickBooksErrorOpen(true)}
+                                                                >
+                                                                    Connect QB
+                                                                </div>
+                                                            ) : isQuickBooksConnected === null ? (
+                                                                <div className="h-8 px-2 border border-input bg-background rounded-md text-xs text-muted-foreground flex items-center">
+                                                                    <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                                                                    Loading...
+                                                                </div>
+                                                            ) : (
+                                                                <LineItemAutocomplete<QuickBooksCustomer>
+                                                                    items={customers}
+                                                                    value={state.customerId}
+                                                                    onSelect={(id) => handleCustomerSelect(lineItem.id, id)}
+                                                                    isLoading={isLoadingCustomers}
+                                                                    disabled={!isEditing}
+                                                                    getDisplayName={getCustomerDisplayName}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    </TooltipTrigger>
+                                                    <TooltipContent>
+                                                        {state.customerId
+                                                            ? `Customer: ${customers.find(c => String(c.Id) === state.customerId)?.DisplayName || 'Selected'}`
+                                                            : 'No customer selected'}
                                                     </TooltipContent>
                                                 </Tooltip>
                                             </TableCell>

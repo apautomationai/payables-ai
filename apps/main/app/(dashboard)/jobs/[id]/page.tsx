@@ -563,7 +563,8 @@ export default function JobDetailPage() {
                             lineItemChangesRef={lineItemChangesRef}
                             setInvoicesList={setInvoicesList}
                             onApprovalSuccess={() => {
-                                router.push("/jobs");
+                                // Stay on the same page after approval
+                                // Invoice status will be updated via onInvoiceDetailsUpdate
                             }}
                             onInvoiceDetailsUpdate={(updatedDetails) => {
                                 setInvoiceDetails(updatedDetails);

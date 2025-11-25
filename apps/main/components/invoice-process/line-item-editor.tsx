@@ -153,7 +153,7 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, onDelete, isEditi
     }
   };
 
-  const handleAccountSelect = (accountId: string, _account: QuickBooksAccount) => {
+  const handleAccountSelect = (accountId: string, _account?: QuickBooksAccount) => {
     setSelectedResourceId(accountId);
 
     // Notify parent of changes without saving
@@ -165,7 +165,7 @@ export function LineItemEditor({ lineItem, onUpdate, onChange, onDelete, isEditi
     }
   };
 
-  const handleProductSelect = (productId: string, _product: QuickBooksItem) => {
+  const handleProductSelect = (productId: string, _product?: QuickBooksItem) => {
     setSelectedResourceId(productId);
 
     // Notify parent of changes without saving

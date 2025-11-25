@@ -116,9 +116,15 @@ export default function SignUpForm() {
 
   useEffect(() => {
     if (state?.success && state?.redirectTo) {
-      toast.success("Account created successfully!", {
-        description: "You can now sign in with your new credentials.",
-      });
+      if (state.requiresPayment) {
+        toast.success("Account created successfully!", {
+          description: "Please sign in to set up your payment and start your trial.",
+        });
+      } else {
+        toast.success("Account created successfully!", {
+          description: "You can now sign in with your new credentials.",
+        });
+      }
       router.push(state.redirectTo);
     } else if (state?.message && !state?.success) {
       toast.error("Sign Up Failed", {

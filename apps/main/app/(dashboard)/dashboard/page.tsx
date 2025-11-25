@@ -1,6 +1,5 @@
 import React from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
-import { SubscriptionGuard } from "@/components/auth/subscription-guard";
 import client from "@/lib/fetch-client";
 import { ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
 
@@ -45,9 +44,5 @@ async function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <SubscriptionGuard requiresAccess={true}>
-      <DashboardContent />
-    </SubscriptionGuard>
-  );
+  return <DashboardContent />;
 }

@@ -17,6 +17,8 @@ export type SignUpFormState = {
   };
   success: boolean;
   redirectTo?: string;
+  requiresPayment?: boolean;
+  userId?: number;
 };
 
 export async function signUpAction(
@@ -46,13 +48,13 @@ export async function signUpAction(
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        body: JSON.stringify({ 
-          firstName, 
-          lastName, 
+        body: JSON.stringify({
+          firstName,
+          lastName,
           email,
           phone,
-          businessName, 
-          password 
+          businessName,
+          password
         }),
       }
     );
@@ -67,11 +69,16 @@ export async function signUpAction(
       };
     }
 
+    // Check if user requires payment setup (not free tier)
+    const requiresPayment = data.subscription?.tier !== 'free' && data.subscription?.requiresPaymentSetup;
+
     // On successful registration
     return {
-      message: "Registration successful! Redirecting to sign in...",
+      message: "Registration successful!",
       success: true,
       redirectTo: "/sign-in?signup=success",
+      requiresPayment,
+      userId: data.user?.id,
     };
 
   } catch (error) {

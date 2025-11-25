@@ -8,6 +8,7 @@ import { Skeleton } from "@workspace/ui/components/skeleton";
 import { Alert, AlertDescription } from "@workspace/ui/components/alert";
 import { ExternalLink, CreditCard, Clock, CheckCircle, AlertCircle } from "lucide-react";
 import client from '@/lib/axios-client';
+import { useSubscription } from '@/components/subscription-provider';
 import type { SubscriptionStatus } from '@/lib/types/subscription';
 
 interface SubscriptionTabProps {
@@ -15,23 +16,44 @@ interface SubscriptionTabProps {
 }
 
 export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps) {
-    const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
-    const [loading, setLoading] = useState(true);
+    const { subscription: contextSubscription, loading: contextLoading, refreshSubscription } = useSubscription();
+    const [subscription, setSubscription] = useState<SubscriptionStatus | null>(contextSubscription);
+    const [loading, setLoading] = useState(contextLoading);
     const [error, setError] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
+    const [autoCheckoutTriggered, setAutoCheckoutTriggered] = useState(false);
+
+    // Update local state when context changes
+    useEffect(() => {
+        if (contextSubscription) {
+            setSubscription(contextSubscription);
+        }
+        setLoading(contextLoading);
+    }, [contextSubscription, contextLoading]);
 
     useEffect(() => {
-        fetchSubscriptionStatus();
+        const initSubscription = async () => {
+            await fetchSubscriptionStatus();
 
-        // Check for payment success/cancel parameters and refresh if present
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('success') === 'true' || urlParams.get('canceled') === 'true') {
-            // Force a fresh check after a short delay to allow webhook processing
-            setTimeout(() => {
-                console.log('Payment flow completed, refreshing subscription status...');
-                fetchSubscriptionStatus();
-            }, 2000);
-        }
+            // Check for payment success/cancel parameters and refresh if present
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('success') === 'true') {
+                // Force a fresh check after a short delay to allow webhook processing
+                setTimeout(async () => {
+                    console.log('Payment flow completed, refreshing subscription status...');
+                    await fetchSubscriptionStatus();
+                    // Redirect to dashboard after successful payment
+                    window.location.href = '/dashboard';
+                }, 2000);
+            } else if (urlParams.get('canceled') === 'true') {
+                setTimeout(() => {
+                    console.log('Payment canceled, refreshing subscription status...');
+                    fetchSubscriptionStatus();
+                }, 1000);
+            }
+        };
+
+        initSubscription();
     }, []);
 
     const fetchSubscriptionStatus = async () => {
@@ -41,12 +63,29 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
             const response = await client.get('api/v1/subscription/status');
             const subscriptionData = (response as any)?.data;
             setSubscription(subscriptionData);
+            // Also refresh the context
+            await refreshSubscription();
         } catch (err: any) {
             setError(err?.message || 'Failed to load subscription information');
         } finally {
             setLoading(false);
         }
     };
+
+    // Auto-trigger checkout for non-free users who need payment setup
+    useEffect(() => {
+        if (!loading && subscription && setupRequired && !autoCheckoutTriggered) {
+            // Only auto-trigger for non-free tiers that require payment
+            if (subscription.tier !== 'free' && subscription.requiresPaymentSetup && !subscription.hasPaymentMethod) {
+                console.log('🚀 Auto-triggering Stripe checkout for new user');
+                setAutoCheckoutTriggered(true);
+                // Small delay to ensure UI is ready
+                setTimeout(() => {
+                    handleSubscribe();
+                }, 500);
+            }
+        }
+    }, [loading, subscription, setupRequired, autoCheckoutTriggered]);
 
     const handleSubscribe = async () => {
         if (!subscription) return;

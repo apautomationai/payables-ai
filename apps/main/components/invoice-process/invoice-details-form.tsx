@@ -28,7 +28,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@workspace/ui/components/select";
 import { LineItemAutocomplete } from "./line-item-autocomplete-simple";
 import { fetchQuickBooksAccounts, fetchQuickBooksItems } from "@/lib/services/quickbooks.service";
-import type { QuickBooksAccount, QuickBooksItem } from "@/lib/services/quickbooks.service";
+import type { QuickBooksAccount, QuickBooksItem, QuickBooksCustomer } from "@/lib/services/quickbooks.service";
+import { useQuickBooksData } from "./quickbooks-data-provider";
 
 const FormField = ({
   fieldKey,
@@ -171,8 +172,12 @@ export default function InvoiceDetailsForm({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showChangeTypeDialog, setShowChangeTypeDialog] = useState(false);
+  // Use shared QuickBooks data from context
+  const { customers: bulkCustomers, isLoadingCustomers, loadCustomers } = useQuickBooksData();
+
   const [bulkItemType, setBulkItemType] = useState<'account' | 'product' | null>(null);
   const [bulkResourceId, setBulkResourceId] = useState<string | null>(null);
+  const [bulkCustomerId, setBulkCustomerId] = useState<string | null>(null);
   const [isApplyingBulkChange, setIsApplyingBulkChange] = useState(false);
   const [bulkAccounts, setBulkAccounts] = useState<any[]>([]);
   const [bulkItems, setBulkItems] = useState<any[]>([]);
@@ -327,6 +332,8 @@ export default function InvoiceDetailsForm({
     }
   };
 
+  // Customers are now loaded from context - no need for separate function
+
   // Method to apply bulk item type change
   const handleApplyBulkChange = async () => {
     if (selectedLineItems.size === 0 || !bulkItemType) return;
@@ -339,6 +346,7 @@ export default function InvoiceDetailsForm({
           client.patch(`/api/v1/invoice/line-items/${lineItemId}`, {
             itemType: bulkItemType,
             resourceId: bulkResourceId,
+            customerId: bulkCustomerId, // Apply customer to all selected items
           })
         )
       );
@@ -363,6 +371,7 @@ export default function InvoiceDetailsForm({
       setShowChangeTypeDialog(false);
       setBulkItemType(null);
       setBulkResourceId(null);
+      setBulkCustomerId(null);
     } catch (error) {
       console.error("Error updating line items:", error);
       toast.error("Failed to update line items");
@@ -526,7 +535,7 @@ export default function InvoiceDetailsForm({
                 {selectedLineItems.size > 0 && (
                   <div className="flex items-center gap-2 ml-4">
                     <span className="text-xs text-muted-foreground">({selectedLineItems.size} selected)</span>
-                    <Button
+                    {/* <Button
                       size="sm"
                       className="h-7 text-xs bg-blue-600 hover:bg-blue-700 text-white"
                       onClick={async () => {
@@ -581,7 +590,7 @@ export default function InvoiceDetailsForm({
                       }}
                     >
                       Split
-                    </Button>
+                    </Button> */}
                     <Button
                       size="sm"
                       className="h-7 text-xs bg-red-600 hover:bg-red-700 text-white"
@@ -677,12 +686,17 @@ export default function InvoiceDetailsForm({
         open={showChangeTypeDialog}
         onOpenChange={(open) => {
           setShowChangeTypeDialog(open);
-          if (open && bulkItemType) {
+          if (open) {
+            // Load customers when dialog opens (from context - will skip if already loaded)
+            loadCustomers();
+
             // Load data when dialog opens based on current type
-            if (bulkItemType === 'account' && bulkAccounts.length === 0) {
-              loadBulkAccounts();
-            } else if (bulkItemType === 'product' && bulkItems.length === 0) {
-              loadBulkItems();
+            if (bulkItemType) {
+              if (bulkItemType === 'account' && bulkAccounts.length === 0) {
+                loadBulkAccounts();
+              } else if (bulkItemType === 'product' && bulkItems.length === 0) {
+                loadBulkItems();
+              }
             }
           }
         }}
@@ -751,6 +765,34 @@ export default function InvoiceDetailsForm({
                 )}
               </div>
             )}
+
+            {/* Customer Dropdown */}
+            <div className="space-y-2">
+              <Label>Customer (Optional)</Label>
+              <LineItemAutocomplete
+                items={bulkCustomers}
+                value={bulkCustomerId}
+                onSelect={(id) => {
+                  console.log('🎯 Customer selected:', id);
+                  setBulkCustomerId(id);
+                }}
+                placeholder="Search customers..."
+                isLoading={isLoadingCustomers}
+                getDisplayName={(customer: QuickBooksCustomer) => {
+                  const name = customer.DisplayName || customer.CompanyName || `Customer ${customer.Id}`;
+                  console.log('📝 Display name for customer:', customer.Id, '=', name);
+                  return name;
+                }}
+              />
+              {bulkCustomers.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {bulkCustomers.length} customers available
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                This customer will be applied to all selected line items
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -760,6 +802,7 @@ export default function InvoiceDetailsForm({
                 setShowChangeTypeDialog(false);
                 setBulkItemType(null);
                 setBulkResourceId(null);
+                setBulkCustomerId(null);
               }}
               disabled={isApplyingBulkChange}
             >

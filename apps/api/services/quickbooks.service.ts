@@ -427,6 +427,72 @@ export class QuickBooksService {
     }
   }
 
+  // Get accounts from database
+  async getAccountsFromDatabase(userId: number) {
+    try {
+      const accounts = await db
+        .select()
+        .from(quickbooksAccountsModel)
+        .where(
+          and(
+            eq(quickbooksAccountsModel.userId, userId),
+            eq(quickbooksAccountsModel.active, true)
+          )
+        );
+
+      // Filter out invalid account types (same logic as getAccounts)
+      const validAccounts = accounts.filter((account) => {
+        const invalidAccountTypes = [
+          'Accounts Payable',
+          'AccountsPayable',
+          'Accounts Receivable',
+          'AccountsReceivable'
+        ];
+
+        const invalidSubTypes = [
+          'AccountsPayable',
+          'AccountsReceivable'
+        ];
+
+        const isInvalidType = invalidAccountTypes.includes(account.accountType || '');
+        const isInvalidSubType = invalidSubTypes.includes(account.accountSubType || '');
+
+        const accountName = (account.name || '').toLowerCase();
+        const isPayableByName = accountName.includes('accounts payable') ||
+          accountName.includes('payable') ||
+          accountName.includes('accounts receivable') ||
+          accountName.includes('receivable');
+
+        return !isInvalidType && !isInvalidSubType && !isPayableByName;
+      });
+
+      return validAccounts;
+    } catch (error) {
+      console.error("Error getting accounts from database:", error);
+      throw error;
+    }
+  }
+
+  // Get products from database
+  async getProductsFromDatabase(userId: number) {
+    try {
+      const products = await db
+        .select()
+        .from(quickbooksProductsModel)
+        .where(
+          and(
+            eq(quickbooksProductsModel.userId, userId),
+            eq(quickbooksProductsModel.active, true)
+          )
+        );
+
+      return products;
+    } catch (error) {
+      console.error("Error getting products from database:", error);
+      throw error;
+    }
+  }
+
   // Create a bill in QuickBooks
   async createBill(integration: QuickBooksIntegration, billData: {
     vendorId: string;

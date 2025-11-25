@@ -101,25 +101,12 @@ export default function ConfirmationModals({
         const hasItemType = item.itemType && (item.itemType === 'account' || item.itemType === 'product');
         const hasResourceId = item.resourceId && item.resourceId.trim() !== '';
 
-        console.log(`📋 Validating line item "${item.item_name}":`, {
-          itemType: item.itemType,
-          resourceId: item.resourceId,
-          hasItemType,
-          hasResourceId
-        });
-
         if (!hasItemType || !hasResourceId) {
           incompleteItems.push(item.item_name || `Line Item ${item.id}`);
         }
       });
 
       const isValid = incompleteItems.length === 0;
-      console.log(`📋 Line items validation result:`, {
-        totalItems: lineItems.length,
-        incompleteItems: incompleteItems.length,
-        isValid,
-        incompleteItemNames: incompleteItems
-      });
 
       return {
         isValid,

@@ -266,17 +266,32 @@ export class QuickBooksController {
         throw new BadRequestError("User not authenticated");
       }
 
-      const integration = await quickbooksService.getUserIntegration(userId);
+      // Fetch accounts from database instead of QuickBooks API
+      const accounts = await quickbooksService.getAccountsFromDatabase(userId);
 
-      if (!integration) {
-        throw new NotFoundError("QuickBooks integration not found");
-      }
-
-      const accounts = await quickbooksService.getAccounts(integration);
+      // Transform to match QuickBooks API format
+      const formattedAccounts = {
+        QueryResponse: {
+          Account: accounts.map(account => ({
+            Id: account.quickbooksId,
+            Name: account.name,
+            FullyQualifiedName: account.fullyQualifiedName,
+            Active: account.active,
+            Classification: account.classification,
+            AccountType: account.accountType,
+            AccountSubType: account.accountSubType,
+            CurrentBalance: account.currentBalance,
+            CurrencyRef: account.currencyRefValue ? {
+              value: account.currencyRefValue,
+              name: account.currencyRefName
+            } : undefined
+          }))
+        }
+      };
 
       res.json({
         success: true,
-        data: accounts,
+        data: formattedAccounts,
       });
     } catch (error) {
       next(error);
@@ -321,17 +336,34 @@ export class QuickBooksController {
         throw new BadRequestError("User not authenticated");
       }
 
-      const integration = await quickbooksService.getUserIntegration(userId);
+      // Fetch products from database instead of QuickBooks API
+      const products = await quickbooksService.getProductsFromDatabase(userId);
 
-      if (!integration) {
-        throw new NotFoundError("QuickBooks integration not found");
-      }
-
-      const lineItems = await quickbooksService.getLineItems(integration);
+      // Transform to match QuickBooks API format
+      const formattedProducts = {
+        QueryResponse: {
+          Item: products.map(product => ({
+            Id: product.quickbooksId,
+            Name: product.name,
+            Description: product.description,
+            Active: product.active,
+            FullyQualifiedName: product.fullyQualifiedName,
+            Taxable: product.taxable,
+            UnitPrice: product.unitPrice,
+            Type: product.type,
+            IncomeAccountRef: product.incomeAccountValue ? {
+              value: product.incomeAccountValue,
+              name: product.incomeAccountName
+            } : undefined,
+            PurchaseCost: product.purchaseCost,
+            TrackQtyOnHand: product.trackQtyOnHand
+          }))
+        }
+      };
 
       res.json({
         success: true,
-        data: lineItems,
+        data: formattedProducts,
       });
     } catch (error) {
       next(error);

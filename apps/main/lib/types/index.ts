@@ -19,6 +19,7 @@ export interface User {
   phone: string | null;
   businessName: string | null;
   avatarUrl: string | null;
+  onboardingCompleted?: boolean;
   // Add any other fields that might be in the response
 }
 

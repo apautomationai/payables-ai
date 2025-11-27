@@ -72,9 +72,15 @@ async function handleRequest(request: NextRequest, method: string) {
 
     // Handle success responses (200)
     if (backendResponse.status === 200) {
-      const redirectUrl = new URL("/integrations", request.url);
-      redirectUrl.searchParams.set("type", "integration.gmail");
-      redirectUrl.searchParams.set("message", "Gmail successfully integrated");
+      // Check if user is in onboarding by looking at the referer
+      const referer = request.headers.get("referer") || "";
+      const isOnboarding = referer.includes("/dashboard");
+
+      const redirectUrl = new URL(isOnboarding ? "/dashboard" : "/integrations", request.url);
+      if (!isOnboarding) {
+        redirectUrl.searchParams.set("type", "integration.gmail");
+        redirectUrl.searchParams.set("message", "Gmail successfully integrated");
+      }
       return NextResponse.redirect(redirectUrl);
     }
 

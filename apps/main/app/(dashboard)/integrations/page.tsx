@@ -1,5 +1,6 @@
 import React, { Suspense } from "react";
 import IntegrationsView from "@/components/integrations/integrations-view";
+import { OnboardingRedirectHandler } from "@/components/onboarding/onboarding-redirect-handler";
 import client from "@/lib/fetch-client";
 import {
   updateIntegrationStatusAction,
@@ -40,14 +41,17 @@ export default async function IntegrationsPage({
   const integrations = await getIntegrations();
 
   return (
-    <Suspense fallback={<IntegrationsSkeleton />}>
-      <IntegrationsView
-        integrations={integrations}
-        searchParams={searchParams}
-        updateIntegrationStatusAction={updateIntegrationStatusAction}
-        updateStartTimeAction={updateStartTimeAction}
-      />
-    </Suspense>
+    <>
+      <OnboardingRedirectHandler />
+      <Suspense fallback={<IntegrationsSkeleton />}>
+        <IntegrationsView
+          integrations={integrations}
+          searchParams={searchParams}
+          updateIntegrationStatusAction={updateIntegrationStatusAction}
+          updateStartTimeAction={updateStartTimeAction}
+        />
+      </Suspense>
+    </>
   );
 }
 

@@ -72,22 +72,12 @@ async function handleRequest(request: NextRequest, method: string) {
 
     // Handle success responses (200)
     if (backendResponse.status === 200) {
-      // Check if user is in onboarding mode via cookie
-      const cookies = request.cookies;
-      const isOnboarding = cookies.get("onboarding_mode")?.value === "true";
-
-      const redirectUrl = new URL(isOnboarding ? "/dashboard" : "/integrations", request.url);
-      if (!isOnboarding) {
-        redirectUrl.searchParams.set("type", "integration.gmail");
-        redirectUrl.searchParams.set("message", "Gmail successfully integrated");
-      }
-
-      // Clear the onboarding cookie
-      const response = NextResponse.redirect(redirectUrl);
-      if (isOnboarding) {
-        response.cookies.delete("onboarding_mode");
-      }
-      return response;
+      // Always redirect to integrations page
+      // The OnboardingRedirectHandler will check localStorage and redirect to dashboard if needed
+      const redirectUrl = new URL("/integrations", request.url);
+      redirectUrl.searchParams.set("type", "integration.gmail");
+      redirectUrl.searchParams.set("message", "Gmail successfully integrated");
+      return NextResponse.redirect(redirectUrl);
     }
 
     // Handle error responses

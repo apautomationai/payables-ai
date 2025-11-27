@@ -50,8 +50,9 @@ export default function OnboardingFlow({ integrations }: OnboardingFlowProps) {
 
     const handleConnectGmail = async () => {
         try {
-            // Set a cookie to track onboarding mode
-            document.cookie = "onboarding_mode=true; path=/; max-age=600"; // 10 minutes
+            // Use localStorage to track onboarding mode (persists through OAuth redirects)
+            localStorage.setItem("onboarding_mode", "true");
+            console.log("🍪 Set onboarding flag for Gmail");
 
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/google/auth`;
             const res: any = await client.get(url);
@@ -87,8 +88,9 @@ export default function OnboardingFlow({ integrations }: OnboardingFlowProps) {
 
     const handleConnectQuickBooks = async () => {
         try {
-            // Set a cookie to track onboarding mode
-            document.cookie = "onboarding_mode=true; path=/; max-age=600"; // 10 minutes
+            // Use localStorage to track onboarding mode (persists through OAuth redirects)
+            localStorage.setItem("onboarding_mode", "true");
+            console.log("🍪 Set onboarding flag for QuickBooks");
 
             const url = `${process.env.NEXT_PUBLIC_API_URL}/api/v1/quickbooks/auth`;
             const res: any = await client.get(url);

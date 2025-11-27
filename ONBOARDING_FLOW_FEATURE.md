@@ -58,7 +58,7 @@ ALTER TABLE "users" ADD COLUMN "onboarding_completed" boolean DEFAULT false NOT 
   - QuickBooks integration button (required)
   - Auto-advances when each step is completed
   - Completion button that marks onboarding as done
-  - Smart redirect: Returns to dashboard during onboarding, integrations page otherwise
+  - Smart redirect using localStorage: Returns to dashboard during onboarding, stays on integrations page otherwise
 
 #### 2. Dashboard Page
 - **File**: `apps/main/app/(dashboard)/dashboard/page.tsx`
@@ -68,15 +68,22 @@ ALTER TABLE "users" ADD COLUMN "onboarding_completed" boolean DEFAULT false NOT 
   - Shows `OnboardingFlow` component if onboarding not completed
   - Shows normal dashboard if onboarding is completed
 
-#### 3. Integration Callbacks
+#### 3. Onboarding Redirect Handler
+- **File**: `apps/main/components/onboarding/onboarding-redirect-handler.tsx`
+- **Purpose**: Client-side component that checks localStorage and redirects appropriately
+- **How it works**:
+  - Checks for `onboarding_mode` flag in localStorage
+  - If flag is set and user lands on integrations page, redirects to dashboard
+  - Clears the flag after redirect
+  - Mounted on integrations page to intercept OAuth callbacks
+
+#### 4. Integration Callbacks
 - **Files**: 
   - `apps/main/app/api/callback/gmail/route.ts`
   - `apps/main/app/api/callback/quickbooks/route.ts`
 - **Changes**:
-  - Check if user is in onboarding mode (via `onboarding_mode` cookie)
-  - Redirect to `/dashboard` instead of `/integrations` during onboarding
-  - Redirect to `/integrations` for normal integration setup
-  - Clear onboarding cookie after redirect
+  - Always redirect to `/integrations` page after OAuth
+  - OnboardingRedirectHandler checks localStorage and redirects to dashboard if needed
 
 #### 4. Subscription Provider
 - **File**: `apps/main/components/subscription-provider.tsx`
@@ -154,8 +161,10 @@ npm run migrate
 
 ### Frontend
 - `apps/main/components/onboarding/onboarding-flow.tsx` (new)
+- `apps/main/components/onboarding/onboarding-redirect-handler.tsx` (new)
 - `apps/main/components/onboarding/index.ts` (new)
 - `apps/main/app/(dashboard)/dashboard/page.tsx`
+- `apps/main/app/(dashboard)/integrations/page.tsx`
 - `apps/main/app/api/callback/gmail/route.ts`
 - `apps/main/app/api/callback/quickbooks/route.ts`
 - `apps/main/components/subscription-provider.tsx`

@@ -33,6 +33,18 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
     const [redirectingToPayment, setRedirectingToPayment] = useState(false);
     const [lastUserId, setLastUserId] = useState<string | null>(null);
     const [lastPathname, setLastPathname] = useState<string>('');
+    // Initialize paymentCanceled from sessionStorage
+    const [paymentCanceled, setPaymentCanceled] = useState(() => {
+        if (typeof window !== 'undefined') {
+            const flag = sessionStorage.getItem('payment_canceled');
+            if (flag === 'true') {
+                // Clear the flag after reading it
+                sessionStorage.removeItem('payment_canceled');
+                return true;
+            }
+        }
+        return false;
+    });
     const router = useRouter();
     const pathname = usePathname();
 
@@ -100,7 +112,8 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             console.log('🚀 Creating Stripe checkout session...');
             const baseUrl = window.location.origin;
             const successUrl = `${baseUrl}/dashboard?payment_success=true`;
-            const cancelUrl = `${baseUrl}/profile?tab=subscription&payment=canceled`;
+            // When user clicks back on payment page, logout and redirect to login
+            const cancelUrl = `${baseUrl}/payment-cancel`;
 
             const response = await client.post('api/v1/subscription/create-checkout', {
                 successUrl,
@@ -193,12 +206,21 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
                             if (subscriptionData.tier !== 'free' &&
                                 subscriptionData.requiresPaymentSetup &&
                                 !subscriptionData.hasPaymentMethod) {
-                                // Directly create and redirect to Stripe checkout
-                                setLoading(false);
-                                setShowLoading(false);
-                                setIsChecked(true);
-                                await createCheckoutAndRedirect();
-                                return;
+
+                                // Don't auto-redirect if user just canceled payment
+                                console.log('💳 Payment setup required. Payment canceled flag:', paymentCanceled);
+                                if (paymentCanceled) {
+                                    console.log('⚠️ Payment was canceled, redirecting to profile instead');
+                                    router.replace('/profile?tab=subscription&setup=required');
+                                } else {
+                                    console.log('🚀 Auto-redirecting to Stripe checkout');
+                                    // Directly create and redirect to Stripe checkout
+                                    setLoading(false);
+                                    setShowLoading(false);
+                                    setIsChecked(true);
+                                    await createCheckoutAndRedirect();
+                                    return;
+                                }
                             } else {
                                 // Fallback to profile page for other cases
                                 router.replace('/profile?tab=subscription&setup=required');

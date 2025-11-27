@@ -1,7 +1,8 @@
 import React, { Suspense } from "react";
 import DashboardClient from "@/components/dashboard/dashboard-client";
+import OnboardingFlow from "@/components/onboarding/onboarding-flow";
 import client from "@/lib/fetch-client";
-import { ApiResponse, DashboardData, DashboardMetrics } from "@/lib/types";
+import { ApiResponse, DashboardData, DashboardMetrics, User } from "@/lib/types";
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,33 @@ function getErrorMessage(error: any): string | null {
 async function DashboardContent() {
   let dashboardData: DashboardData | null = null;
   let integrationError: string | null = null;
+  let user: User | null = null;
+  let integrations: any[] = [];
 
+  // Fetch user data to check onboarding status
+  try {
+    const userResult = await client.get<ApiResponse<User>>("api/v1/users/me");
+    if (userResult?.data) {
+      user = userResult.data;
+    }
+  } catch (error) {
+    console.error("Failed to fetch user data:", error);
+  }
+
+  // Fetch integrations for onboarding
+  try {
+    const integrationsResult = await client.get("api/v1/settings/integrations");
+    integrations = integrationsResult?.data || [];
+  } catch (error) {
+    console.error("Failed to fetch integrations:", error);
+  }
+
+  // If user hasn't completed onboarding, show onboarding flow
+  if (user && !user.onboardingCompleted) {
+    return <OnboardingFlow integrations={integrations} />;
+  }
+
+  // Otherwise, show normal dashboard
   try {
     const dashboardResult = await client.get<ApiResponse<DashboardData>>("api/v1/invoice/dashboard");
 

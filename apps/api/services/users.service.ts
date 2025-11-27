@@ -295,6 +295,29 @@ export class UserServices {
       throw new BadRequestError(error.message || "Failed to find or create Google user");
     }
   };
+
+  completeOnboarding = async (userId: number) => {
+    try {
+      const [user] = await db
+        .select()
+        .from(usersModel)
+        .where(eq(usersModel.id, userId));
+
+      if (!user) {
+        throw new NotFoundError("User not found");
+      }
+
+      const updatedUser = await db
+        .update(usersModel)
+        .set({ onboardingCompleted: true })
+        .where(eq(usersModel.id, userId))
+        .returning();
+
+      return updatedUser;
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to complete onboarding");
+    }
+  };
 }
 
 export const userServices = new UserServices();

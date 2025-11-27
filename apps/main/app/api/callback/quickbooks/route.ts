@@ -73,7 +73,12 @@ async function handleRequest(request: NextRequest, method: string) {
 
     // Handle success responses (200)
     if (backendResponse.status === 200) {
-      return NextResponse.redirect(new URL("/integrations", request.url));
+      // Check if user is in onboarding by looking at the referer
+      const referer = request.headers.get("referer") || "";
+      const isOnboarding = referer.includes("/dashboard");
+
+      const redirectUrl = new URL(isOnboarding ? "/dashboard" : "/integrations", request.url);
+      return NextResponse.redirect(redirectUrl);
     }
 
     // Handle error responses

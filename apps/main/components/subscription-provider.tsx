@@ -99,7 +99,7 @@ export function SubscriptionProvider({ children }: SubscriptionProviderProps) {
             setRedirectingToPayment(true);
             console.log('🚀 Creating Stripe checkout session...');
             const baseUrl = window.location.origin;
-            const successUrl = `${baseUrl}/dashboard?payment=success`;
+            const successUrl = `${baseUrl}/dashboard?payment_success=true`;
             const cancelUrl = `${baseUrl}/profile?tab=subscription&payment=canceled`;
 
             const response = await client.post('api/v1/subscription/create-checkout', {

@@ -73,12 +73,18 @@ async function handleRequest(request: NextRequest, method: string) {
 
     // Handle success responses (200)
     if (backendResponse.status === 200) {
-      // Check if user is in onboarding by looking at the referer
-      const referer = request.headers.get("referer") || "";
-      const isOnboarding = referer.includes("/dashboard");
+      // Check if user is in onboarding mode via cookie
+      const cookies = request.cookies;
+      const isOnboarding = cookies.get("onboarding_mode")?.value === "true";
 
       const redirectUrl = new URL(isOnboarding ? "/dashboard" : "/integrations", request.url);
-      return NextResponse.redirect(redirectUrl);
+
+      // Clear the onboarding cookie
+      const response = NextResponse.redirect(redirectUrl);
+      if (isOnboarding) {
+        response.cookies.delete("onboarding_mode");
+      }
+      return response;
     }
 
     // Handle error responses

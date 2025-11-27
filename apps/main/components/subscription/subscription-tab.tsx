@@ -95,7 +95,8 @@ export function SubscriptionTab({ setupRequired = false }: SubscriptionTabProps)
             const baseUrl = window.location.origin;
             const currentPath = window.location.pathname;
             const successUrl = `${baseUrl}${currentPath}?success=true`;
-            const cancelUrl = `${baseUrl}${currentPath}?canceled=true`;
+            // When user clicks back on payment page, logout and redirect to login
+            const cancelUrl = `${baseUrl}/payment-cancel`;
 
             const response = await client.post('api/v1/subscription/create-checkout', {
                 successUrl,

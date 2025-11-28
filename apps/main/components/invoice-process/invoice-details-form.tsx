@@ -49,6 +49,7 @@ const FormField = ({
   const isDateField = fieldKey === 'invoiceDate' || fieldKey === 'dueDate';
   const isBooleanField = typeof value === 'boolean';
   const isArrayField = Array.isArray(value);
+  const isTotalAmountField = fieldKey === 'totalAmount';
 
   // Use local state for the input to avoid cursor jumping
   const [localValue, setLocalValue] = useState(value ?? "");
@@ -91,6 +92,9 @@ const FormField = ({
         className="text-xs font-medium"
       >
         {label}
+        {isTotalAmountField && (
+          <span className="ml-1 text-xs text-muted-foreground font-normal">(Auto-calculated)</span>
+        )}
       </Label>
 
       {isDateField && isEditing ? (
@@ -105,7 +109,7 @@ const FormField = ({
           id={fieldKey}
           name={fieldKey}
           value={inputValue}
-          readOnly={!isEditing || isArrayField || isBooleanField}
+          readOnly={!isEditing || isArrayField || isBooleanField || isTotalAmountField}
           onChange={handleChange}
           onBlur={handleBlur}
           className="h-8 read-only:bg-muted/50 read-only:border-dashed"
@@ -199,6 +203,13 @@ export default function InvoiceDetailsForm({
         ...changes,
       },
     }));
+
+    // Update line items in state to reflect changes
+    setLineItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === lineItemId ? { ...item, ...changes } : item
+      )
+    );
 
     // Notify parent that there are unsaved changes
     if (onFieldChange) {
@@ -456,6 +467,37 @@ export default function InvoiceDetailsForm({
 
     fetchLineItems();
   }, [invoiceDetails?.id]);
+
+  // Calculate and update total amount whenever line items change
+  useEffect(() => {
+    const calculateTotal = () => {
+      const total = lineItems.reduce((sum, item) => {
+        const amount = parseFloat(String(item.amount || 0));
+        return sum + (isNaN(amount) ? 0 : amount);
+      }, 0);
+
+      // Update local invoice details with the new total
+      const formattedTotal = total.toFixed(2);
+      setLocalInvoiceDetails(prev => ({
+        ...prev,
+        totalAmount: formattedTotal
+      }));
+
+      // Create a synthetic event to update parent state
+      const syntheticEvent = {
+        target: {
+          name: 'totalAmount',
+          value: formattedTotal
+        }
+      } as React.ChangeEvent<HTMLInputElement>;
+
+      onDetailsChange(syntheticEvent);
+    };
+
+    if (lineItems.length > 0) {
+      calculateTotal();
+    }
+  }, [lineItems]);
 
 
 

@@ -1,7 +1,6 @@
 "use client";
 
-import React from "react";
-import { format } from "date-fns";
+import React, { useState } from "react";
 import { toast } from "sonner";
 import {
   Card,
@@ -18,37 +17,35 @@ import {
   TooltipTrigger,
 } from "@workspace/ui/components/tooltip";
 import { Button } from "@workspace/ui/components/button";
-import { cn } from "@workspace/ui/lib/utils";
 import {
-  Mail,
-  BookUser,
   Power,
-  CalendarDays,
-  Clock,
   CircleHelp,
   PauseCircle,
   PlayCircle,
+  AlertTriangle,
+  RefreshCcw,
+  Mail,
 } from "lucide-react";
 import client from "@/lib/axios-client";
-import type { Integration, IntegrationStatus } from "./types";
+import type { Integration } from "./types";
 import type { ActionState } from "@/app/(dashboard)/integrations/actions";
 import { ConfigureDialog, DisconnectDialog, SubmitButton } from "./integration-dialogs";
-
-const INTEGRATION_LOGOS: Record<string, React.ComponentType<{ className?: string }>> = {
-  Gmail: () => <Mail className="w-8 h-8 text-red-500" />,
-  Outlook: () => <Mail className="w-8 h-8 text-blue-500" />,
-  QuickBooks: () => <BookUser className="w-8 h-8 text-green-600" />,
-};
-
-const STATUS_CONFIG: Record<IntegrationStatus, { text: string; color: string }> = {
-  success: { text: "Connected", color: "bg-green-500" },
-  disconnected: { text: "Not Connected", color: "bg-gray-500" },
-  failed: { text: "Failed", color: "bg-red-500" },
-  not_connected: { text: "Not Connected", color: "bg-gray-500" },
-  paused: { text: "Paused", color: "bg-yellow-500" },
-};
-
-const DATE_TIME_FORMAT = "LLL d, yyyy 'at' p";
+import { syncQuickBooksData } from "@/lib/services/quickbooks.service";
+import { syncGmailData } from "@/lib/services/gmail.service";
+import { syncOutlookData } from "@/lib/services/outlook.service";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@workspace/ui/components/alert";
+import { INTEGRATION_LOGOS } from "./integration-constants";
+import { IntegrationStatusBadge } from "./integration-status-badge";
+import { IntegrationInfoRow } from "./integration-info-row";
+import { IntegrationMetadataSection } from "./integration-metadata-section";
+import {
+  isIntegrationConnected,
+  formatDate,
+} from "./integration-utils";
 
 interface IntegrationCardProps {
   integration: Integration;
@@ -57,21 +54,39 @@ interface IntegrationCardProps {
     prevState: ActionState,
     formData: FormData,
   ) => Promise<ActionState>;
+  shouldOpenConfigDialog?: boolean;
+  onConfigDialogClose?: () => void;
 }
 
 export function IntegrationCard({
   integration,
   updateAction,
   updateStartTimeAction,
+  shouldOpenConfigDialog,
+  onConfigDialogClose,
 }: IntegrationCardProps) {
-  const { name, status, allowCollection, path, backendName, category, startReading, createdAt, lastRead } =
-    integration;
+  const {
+    name,
+    status,
+    allowCollection,
+    path,
+    backendName,
+    category,
+    createdAt,
+    metadata,
+    errorMessage,
+    email,
+  } = integration;
 
-  const { text: statusText, color: statusColor } = STATUS_CONFIG[status as IntegrationStatus] || STATUS_CONFIG.not_connected;
-  const isConnected = status === "success" || status === "paused";
+  const isConnected = isIntegrationConnected(status);
   const formId = `form-${backendName}`;
   const isGmail = name.toLowerCase() === "gmail";
+  const isOutlook = name.toLowerCase() === "outlook";
+  const isQuickBooks = name.toLowerCase() === "quickbooks";
   const IntegrationLogo = INTEGRATION_LOGOS[name];
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const connectedTime = formatDate(createdAt);
 
   const handleConnect = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -80,72 +95,102 @@ export function IntegrationCard({
       const res: any = await client.get(url);
       window.location.href = res.url;
     } catch (error: unknown) {
-      const errorMessage =
+      const connectErrorMessage =
         error && typeof error === "object" && "response" in error
           ? ((error.response as any)?.data?.message as string) || "Failed to connect!"
           : "Failed to connect!";
-      toast.error(errorMessage);
+      toast.error(connectErrorMessage);
+    }
+  };
+
+  const handleSync = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    setIsSyncing(true);
+    try {
+      if (isGmail) {
+        const result = await syncGmailData();
+        toast.success("Gmail sync completed successfully", {
+          description: result.message || "Emails synced successfully",
+        });
+      } else if (isOutlook) {
+        const result = await syncOutlookData();
+        toast.success("Outlook sync completed successfully", {
+          description: result.message || "Emails synced successfully",
+        });
+      } else if (isQuickBooks) {
+        const result = await syncQuickBooksData();
+        toast.success("Sync completed successfully", {
+          description: `Products: ${result.data.products.inserted} inserted, ${result.data.products.updated} updated, ${result.data.products.skipped} skipped. Accounts: ${result.data.accounts.inserted} inserted, ${result.data.accounts.updated} updated, ${result.data.accounts.skipped} skipped.`,
+        });
+      }
+    } catch (error: unknown) {
+      const syncErrorMessage =
+        error && typeof error === "object" && "response" in error
+          ? ((error.response as any)?.data?.message as string) || "Failed to sync!"
+          : "Failed to sync!";
+      toast.error(syncErrorMessage);
+    } finally {
+      setIsSyncing(false);
     }
   };
 
   return (
-    <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
+    <Card className="flex flex-col justify-between hover:shadow-lg transition-shadow duration-300 w-full h-full">
+      <CardHeader className="p-1 sm:p-4 pb-2">
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex items-center gap-3">
             {IntegrationLogo && <IntegrationLogo />}
-            <div>
-              <CardTitle className="text-lg">{name}</CardTitle>
-              <CardDescription>{category}</CardDescription>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-base sm:text-lg truncate">{name}</CardTitle>
+              <CardDescription className="text-xs sm:text-sm line-clamp-1">{category}</CardDescription>
             </div>
           </div>
-          <div className="flex items-center text-xs font-medium text-muted-foreground pt-1">
-            <span className={cn("h-2 w-2 rounded-full mr-2 shrink-0", statusColor)} />
-            {statusText}
-          </div>
+          <IntegrationStatusBadge status={status} className="pt-0.5 shrink-0" />
         </div>
       </CardHeader>
 
-      <CardContent className="flex-grow">
+      <CardContent className="flex-grow space-y-1 p-1 sm:p-2 pt-0">
+        {errorMessage && (
+          <Alert variant="destructive" className="border-destructive/30">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle className="flex items-center gap-2">Sync Paused</AlertTitle>
+            <AlertDescription>{errorMessage}</AlertDescription>
+          </Alert>
+        )}
+
         {isConnected && (
-          <div className="space-y-2.5 text-sm text-muted-foreground border-l-2 pl-4 py-2">
-            {createdAt && (
-              <div className="flex items-center gap-2">
-                <Power className="h-4 w-4" /> Connected:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(createdAt), DATE_TIME_FORMAT)}
-                </span>
-              </div>
-            )}
-            {isGmail && startReading && (
-              <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" /> Start Reading:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(startReading), "LLL d, yyyy")}
-                </span>
-              </div>
-            )}
-            {isGmail && lastRead && (
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4" /> Last Read:{" "}
-                <span className="font-medium text-primary">
-                  {format(new Date(lastRead), DATE_TIME_FORMAT)}
-                </span>
-              </div>
+          <div className="space-y-1 text-xs sm:text-sm text-muted-foreground border-l-2 pl-2.5 sm:pl-3 py-1">
+            <IntegrationInfoRow
+              icon={Power}
+              label="Connected"
+              value={connectedTime}
+            />
+            {email && (
+              <IntegrationInfoRow
+                icon={Mail}
+                label="Email"
+                value={email}
+              />
             )}
           </div>
         )}
+
+        <IntegrationMetadataSection metadata={metadata} backendName={backendName} />
       </CardContent>
 
-      <CardFooter>
-        <form id={formId} action={updateAction} className="flex flex-wrap items-center gap-2 w-full">
+      <CardFooter className="p-1 sm:p-2 pt-1">
+        <form
+          id={formId}
+          action={updateAction}
+          className="flex flex-wrap items-center gap-1 sm:gap-2 w-full"
+        >
           <input type="hidden" name="name" value={backendName} />
 
           {allowCollection ? (
             (status === "not_connected" || status === "disconnected") && (
-                <Button size="sm" className="w-full cursor-pointer" onClick={handleConnect}>
-                  Connect Now
-                </Button>
+              <Button size="sm" className="w-full cursor-pointer" onClick={handleConnect}>
+                Connect Now
+              </Button>
             )
           ) : (
             <TooltipProvider>
@@ -164,8 +209,32 @@ export function IntegrationCard({
 
           {status === "success" && (
             <>
-              {isGmail && !startReading && (
-                <ConfigureDialog backendName={backendName} updateStartTimeAction={updateStartTimeAction} />
+              {(isGmail || isOutlook) && !metadata?.startReading && (
+                <ConfigureDialog
+                  backendName={backendName}
+                  updateStartTimeAction={updateStartTimeAction}
+                  defaultOpen={shouldOpenConfigDialog}
+                  onOpenChange={(open) => !open && onConfigDialogClose?.()}
+                />
+              )}
+              {(isGmail || isOutlook || isQuickBooks) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" /> Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2" /> Sync
+                    </>
+                  )}
+                </Button>
               )}
               <SubmitButton name="status" value="paused" label="Pause" variant="outline">
                 <PauseCircle className="h-4 w-4 mr-2" /> Pause
@@ -176,8 +245,32 @@ export function IntegrationCard({
 
           {status === "paused" && (
             <>
-              {isGmail && !startReading && (
-                <ConfigureDialog backendName={backendName} updateStartTimeAction={updateStartTimeAction} />
+              {(isGmail || isOutlook) && !metadata?.startReading && (
+                <ConfigureDialog
+                  backendName={backendName}
+                  updateStartTimeAction={updateStartTimeAction}
+                  defaultOpen={shouldOpenConfigDialog}
+                  onOpenChange={(open) => !open && onConfigDialogClose?.()}
+                />
+              )}
+              {(isGmail || isOutlook || isQuickBooks) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="cursor-pointer"
+                >
+                  {isSyncing ? (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2 animate-spin" /> Syncing...
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCcw className="h-4 w-4 mr-2" /> Sync
+                    </>
+                  )}
+                </Button>
               )}
               <SubmitButton name="status" value="success" label="Resume" variant="outline">
                 <PlayCircle className="h-4 w-4 mr-2 text-green-600" /> Resume
@@ -190,4 +283,3 @@ export function IntegrationCard({
     </Card>
   );
 }
-

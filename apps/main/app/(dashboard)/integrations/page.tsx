@@ -1,6 +1,6 @@
 import React, { Suspense } from "react";
 import IntegrationsView from "@/components/integrations/integrations-view";
-import { SubscriptionGuard } from "@/components/auth/subscription-guard";
+import { OnboardingRedirectHandler } from "@/components/onboarding/onboarding-redirect-handler";
 import client from "@/lib/fetch-client";
 import {
   updateIntegrationStatusAction,
@@ -15,6 +15,9 @@ interface IntegrationData {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  email?: string | null;
+  providerId?: string | null;
+  metadata?: Record<string, any>;
 }
 
 interface IntegrationsPageProps {
@@ -24,6 +27,7 @@ interface IntegrationsPageProps {
 async function getIntegrations(): Promise<IntegrationData[]> {
   try {
     const response = await client.get("api/v1/settings/integrations");
+    // console.log("response", response.data.some(i => i.name=='gmail'));
     return response?.data || [];
   } catch (error) {
     return [];
@@ -37,7 +41,8 @@ export default async function IntegrationsPage({
   const integrations = await getIntegrations();
 
   return (
-    <SubscriptionGuard requiresAccess={true} loadingType="skeleton">
+    <>
+      <OnboardingRedirectHandler />
       <Suspense fallback={<IntegrationsSkeleton />}>
         <IntegrationsView
           integrations={integrations}
@@ -46,7 +51,7 @@ export default async function IntegrationsPage({
           updateStartTimeAction={updateStartTimeAction}
         />
       </Suspense>
-    </SubscriptionGuard>
+    </>
   );
 }
 

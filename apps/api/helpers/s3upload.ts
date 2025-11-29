@@ -3,7 +3,15 @@ import { BadRequestError } from "./errors";
 import { config } from "@/lib/config";
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 
-export const s3Client = new S3Client();
+export const s3Client = new S3Client({
+  region: config.s3.region,
+  credentials: config.aws.accessKeyId && config.aws.secretAccessKey
+    ? {
+        accessKeyId: config.aws.accessKeyId,
+        secretAccessKey: config.aws.secretAccessKey,
+      }
+    : undefined, // If not provided, SDK will try to load from default credential chain
+});
 
 export const uploadBufferToS3 = async (
   buffer: Buffer,

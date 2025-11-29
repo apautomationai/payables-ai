@@ -56,8 +56,15 @@ const faqs = [
 
 export function FAQ() {
   return (
-    <section className="py-24 sm:py-32 bg-gray-50">
-      <div className="mx-auto max-w-4xl px-6 lg:px-8">
+    <section className="py-24 sm:py-32 bg-gradient-to-b from-black via-gray-900 to-gray-800 relative overflow-hidden">
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
+      <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -67,18 +74,18 @@ export function FAQ() {
         >
           <Badge
             variant="outline"
-            className="mb-4 px-3 py-1 text-sm font-medium border-emerald-200 bg-emerald-50/50 text-emerald-700"
+            className="mb-4 px-3 py-1 text-sm font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase"
           >
             FAQ
           </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl uppercase">
             Frequently asked
-            <span className="bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
               {" "}
               questions
             </span>
           </h2>
-          <p className="mt-6 text-xl leading-8 text-gray-600">
+          <p className="mt-6 text-xl leading-8 text-gray-300">
             Everything you need to know about our platform and services.
           </p>
         </motion.div>
@@ -94,12 +101,12 @@ export function FAQ() {
               <AccordionItem
                 key={index}
                 value={`item-${index}`}
-                className="bg-white border border-gray-200 rounded-lg px-6 hover:shadow-md transition-shadow duration-300"
+                className="bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 rounded-none px-6 hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300"
               >
-                <AccordionTrigger className="text-left font-semibold text-gray-900 hover:text-blue-700 transition-colors duration-300">
+                <AccordionTrigger className="text-left font-semibold text-white hover:text-yellow-400 transition-colors duration-300 uppercase">
                   {faq.question}
                 </AccordionTrigger>
-                <AccordionContent className="text-gray-600 leading-relaxed pt-2">
+                <AccordionContent className="text-gray-300 leading-relaxed pt-2">
                   {faq.answer}
                 </AccordionContent>
               </AccordionItem>

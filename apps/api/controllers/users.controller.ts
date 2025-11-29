@@ -92,7 +92,7 @@ export class UserController {
           maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
           path: "/", // cookie is valid across all routes
         });
-      
+
         return res.json({ user, token });
       }
     )(req, res, next);
@@ -206,6 +206,26 @@ export class UserController {
       return res.status(200).send(result);
     } catch (error: any) {
       throw new BadRequestError(error.message || "Unable to change password");
+    }
+  };
+
+  completeOnboarding = async (req: Request, res: Response) => {
+    //@ts-ignore
+    const userId = req.user.id;
+    try {
+      const response = await userServices.completeOnboarding(userId);
+      if (!response) {
+        throw new BadRequestError("Unable to complete onboarding");
+      }
+      const result = {
+        status: "success",
+        data: {
+          message: "Onboarding completed successfully",
+        },
+      };
+      return res.status(200).send(result);
+    } catch (error: any) {
+      throw new BadRequestError(error.message || "Unable to complete onboarding");
     }
   };
 }

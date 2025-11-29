@@ -2,6 +2,7 @@ import { pgTable, serial, integer, timestamp, index, foreignKey, unique, varchar
 
 export const provider = pgEnum("provider", ['local', 'gmail', 'outlook'])
 export const status = pgEnum("status", ['pending', 'approved', 'rejected', 'failed', 'not_connected'])
+export const itemType = pgEnum("item_type", ['account', 'product'])
 
 
 export const registrationCounter = pgTable("registration_counter", {
@@ -93,9 +94,13 @@ export const invoices = pgTable("invoices", {
 	fileKey: text("file_key"),
 	s3JsonKey: text("s3_json_key"),
 	status: status().default('pending').notNull(),
+	isDeleted: boolean("is_deleted").default(false).notNull(),
+	deletedAt: timestamp("deleted_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
-});
+}, (table) => [
+	index("idx_invoices_is_deleted").using("btree", table.isDeleted.asc().nullsLast().op("bool_ops")),
+]);
 
 export const attachments = pgTable("attachments", {
 	id: serial().primaryKey().notNull(),
@@ -109,10 +114,14 @@ export const attachments = pgTable("attachments", {
 	provider: provider().default('local').notNull(),
 	fileUrl: text("file_url"),
 	fileKey: text("file_key"),
+	isDeleted: boolean("is_deleted").default(false).notNull(),
+	deletedAt: timestamp("deleted_at", { mode: 'string' }),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow(),
 	status: text().default('pending').notNull(),
-});
+}, (table) => [
+	index("idx_attachments_is_deleted").using("btree", table.isDeleted.asc().nullsLast().op("bool_ops")),
+]);
 
 export const lineItems = pgTable("line_items", {
 	id: serial().primaryKey().notNull(),
@@ -122,6 +131,9 @@ export const lineItems = pgTable("line_items", {
 	quantity: numeric(),
 	rate: numeric(),
 	amount: numeric(),
+	itemType: itemType("item_type"),
+	resourceId: integer("resource_id"),
+	customerId: integer("customer_id"),
 });
 
 

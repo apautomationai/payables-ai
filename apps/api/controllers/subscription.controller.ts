@@ -20,10 +20,31 @@ export class SubscriptionController {
             }
 
             // Get subscription from database
-            const subscription = await SubscriptionService.getSubscriptionByUserId(userId);
+            let subscription = await SubscriptionService.getSubscriptionByUserId(userId);
 
+            // If subscription doesn't exist, try to create one (recovery mechanism)
             if (!subscription) {
-                throw new NotFoundError('Subscription not found for user');
+                console.warn(`⚠️ Subscription not found for user ${userId}, attempting to create one`);
+
+                try {
+                    // Import RegistrationService
+                    const { RegistrationService } = await import('@/services/registration.service');
+
+                    // Attempt to assign subscription using recovery method
+                    await RegistrationService.assignSubscriptionToExistingUser(userId);
+
+                    // Try to fetch again
+                    subscription = await SubscriptionService.getSubscriptionByUserId(userId);
+
+                    if (!subscription) {
+                        throw new NotFoundError('Failed to create subscription for user');
+                    }
+
+                    console.log(`✅ Successfully recovered and created subscription for user ${userId}`);
+                } catch (recoveryError: any) {
+                    console.error(`❌ Failed to recover subscription for user ${userId}:`, recoveryError);
+                    throw new NotFoundError('Subscription not found for user and recovery failed');
+                }
             }
 
             // Calculate days remaining in trial

@@ -15,6 +15,7 @@ import { notFoundHandler } from "@/helpers/not-found-handler";
 import healthRouter from "@/routes/health.route";
 import usersRoutes from "@/routes/users.route";
 import googleRoutes from "@/routes/google.routes";
+import outlookRoutes from "@/routes/outlook.routes";
 import authRoutes from "@/routes/auth.routes";
 import settingsRoutes from "@/routes/settings.route";
 import uploadRoutes from "@/routes/upload.routes";
@@ -22,6 +23,7 @@ import invoiceRoutes from "@/routes/invoice.routes";
 import quickbooksRoutes from "@/routes/quickbooks.routes";
 import processorRoutes from "@/routes/processor.routes";
 import subscriptionRoutes from "@/routes/subscription.routes";
+import jobsRoutes from "@/routes/jobs.routes";
 
 const app = express();
 
@@ -60,12 +62,14 @@ app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/users", usersRoutes);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/google", googleRoutes);
+app.use("/api/v1/outlook", outlookRoutes);
 app.use("/api/v1/settings", settingsRoutes);
 app.use("/api/v1/upload", uploadRoutes);
 app.use("/api/v1/invoice", invoiceRoutes);
 app.use("/api/v1/quickbooks", quickbooksRoutes);
 app.use("/api/v1/processor", processorRoutes);
 app.use("/api/v1/subscription", subscriptionRoutes);
+app.use("/api/v1/jobs", jobsRoutes);
 
 // Apply error handlers
 app.use(notFoundHandler);

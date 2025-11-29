@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   pgEnum,
   pgTable,
@@ -24,6 +25,8 @@ export const attachmentsModel = pgTable("attachments", {
   provider: providerEnum("provider").notNull().default("local"),
   fileUrl: text("file_url"),
   fileKey: text("file_key"),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+  deletedAt: timestamp("deleted_at"),
   created_at: timestamp("created_at").defaultNow(),
   updated_at: timestamp("updated_at").defaultNow(),
 });

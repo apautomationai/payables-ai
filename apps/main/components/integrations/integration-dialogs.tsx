@@ -78,13 +78,20 @@ interface ConfigureDialogProps {
     prevState: ActionState,
     formData: FormData,
   ) => Promise<ActionState>;
+  defaultOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ConfigureDialog({ backendName, updateStartTimeAction }: ConfigureDialogProps) {
+export function ConfigureDialog({ backendName, updateStartTimeAction, defaultOpen = false, onOpenChange }: ConfigureDialogProps) {
   const router = useRouter();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [state, formAction] = useActionState(updateStartTimeAction, initialState);
+
+  // Update internal state when defaultOpen changes
+  useEffect(() => {
+    setIsOpen(defaultOpen);
+  }, [defaultOpen]);
 
   const dateString = useMemo(() => (date ? date.toISOString().split("T")[0] : ""), [date]);
 
@@ -99,8 +106,13 @@ export function ConfigureDialog({ backendName, updateStartTimeAction }: Configur
     }
   }, [state, router]);
 
+  const handleOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    onOpenChange?.(open);
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="outline" size="sm">
           <Settings className="mr-2 h-4 w-4" /> Configure
@@ -115,7 +127,7 @@ export function ConfigureDialog({ backendName, updateStartTimeAction }: Configur
         </DialogHeader>
         <form action={formAction} className="grid gap-4 py-4">
           <input type="hidden" name="name" value={backendName} />
-          <input type="hidden" name="startTime" value={dateString} />
+          <input type="hidden" name="startReading" value={dateString} />
           <div className="flex justify-center">
             <Calendar
               mode="single"

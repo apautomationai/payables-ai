@@ -35,14 +35,21 @@ export function About() {
   return (
     <section
       id="about"
-      className="py-24 sm:py-32 bg-white relative overflow-hidden"
+      className="py-24 sm:py-32 bg-gradient-to-b from-gray-800 via-gray-900 to-black relative overflow-hidden"
     >
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
       {/* Background decorative elements */}
       <div className="absolute top-20 right-10 opacity-10">
-        <PulsingOrb color="#3B82F6" size={120} />
+        <PulsingOrb color="#FDB022" size={120} />
       </div>
       <div className="absolute bottom-20 left-10 opacity-10">
-        <PulsingOrb color="#10B981" size={100} />
+        <PulsingOrb color="#F59E0B" size={100} />
       </div>
 
       <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
@@ -56,19 +63,19 @@ export function About() {
           >
             <Badge
               variant="outline"
-              className="mb-6 px-3 py-1 text-sm font-medium border-blue-200 bg-blue-50/50 text-blue-700"
+              className="mb-6 px-3 py-1 text-sm font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase"
             >
               About SLEDGE
             </Badge>
 
-            <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-6">
+            <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl mb-6 uppercase">
               Why We Built{" "}
-              <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
                 SLEDGE
               </span>
             </h2>
 
-            <p className="text-xl text-gray-600 mb-6 leading-8">
+            <p className="text-xl text-gray-300 mb-6 leading-8">
               We've all been there — chasing down invoices, juggling emails, and
               trying to keep projects moving while paperwork slows everything
               down. In construction and small business especially, missed
@@ -79,7 +86,7 @@ export function About() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-md hover:shadow-lg"
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-gray-900 font-bold rounded-lg transition-all duration-300 shadow-lg shadow-yellow-500/50 hover:shadow-xl hover:shadow-yellow-400/60 border-2 border-yellow-600 uppercase"
             >
               Learn More About Us
               <ArrowRight className="ml-2 h-5 w-5" />
@@ -113,16 +120,16 @@ export function About() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Mission Card */}
-            <Card className="p-6 dark:border-blue-100 border-blue-100 bg-gradient-to-br from-blue-50 to-white hover:shadow-lg transition-shadow duration-300">
+            <Card className="p-6 border-8 border-yellow-600/60 bg-gradient-to-br from-gray-900 to-black hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 rounded-none">
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-blue-100">
-                  <Target className="h-6 w-6 text-blue-600" />
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-yellow-500/20 border-2 border-yellow-600/40">
+                  <Target className="h-6 w-6 text-yellow-500" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-white mb-2 uppercase">
                     Our Mission
                   </h3>
-                  <p className="text-gray-600 text-sm leading-6">
+                  <p className="text-gray-300 text-sm leading-6">
                     To take the headache out of accounts payable by giving
                     builders, contractors, and small businesses the tools to
                     manage invoices effortlessly, pay vendors on time, and keep
@@ -133,16 +140,16 @@ export function About() {
             </Card>
 
             {/* Vision Card */}
-            <Card className="p-6 dark:border-purple-100 border-purple-100 bg-gradient-to-br from-purple-50 to-white hover:shadow-lg transition-shadow duration-300">
+            <Card className="p-6 border-8 border-orange-600/60 bg-gradient-to-br from-gray-900 to-black hover:shadow-[0_0_40px_rgba(245,158,11,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 rounded-none">
               <div className="flex items-start space-x-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-purple-100">
-                  <Eye className="h-6 w-6 text-purple-600" />
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-lg bg-orange-500/20 border-2 border-orange-600/40">
+                  <Eye className="h-6 w-6 text-orange-500" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg font-semibold text-white mb-2 uppercase">
                     Our Vision
                   </h3>
-                  <p className="text-gray-600 text-sm leading-6">
+                  <p className="text-gray-300 text-sm leading-6">
                     A world where no business loses time, money, or
                     opportunities because of messy invoice processes. We're
                     building the future of accounts payable — faster, smarter,

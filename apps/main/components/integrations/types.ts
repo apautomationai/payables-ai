@@ -15,6 +15,10 @@ export interface Integration {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  errorMessage?: string | null;
+  email?: string | null;
+  providerId?: string | null;
+  metadata?: Record<string, any>;
 }
 
 export interface BackendIntegrationData {
@@ -23,5 +27,11 @@ export interface BackendIntegrationData {
   startReading?: string | null;
   createdAt?: string | null;
   lastRead?: string | null;
+  email?: string | null;
+  providerId?: string | null;
+  metadata?: {
+    lastErrorMessage?: string | null;
+    [key: string]: any;
+  };
 }
 

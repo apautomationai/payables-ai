@@ -1,7 +1,7 @@
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
-import { and, eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 interface UpdatedData {
   name: "google";
   status: "pending" | "approved" | "rejected" | "failed" | "not_connected";
@@ -73,6 +73,26 @@ class IntegrationsService {
     }
   }
 
+  async getOutlookIntegration() {
+    try {
+      const integrations = await db
+        .select()
+        .from(integrationsModel)
+        .where(and(eq(integrationsModel.name, "outlook"), eq(integrationsModel.status, "success")));
+      return {
+        success: true,
+        data: integrations || [],
+      };
+    }
+    catch (error: any) {
+      const result = {
+        success: false,
+        message: error.message,
+      };
+      return result;
+    }
+  }
+
   async getIntegrations(useId: number) {
     try {
       // @ts-ignore
@@ -130,6 +150,36 @@ class IntegrationsService {
       return false;
     }
   }
+
+  async checkEmailExists(email: string, excludeUserId?: number): Promise<boolean> {
+    try {
+      const conditions = [eq(integrationsModel.email, email)];
+      if (excludeUserId) {
+        conditions.push(ne(integrationsModel.userId, excludeUserId));
+      }
+      const [integration] = await db
+        .select()
+        .from(integrationsModel)
+        .where(and(...conditions))
+        .limit(1);
+      return !!integration;
+    } catch (error: any) {
+      return false;
+    }
+  }
+
+  async getIntegrationByEmail(email: string) {
+    try {
+      const [integration] = await db
+        .select()
+        .from(integrationsModel)
+        .where(eq(integrationsModel.email, email))
+        .limit(1);
+      return integration || null;
+    } catch (error: any) {
+      return null;
+    }
+  }
   updateStatus = async (userId: number, updatedData: UpdatedData) => {
     try {
       const [integration] = await db
@@ -165,7 +215,7 @@ class IntegrationsService {
   };
   getStartedReadingAt = async (userId: number, name: string) => {
     try {
-      const [startedReadingAt] = await db
+      const [integration] = await db
         .select()
         .from(integrationsModel)
         .where(
@@ -175,7 +225,12 @@ class IntegrationsService {
           )
         );
 
-      return startedReadingAt.startReading;
+      if (!integration) {
+        return null;
+      }
+
+      const metadata = (integration.metadata as any) || {};
+      return metadata.startReading ? new Date(metadata.startReading) : null;
     } catch (error: any) {
       const result = {
         status: false,
@@ -186,7 +241,7 @@ class IntegrationsService {
   };
   getLastReadAt = async (userId: number, name: string) => {
     try {
-      const [lastReadAt] = await db
+      const [integration] = await db
         .select()
         .from(integrationsModel)
         .where(
@@ -196,7 +251,12 @@ class IntegrationsService {
           )
         );
 
-      return lastReadAt.lastRead;
+      if (!integration) {
+        return null;
+      }
+
+      const metadata = (integration.metadata as any) || {};
+      return metadata.lastRead ? new Date(metadata.lastRead) : null;
     } catch (error: any) {
       const result = {
         status: false,
@@ -242,9 +302,10 @@ class IntegrationsService {
     }
   }
 
-  async updateStartTime(userId: number, name: string, startTime: string) {
+  async updateStartReading(userId: number, name: string, startReading: string) {
     try {
-      const timestamp = new Date(startTime);
+      console.log("startReading from service", startReading);
+      const timestamp = new Date(startReading);
       const integrations = await this.getIntegrations(userId);
       //@ts-ignore
       const integration = integrations?.data?.find(
@@ -253,9 +314,18 @@ class IntegrationsService {
       if (!integration) {
         throw new NotFoundError(`No ${name} integration found for this user`);
       }
+      
+      const currentMetadata = (integration.metadata as any) || {};
+      const updatedMetadata = {
+        ...currentMetadata,
+        startReading: timestamp.toISOString(),
+      };
+      console.log("updatedMetadata", updatedMetadata);
+      console.log("integration", integration);
+
       const [updateStartTime] = await db
         .update(integrationsModel)
-        .set({ startReading: timestamp })
+        .set({ metadata: updatedMetadata })
         .where(eq(integrationsModel.id, integration.id))
         .returning();
       const result = {

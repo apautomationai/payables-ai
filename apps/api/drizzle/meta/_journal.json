@@ -3,20 +3,6 @@
   "dialect": "postgresql",
   "entries": [
     {
-      "idx": 0,
-      "version": "7",
-      "when": 1757769990034,
-      "tag": "0000_wooden_talkback",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1760492868792,
-      "tag": "0001_large_legion",
-      "breakpoints": true
-    },
-    {
       "idx": 2,
       "version": "7",
       "when": 1761708546400,
@@ -28,6 +14,41 @@
       "version": "7",
       "when": 1761855262038,
       "tag": "0003_cold_wrecking_crew",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1762474704980,
+      "tag": "0004_worthless_monster_badoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1763060851945,
+      "tag": "0005_rainy_lightspeed",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1763061251019,
+      "tag": "0006_slow_johnny_blaze",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1764000000000,
+      "tag": "0007_quickbooks_hybrid_search",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764000001000,
+      "tag": "0008_integrations_oauth_fields",
       "breakpoints": true
     }
   ]

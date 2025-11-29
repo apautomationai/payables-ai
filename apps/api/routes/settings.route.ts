@@ -19,6 +19,6 @@ router.delete(
   requireSubscriptionAccess,
   settingsController.deleteIntegration
 );
-router.patch("/update-start", authenticate, requireSubscriptionAccess, settingsController.updateStartTime);
+router.patch("/update-start", authenticate, requireSubscriptionAccess, settingsController.updateStartReading);
 
 export default router;

@@ -55,8 +55,15 @@ const companies = [
 
 export function SocialProof() {
   return (
-    <section className="py-24 sm:py-32 bg-gray-50">
-      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+    <section className="py-24 sm:py-32 bg-gradient-to-b from-black via-gray-900 to-gray-800 relative overflow-hidden">
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
+      <div className="mx-auto max-w-7xl px-6 lg:px-8 relative z-10">
         {/* Company Logos */}
         {/* <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -99,19 +106,19 @@ export function SocialProof() {
         >
           <Badge
             variant="outline"
-            className="mb-4 px-3 py-1 text-sm font-medium border-blue-200 bg-blue-50/50 text-blue-700"
+            className="mb-4 px-3 py-1 text-sm font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase"
           >
             Testimonials
           </Badge>
-          <h2 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          <h2 className="text-4xl font-bold tracking-tight text-white sm:text-5xl uppercase">
             Loved by
-            <span className="bg-gradient-to-r from-blue-600 to-emerald-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-yellow-400 to-orange-500 bg-clip-text text-transparent">
               {" "}
               thousands{" "}
             </span>
             of teams
           </h2>
-          <p className="mt-6 text-xl leading-8 text-gray-600">
+          <p className="mt-6 text-xl leading-8 text-gray-300">
             See what our customers say about transforming their business
             operations.
           </p>
@@ -126,12 +133,30 @@ export function SocialProof() {
               transition={{ duration: 0.6, delay: index * 0.1 }}
               viewport={{ once: true }}
             >
-              <Card className="p-8 h-full dark:bg-white bg-white dark:border-gray-200 border-gray-200 hover:shadow-lg transition-shadow duration-300 relative">
-                <Quote className="absolute top-6 right-6 w-8 h-8 text-blue-100" />
+              <Card className="p-8 h-full bg-gradient-to-br from-gray-900 to-black border-8 border-gray-600 hover:border-yellow-600/70 hover:shadow-[0_0_40px_rgba(253,176,34,0.5),inset_0_0_30px_rgba(0,0,0,0.6)] transition-all duration-300 relative rounded-none">
+                {/* Corner screws/rivets - LARGER AND ROUGHER */}
+                <div className="absolute -top-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -top-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -left-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                <div className="absolute -bottom-3 -right-3 w-6 h-6 bg-gray-800 rounded-full border-4 border-gray-500 shadow-[inset_0_0_5px_rgba(0,0,0,0.9),0_3px_6px_rgba(0,0,0,1)] z-20">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 bg-gray-400 rounded-full"></div>
+                </div>
+                
+                {/* Weld marks */}
+                <div className="absolute top-4 left-1/4 w-16 h-1 bg-yellow-600/40 blur-[2px]"></div>
+                <div className="absolute bottom-4 right-1/4 w-14 h-1 bg-yellow-600/40 blur-[2px]"></div>
+                
+                <Quote className="absolute top-6 right-6 w-8 h-8 text-yellow-500/20" />
 
                 {/* Animated corner orb */}
                 <div className="absolute top-2 left-2 opacity-0 hover:opacity-30 transition-opacity duration-300">
-                  <PulsingOrb color="#10B981" size={20} />
+                  <PulsingOrb color="#FDB022" size={20} />
                 </div>
 
                 <div className="flex items-center gap-1 mb-4">
@@ -151,14 +176,14 @@ export function SocialProof() {
                   ))}
                 </div>
 
-                <blockquote className="text-gray-700 mb-6 leading-relaxed text-lg">
+                <blockquote className="text-gray-300 mb-6 leading-relaxed text-lg">
                   "{testimonial.content}"
                 </blockquote>
 
                 <div className="flex items-center gap-4 mb-4">
-                  <Avatar className="w-12 h-12">
+                  <Avatar className="w-12 h-12 border-2 border-yellow-600/40">
                     <AvatarImage src={testimonial.image} alt={"photo"} />
-                    {/* <AvatarFallback className="bg-blue-100 text-blue-700 font-semibold">
+                    {/* <AvatarFallback className="bg-yellow-500/20 text-yellow-400 font-semibold">
                       {testimonial.name
                         .split(" ")
                         .map((n) => n[0])
@@ -166,13 +191,13 @@ export function SocialProof() {
                     </AvatarFallback> */}
                   </Avatar>
                   <div>
-                    {/* <div className="font-semibold text-gray-900">
+                    {/* <div className="font-semibold text-white">
                       {testimonial.name}
                     </div> */}
-                    {/* <div className="text-sm text-gray-600">
+                    {/* <div className="text-sm text-gray-400">
                       {testimonial.role}
                     </div> */}
-                    <div className="text-sm font-medium text-blue-600">
+                    <div className="text-sm font-medium text-yellow-400">
                       {testimonial.company}
                     </div>
                   </div>

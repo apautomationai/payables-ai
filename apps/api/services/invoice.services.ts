@@ -2,14 +2,17 @@ import { BadRequestError, NotFoundError } from "@/helpers/errors";
 import db from "@/lib/db";
 import { attachmentsModel } from "@/models/attachments.model";
 import { invoiceModel, lineItemsModel } from "@/models/invoice.model";
-import { count, desc, eq, getTableColumns, and, sql, gte, lt } from "drizzle-orm";
+import { count, desc, eq, getTableColumns, and, sql, gte, lt, inArray } from "drizzle-orm";
 import { PDFDocument } from "pdf-lib";
 import { s3Client, uploadBufferToS3 } from "@/helpers/s3upload";
 import { GetObjectCommand } from "@aws-sdk/client-s3";
 import { streamToBuffer } from "@/lib/utils/steamToBuffer";
 import { Readable } from "stream";
 import { generateS3PublicUrl } from "@/lib/utils/s3";
+import { QuickBooksService } from "@/services/quickbooks.service";
 const { v4: uuidv4 } = require("uuid");
+
+const quickbooksService = new QuickBooksService();
 
 export class InvoiceServices {
   async insertInvoice(data: typeof invoiceModel.$inferInsert) {
@@ -39,7 +42,8 @@ export class InvoiceServices {
           .where(
             and(
               eq(invoiceModel.invoiceNumber, invoiceData.invoiceNumber!),
-              eq(invoiceModel.attachmentId, invoiceData.attachmentId)
+              eq(invoiceModel.attachmentId, invoiceData.attachmentId),
+              eq(invoiceModel.isDeleted, false)
             )
           );
 
@@ -111,13 +115,45 @@ export class InvoiceServices {
 
         // Handle line items - always add new line items to existing invoice
         if (lineItemsData && lineItemsData.length > 0) {
-          const lineItemsToInsert = lineItemsData.map((item) => ({
-            invoiceId: invoice.id,
-            item_name: item.item_name,
-            quantity: item.quantity.toString(),
-            rate: item.rate.toString(),
-            amount: item.amount.toString(),
-          }));
+          // Search for each line item in QuickBooks products to get quickbooks_id
+          const lineItemsToInsert = await Promise.all(
+            lineItemsData.map(async (item) => {
+              let resourceId: string | null = null;
+              let itemType: 'account' | 'product' | null = null;
+
+              // Search for the product in QuickBooks using hybrid search
+              if (item.item_name) {
+                try {
+                  const searchResults = await quickbooksService.hybridSearchProducts(
+                    invoiceData.userId,
+                    item.item_name,
+                    1 // Get top 1 match
+                  );
+
+                  if (searchResults && searchResults.length > 0) {
+                    const topMatch = searchResults[0];
+                    // Use quickbooks_id as resourceId
+                    resourceId = topMatch.quickbooksId;
+                    itemType = 'product' as const;
+                    console.log(`Found QuickBooks product for "${item.item_name}": ${topMatch.name} (ID: ${resourceId})`);
+                  }
+                } catch (error) {
+                  console.error(`Error searching for product "${item.item_name}":`, error);
+                  // Continue without resourceId if search fails
+                }
+              }
+
+              return {
+                invoiceId: invoice.id,
+                item_name: item.item_name,
+                quantity: item.quantity.toString(),
+                rate: item.rate.toString(),
+                amount: item.amount.toString(),
+                itemType: itemType,
+                resourceId: resourceId,
+              };
+            })
+          );
 
           await tx.insert(lineItemsModel).values(lineItemsToInsert);
         }
@@ -133,8 +169,19 @@ export class InvoiceServices {
     }
   }
 
-  async getAllInvoices(userId: number, page: number, limit: number) {
+  async getAllInvoices(userId: number, page: number, limit: number, attachmentId?: number) {
     const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(invoiceModel.userId, userId),
+      eq(invoiceModel.isDeleted, false)
+    ];
+
+    // Add attachmentId filter if provided
+    if (attachmentId !== undefined) {
+      whereConditions.push(eq(invoiceModel.attachmentId, attachmentId));
+    }
 
     const allInvoices = await db
       .select({
@@ -155,7 +202,7 @@ export class InvoiceServices {
         attachmentsModel,
         eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
-      .where(eq(invoiceModel.userId, userId))
+      .where(and(...whereConditions))
       .orderBy(desc(invoiceModel.createdAt))
       .limit(limit)
       .offset(offset);
@@ -163,12 +210,34 @@ export class InvoiceServices {
     const [totalResult] = await db
       .select({ count: count() })
       .from(invoiceModel)
-      .where(eq(invoiceModel.userId, userId));
+      .where(and(...whereConditions));
 
     return {
       invoices: allInvoices,
       totalCount: totalResult.count,
     };
+  }
+
+  // Lightweight method that only returns invoice IDs and statuses
+  async getInvoicesListByAttachment(userId: number, attachmentId: number) {
+    const invoicesList = await db
+      .select({
+        id: invoiceModel.id,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        status: invoiceModel.status,
+        createdAt: invoiceModel.createdAt,
+      })
+      .from(invoiceModel)
+      .where(
+        and(
+          eq(invoiceModel.userId, userId),
+          eq(invoiceModel.attachmentId, attachmentId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      )
+      .orderBy(desc(invoiceModel.createdAt));
+
+    return invoicesList;
   }
 
   async getInvoice(invoiceId: number) {
@@ -182,13 +251,38 @@ export class InvoiceServices {
         attachmentsModel,
         eq(invoiceModel.attachmentId, attachmentsModel.id),
       )
-      .where(eq(invoiceModel.id, invoiceId));
+      .where(
+        and(
+          eq(invoiceModel.id, invoiceId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      );
 
     if (!response) {
       throw new NotFoundError("No invoice found with that ID.");
     }
 
     return response;
+  }
+
+  async getInvoicesByAttachmentId(attachmentId: number) {
+    const invoices = await db
+      .select({
+        id: invoiceModel.id,
+        status: invoiceModel.status,
+        invoiceNumber: invoiceModel.invoiceNumber,
+        vendorName: invoiceModel.vendorName,
+        totalAmount: invoiceModel.totalAmount,
+      })
+      .from(invoiceModel)
+      .where(
+        and(
+          eq(invoiceModel.attachmentId, attachmentId),
+          eq(invoiceModel.isDeleted, false)
+        )
+      );
+
+    return invoices;
   }
 
   async updateInvoice(
@@ -212,6 +306,42 @@ export class InvoiceServices {
     } catch (error) {
       console.log(error);
       throw new BadRequestError("Unable to update invoice");
+    }
+  }
+
+  async softDeleteInvoice(invoiceId: number): Promise<void> {
+    try {
+      // Verify invoice exists and is not already deleted
+      const [existingInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(eq(invoiceModel.id, invoiceId));
+
+      if (!existingInvoice) {
+        throw new NotFoundError("Invoice not found");
+      }
+
+      if (existingInvoice.isDeleted) {
+        throw new BadRequestError("Invoice has already been deleted");
+      }
+
+      // Perform soft delete
+      const [result] = await db
+        .update(invoiceModel)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(invoiceModel.id, invoiceId))
+        .returning();
+
+      if (!result) {
+        throw new BadRequestError("Failed to delete invoice");
+      }
+    } catch (error) {
+      console.error("Error soft deleting invoice:", error);
+      throw error;
     }
   }
 
@@ -423,7 +553,12 @@ export class InvoiceServices {
     const [attachment] = await db
       .select()
       .from(attachmentsModel)
-      .where(eq(attachmentsModel.id, attachmentId));
+      .where(
+        and(
+          eq(attachmentsModel.id, attachmentId),
+          eq(attachmentsModel.isDeleted, false)
+        )
+      );
 
     const s3Url = attachment.fileUrl;
     //convert s3Url to attachment
@@ -536,7 +671,12 @@ export class InvoiceServices {
       const lineItems = await db
         .select()
         .from(lineItemsModel)
-        .where(eq(lineItemsModel.invoiceId, invoiceId));
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false)
+          )
+        );
 
       return lineItems;
     } catch (error) {
@@ -563,12 +703,391 @@ export class InvoiceServices {
     }
   }
 
-  async getDashboardMetrics(userId: number) {
+  async cloneInvoice(invoiceId: number, userId: number) {
     try {
-      // Calculate current month boundaries
+      // Get the original invoice
+      const [originalInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, invoiceId),
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        );
+
+      if (!originalInvoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Get line items (only non-deleted ones)
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false)
+          )
+        );
+
+      // Generate new invoice number with suffix logic
+      const originalNumber = originalInvoice.invoiceNumber || "INV";
+
+      // Check if the invoice number already has a suffix pattern (ends with -XXX where XXX is digits)
+      const suffixMatch = originalNumber.match(/^(.+)-(\d+)$/);
+
+      let newInvoiceNumber: string;
+
+      if (suffixMatch) {
+        // Invoice already has a suffix (e.g., "546237-001" or "INV-2024-001")
+        const basePart = suffixMatch[1]; // "546237" or "INV-2024"
+        const suffixPart = suffixMatch[2]; // "001"
+        const currentNum = parseInt(suffixPart, 10);
+        const newNum = currentNum + 1;
+        // Pad with zeros to match original length
+        const paddedNum = String(newNum).padStart(suffixPart.length, '0');
+        newInvoiceNumber = `${basePart}-${paddedNum}`;
+      } else {
+        // Invoice doesn't have a suffix, add -001
+        newInvoiceNumber = `${originalNumber}-001`;
+      }
+
+      // Create new invoice
+      const [newInvoice] = await db
+        .insert(invoiceModel)
+        .values({
+          userId: originalInvoice.userId,
+          attachmentId: originalInvoice.attachmentId,
+          invoiceNumber: newInvoiceNumber,
+          vendorName: originalInvoice.vendorName,
+          vendorAddress: originalInvoice.vendorAddress,
+          vendorPhone: originalInvoice.vendorPhone,
+          vendorEmail: originalInvoice.vendorEmail,
+          customerName: originalInvoice.customerName,
+          invoiceDate: originalInvoice.invoiceDate,
+          dueDate: originalInvoice.dueDate,
+          totalAmount: originalInvoice.totalAmount,
+          currency: originalInvoice.currency,
+          totalTax: originalInvoice.totalTax,
+          description: originalInvoice.description,
+          fileUrl: originalInvoice.fileUrl,
+          fileKey: originalInvoice.fileKey,
+          s3JsonKey: originalInvoice.s3JsonKey,
+          status: "pending",
+          isDeleted: false,
+        })
+        .returning();
+
+      // Clone line items if any exist (only non-deleted ones)
+      if (lineItems.length > 0) {
+        await db.insert(lineItemsModel).values(
+          lineItems.map((item) => ({
+            invoiceId: newInvoice.id,
+            item_name: item.item_name,
+            description: item.description,
+            quantity: item.quantity,
+            rate: item.rate,
+            amount: item.amount,
+            itemType: item.itemType,
+            resourceId: item.resourceId,
+            isDeleted: false,
+          }))
+        );
+      }
+
+      return newInvoice;
+    } catch (error) {
+      console.error("Error cloning invoice:", error);
+      throw error;
+    }
+  }
+
+  async splitInvoice(invoiceId: number, userId: number, lineItemIds: number[]) {
+    try {
+      // Get the original invoice
+      const [originalInvoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, invoiceId),
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        );
+
+      if (!originalInvoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Get only the selected line items
+      const lineItems = await db
+        .select()
+        .from(lineItemsModel)
+        .where(
+          and(
+            eq(lineItemsModel.invoiceId, invoiceId),
+            eq(lineItemsModel.isDeleted, false),
+            inArray(lineItemsModel.id, lineItemIds)
+          )
+        );
+
+      if (lineItems.length === 0) {
+        throw new BadRequestError("No valid line items found to split");
+      }
+
+      // Generate new invoice number with suffix logic
+      const originalNumber = originalInvoice.invoiceNumber || "INV";
+      const suffixMatch = originalNumber.match(/^(.+)-(\d+)$/);
+
+      let newInvoiceNumber: string;
+      if (suffixMatch) {
+        const basePart = suffixMatch[1];
+        const suffixPart = suffixMatch[2];
+        const currentNum = parseInt(suffixPart, 10);
+        const newNum = currentNum + 1;
+        const paddedNum = String(newNum).padStart(suffixPart.length, '0');
+        newInvoiceNumber = `${basePart}-${paddedNum}`;
+      } else {
+        newInvoiceNumber = `${originalNumber}-001`;
+      }
+
+      // Calculate total amount from selected line items
+      const totalAmount = lineItems.reduce((sum, item) => {
+        return sum + parseFloat(item.amount || "0");
+      }, 0).toFixed(2);
+
+      // Create new invoice
+      const [newInvoice] = await db
+        .insert(invoiceModel)
+        .values({
+          userId: originalInvoice.userId,
+          attachmentId: originalInvoice.attachmentId,
+          invoiceNumber: newInvoiceNumber,
+          vendorName: originalInvoice.vendorName,
+          vendorAddress: originalInvoice.vendorAddress,
+          vendorPhone: originalInvoice.vendorPhone,
+          vendorEmail: originalInvoice.vendorEmail,
+          customerName: originalInvoice.customerName,
+          invoiceDate: originalInvoice.invoiceDate,
+          dueDate: originalInvoice.dueDate,
+          totalAmount: totalAmount,
+          currency: originalInvoice.currency,
+          totalTax: originalInvoice.totalTax,
+          description: originalInvoice.description,
+          fileUrl: originalInvoice.fileUrl,
+          fileKey: originalInvoice.fileKey,
+          s3JsonKey: originalInvoice.s3JsonKey,
+          status: "pending",
+          isDeleted: false,
+        })
+        .returning();
+
+      // Clone only the selected line items to the new invoice
+      await db.insert(lineItemsModel).values(
+        lineItems.map((item) => ({
+          invoiceId: newInvoice.id,
+          item_name: item.item_name,
+          description: item.description,
+          quantity: item.quantity,
+          rate: item.rate,
+          amount: item.amount,
+          itemType: item.itemType,
+          resourceId: item.resourceId,
+          isDeleted: false,
+        }))
+      );
+
+      return newInvoice;
+    } catch (error) {
+      console.error("Error splitting invoice:", error);
+      throw error;
+    }
+  }
+
+  async createLineItem(
+    lineItemData: {
+      invoiceId: number;
+      item_name: string;
+      description: string | null;
+      quantity: string;
+      rate: string;
+      amount: string;
+      itemType?: 'account' | 'product' | null;
+      resourceId?: string | null;
+      customerId?: string | null;
+    },
+    userId: number
+  ) {
+    try {
+      // Verify invoice exists and belongs to user
+      const [invoice] = await db
+        .select()
+        .from(invoiceModel)
+        .where(
+          and(
+            eq(invoiceModel.id, lineItemData.invoiceId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!invoice) {
+        throw new NotFoundError("Invoice not found or access denied");
+      }
+
+      // Create the line item
+      const [newLineItem] = await db
+        .insert(lineItemsModel)
+        .values({
+          invoiceId: lineItemData.invoiceId,
+          item_name: lineItemData.item_name,
+          description: lineItemData.description,
+          quantity: lineItemData.quantity,
+          rate: lineItemData.rate,
+          amount: lineItemData.amount,
+          itemType: lineItemData.itemType || null,
+          resourceId: lineItemData.resourceId || null,
+          customerId: lineItemData.customerId || null,
+          isDeleted: false,
+        })
+        .returning();
+
+      return newLineItem;
+    } catch (error) {
+      console.error("Error creating line item:", error);
+      throw error;
+    }
+  }
+
+  async updateLineItem(
+    lineItemId: number,
+    updateData: {
+      itemType?: 'account' | 'product' | null;
+      resourceId?: string | null;
+      customerId?: string | null;
+      quantity?: string;
+      rate?: string;
+      amount?: string;
+      item_name?: string;
+      description?: string;
+    }
+  ) {
+    try {
+      // Verify line item exists
+      const [existingLineItem] = await db
+        .select()
+        .from(lineItemsModel)
+        .where(eq(lineItemsModel.id, lineItemId));
+
+      if (!existingLineItem) {
+        throw new NotFoundError("Line item not found");
+      }
+
+      // Prepare update data
+      const updateFields: any = {};
+
+      if (updateData.itemType !== undefined) {
+        updateFields.itemType = updateData.itemType;
+      }
+
+      if (updateData.resourceId !== undefined) {
+        updateFields.resourceId = updateData.resourceId;
+      }
+
+      if (updateData.customerId !== undefined) {
+        updateFields.customerId = updateData.customerId;
+      }
+
+      if (updateData.quantity !== undefined) {
+        updateFields.quantity = updateData.quantity;
+      }
+
+      if (updateData.rate !== undefined) {
+        updateFields.rate = updateData.rate;
+      }
+
+      if (updateData.amount !== undefined) {
+        updateFields.amount = updateData.amount;
+      }
+
+      if (updateData.item_name !== undefined) {
+        updateFields.item_name = updateData.item_name;
+      }
+
+      if (updateData.description !== undefined) {
+        updateFields.description = updateData.description;
+      }
+
+      // If itemType is being changed, clear resourceId if it doesn't match
+      if (updateData.itemType !== undefined && updateData.resourceId === undefined) {
+        // If changing type without setting resourceId, clear it
+        updateFields.resourceId = null;
+      }
+
+      const [updatedLineItem] = await db
+        .update(lineItemsModel)
+        .set(updateFields)
+        .where(eq(lineItemsModel.id, lineItemId))
+        .returning();
+
+      return updatedLineItem;
+    } catch (error) {
+      console.error("Error updating line item:", error);
+      throw error;
+    }
+  }
+
+  async deleteLineItem(lineItemId: number, userId: number) {
+    try {
+      // Verify line item exists and belongs to user's invoice
+      const [existingLineItem] = await db
+        .select({
+          lineItem: lineItemsModel,
+          invoice: invoiceModel,
+        })
+        .from(lineItemsModel)
+        .innerJoin(invoiceModel, eq(lineItemsModel.invoiceId, invoiceModel.id))
+        .where(
+          and(
+            eq(lineItemsModel.id, lineItemId),
+            eq(invoiceModel.userId, userId)
+          )
+        );
+
+      if (!existingLineItem) {
+        throw new NotFoundError("Line item not found or access denied");
+      }
+
+      // Soft delete by setting isDeleted to true
+      await db
+        .update(lineItemsModel)
+        .set({
+          isDeleted: true,
+          deletedAt: new Date()
+        })
+        .where(eq(lineItemsModel.id, lineItemId));
+
+      return { success: true };
+    } catch (error) {
+      console.error("Error deleting line item:", error);
+      throw error;
+    }
+  }
+
+  async getDashboardMetrics(userId: number, dateRange: 'monthly' | 'all-time' = 'monthly') {
+    try {
+      // Calculate date boundaries based on range
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      let startDate: Date | null = null;
+      let endDate: Date | null = null;
+
+      if (dateRange === 'monthly') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+        endDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      }
+      // For 'all-time', startDate and endDate remain null (no date filtering)
 
       // Fetch last 10 invoices with full details including attachment URL
       const recentInvoices = await db
@@ -581,60 +1100,77 @@ export class InvoiceServices {
           attachmentsModel,
           eq(invoiceModel.attachmentId, attachmentsModel.id),
         )
-        .where(eq(invoiceModel.userId, userId))
+        .where(
+          and(
+            eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false)
+          )
+        )
         .orderBy(desc(invoiceModel.createdAt))
         .limit(10);
 
-      // Count invoices created this month
+      // Count invoices in the selected date range
+      const invoiceConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+      ];
+      if (startDate && endDate) {
+        invoiceConditions.push(gte(invoiceModel.createdAt, startDate));
+        invoiceConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [invoicesThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...invoiceConditions));
 
-      // Count pending invoices this month
+      // Count pending invoices in the selected date range
+      const pendingConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "pending"),
+      ];
+      if (startDate && endDate) {
+        pendingConditions.push(gte(invoiceModel.createdAt, startDate));
+        pendingConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [pendingThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.status, "pending"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...pendingConditions));
 
-      // Count approved invoices this month
+      // Count approved invoices in the selected date range
+      const approvedConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "approved"),
+      ];
+      if (startDate && endDate) {
+        approvedConditions.push(gte(invoiceModel.createdAt, startDate));
+        approvedConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [approvedThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.status, "approved"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...approvedConditions));
 
-      // Count rejected invoices this month
+      // Count rejected invoices in the selected date range
+      const rejectedConditions = [
+        eq(invoiceModel.userId, userId),
+        eq(invoiceModel.isDeleted, false),
+        eq(invoiceModel.status, "rejected"),
+      ];
+      if (startDate && endDate) {
+        rejectedConditions.push(gte(invoiceModel.createdAt, startDate));
+        rejectedConditions.push(lt(invoiceModel.createdAt, endDate));
+      }
+
       const [rejectedThisMonthResult] = await db
         .select({ count: count() })
         .from(invoiceModel)
-        .where(
-          and(
-            eq(invoiceModel.userId, userId),
-            eq(invoiceModel.status, "rejected"),
-            gte(invoiceModel.createdAt, startOfMonth),
-            lt(invoiceModel.createdAt, startOfNextMonth)
-          )
-        );
+        .where(and(...rejectedConditions));
 
       // Calculate total outstanding (sum of totalAmount for ALL pending invoices)
       const [totalOutstandingResult] = await db
@@ -645,6 +1181,7 @@ export class InvoiceServices {
         .where(
           and(
             eq(invoiceModel.userId, userId),
+            eq(invoiceModel.isDeleted, false),
             eq(invoiceModel.status, "pending")
           )
         );

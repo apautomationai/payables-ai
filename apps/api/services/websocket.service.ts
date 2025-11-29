@@ -167,6 +167,20 @@ export class WebSocketService {
         this.io.to(`invoice_list_${userId}`).emit('invoice_list_update', updateData);
     }
 
+    // Emit attachment status updated
+    public emitAttachmentStatusUpdated(userId: number, attachmentId: number, status: string) {
+        const notification = {
+            type: 'ATTACHMENT_STATUS_UPDATED',
+            attachmentId: attachmentId,
+            status: status,
+            timestamp: new Date().toISOString()
+        };
+
+        this.io.to(`user_${userId}`).emit('invoice_notification', notification);
+        this.io.to(`dashboard_${userId}`).emit('dashboard_notification', notification);
+        this.io.to(`invoice_list_${userId}`).emit('invoice_list_notification', notification);
+    }
+
     // Get Socket.IO instance for direct use if needed
     public getIO(): SocketIOServer {
         return this.io;

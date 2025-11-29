@@ -23,5 +23,6 @@ router
 // router.patch("/me", authenticate, userController.updateUser);
 router.patch("/reset-password", authenticate, userController.resetPassword);
 router.patch("/change-password", authenticate, userController.changePassword);
+router.post("/complete-onboarding", authenticate, userController.completeOnboarding);
 
 export default router;

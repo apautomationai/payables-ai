@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { quickbooksService } from "@/services/quickbooks.service";
+import { integrationsService } from "@/services/integrations.service";
 import { BadRequestError, NotFoundError } from "@/helpers/errors";
 
 export class QuickBooksController {
@@ -34,11 +35,10 @@ export class QuickBooksController {
   callback = async (
     req: Request,
     res: Response,
-    next: NextFunction,
+    _next: NextFunction,
   ): Promise<void> => {
     try {
       const { code, realmId, state, error } = req.query;
-
       if (error) {
         throw new BadRequestError(`QuickBooks authorization error: ${error}`);
       }
@@ -64,31 +64,72 @@ export class QuickBooksController {
         realmId as string,
       );
 
-      // Save integration to database
-      const integration = await quickbooksService.saveIntegration(
-        userId,
-        tokenData,
-      );
-
-      // Get company info for display
+      // Get company info to extract email if available
+      let companyInfo: any = null;
       try {
-        const companyInfo = await quickbooksService.getCompanyInfo(integration);
-        console.log("Connected to QuickBooks company:", companyInfo);
+        // Create a temporary integration object to fetch company info
+        // Include metadata with realmId for API calls
+        const tempIntegration = {
+          id: 0,
+          userId,
+          name: "quickbooks",
+          status: "success",
+          accessToken: tokenData.accessToken,
+          refreshToken: tokenData.refreshToken,
+          expiryDate: new Date(Date.now() + tokenData.expiresIn * 1000),
+          createdAt: null,
+          updatedAt: null,
+          metadata: {
+            realmId: tokenData.realmId, // Required for QuickBooks API calls
+          },
+        };
+        companyInfo = await quickbooksService.getCompanyInfo(tempIntegration);
       } catch (error) {
         console.warn("Could not fetch company info:", error);
+        // Continue without company info
       }
 
-      // Redirect to frontend settings page with success
-      // const frontendUrl = process.env.OAUTH_REDIRECT_URI;
-      // res.redirect(`${frontendUrl}?quickbooks=success`);
-      res.status(200).json({
-        message: "OAuth successful",
-        access_token: tokenData.accessToken,
-        refresh_token: tokenData.refreshToken,
-        expiry_date: tokenData.expiresIn,
-      });
-    } catch (error) {
-      next(error);
+      // Check for duplicate email if available
+      if (companyInfo?.email) {
+        const emailExists = await integrationsService.checkEmailExists(companyInfo.email, userId);
+        if (emailExists) {
+          const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+          const errorMessage = "This email is already connected to another sledge account. Please disconnect it from that account then try again.";
+          const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+          return res.redirect(redirectUrl);
+        }
+      }
+
+      await quickbooksService.saveIntegration(
+        userId,
+        tokenData,
+        companyInfo,
+      );
+
+      // // Save integration to database
+      // const integration = await quickbooksService.saveIntegration(
+      //   userId,
+      //   tokenData,
+      // );
+
+      // // Get company info for display
+      // try {
+      //   const companyInfo = await quickbooksService.getCompanyInfo(integration);
+      //   console.log("Connected to QuickBooks company:", companyInfo);
+      // } catch (error) {
+      //   console.warn("Could not fetch company info:", error);
+      // }
+
+      // Redirect to frontend integrations page with success
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const redirectUrl = `${frontendUrl}/integrations?message=QuickBooks connected successfully&type=success`;
+      res.redirect(redirectUrl);
+    } catch (error: any) {
+      // Redirect to frontend integrations page with error
+      const frontendUrl = process.env.FRONTEND_URL || process.env.OAUTH_REDIRECT_URI || 'http://localhost:3000';
+      const errorMessage = error.message || "Failed to connect QuickBooks";
+      const redirectUrl = `${frontendUrl}/integrations?message=${encodeURIComponent(errorMessage)}&type=error`;
+      res.redirect(redirectUrl);
     }
   };
 
@@ -215,6 +256,48 @@ export class QuickBooksController {
     }
   };
 
+  // Get vendors
+  getAccounts = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      // Fetch accounts from database instead of QuickBooks API
+      const accounts = await quickbooksService.getAccountsFromDatabase(userId);
+
+      // Transform to match QuickBooks API format
+      const formattedAccounts = {
+        QueryResponse: {
+          Account: accounts.map(account => ({
+            Id: account.quickbooksId,
+            Name: account.name,
+            FullyQualifiedName: account.fullyQualifiedName,
+            Active: account.active,
+            Classification: account.classification,
+            AccountType: account.accountType,
+            AccountSubType: account.accountSubType,
+            CurrentBalance: account.currentBalance,
+            CurrencyRef: account.currencyRefValue ? {
+              value: account.currencyRefValue,
+              name: account.currencyRefName
+            } : undefined
+          }))
+        }
+      };
+
+      res.json({
+        success: true,
+        data: formattedAccounts,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
   // Get invoices
   // @ts-ignore
   getInvoices = async (req: Request, res: Response, next: NextFunction) => {
@@ -253,17 +336,34 @@ export class QuickBooksController {
         throw new BadRequestError("User not authenticated");
       }
 
-      const integration = await quickbooksService.getUserIntegration(userId);
+      // Fetch products from database instead of QuickBooks API
+      const products = await quickbooksService.getProductsFromDatabase(userId);
 
-      if (!integration) {
-        throw new NotFoundError("QuickBooks integration not found");
-      }
-
-      const lineItems = await quickbooksService.getLineItems(integration);
+      // Transform to match QuickBooks API format
+      const formattedProducts = {
+        QueryResponse: {
+          Item: products.map(product => ({
+            Id: product.quickbooksId,
+            Name: product.name,
+            Description: product.description,
+            Active: product.active,
+            FullyQualifiedName: product.fullyQualifiedName,
+            Taxable: product.taxable,
+            UnitPrice: product.unitPrice,
+            Type: product.type,
+            IncomeAccountRef: product.incomeAccountValue ? {
+              value: product.incomeAccountValue,
+              name: product.incomeAccountName
+            } : undefined,
+            PurchaseCost: product.purchaseCost,
+            TrackQtyOnHand: product.trackQtyOnHand
+          }))
+        }
+      };
 
       res.json({
         success: true,
-        data: lineItems,
+        data: formattedProducts,
       });
     } catch (error) {
       next(error);
@@ -336,6 +436,76 @@ export class QuickBooksController {
           searchTerm,
           totalResults: searchResults.length,
           results: searchResults,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Hybrid search for stored QuickBooks products
+  searchProductsHybrid = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { searchTerm, limit } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!searchTerm || typeof searchTerm !== "string" || !searchTerm.trim()) {
+        throw new BadRequestError("Search term is required");
+      }
+
+      const matchCount = limit ? Number(limit) : undefined;
+      const results = await quickbooksService.hybridSearchProducts(
+        userId,
+        searchTerm,
+        Number.isNaN(matchCount) ? undefined : matchCount,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          searchTerm,
+          totalResults: results.length,
+          results,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Hybrid search for stored QuickBooks accounts
+  searchAccountsHybrid = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+      const { searchTerm, limit } = req.query;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      if (!searchTerm || typeof searchTerm !== "string" || !searchTerm.trim()) {
+        throw new BadRequestError("Search term is required");
+      }
+
+      const matchCount = limit ? Number(limit) : undefined;
+      const results = await quickbooksService.hybridSearchAccounts(
+        userId,
+        searchTerm,
+        Number.isNaN(matchCount) ? undefined : matchCount,
+      );
+
+      res.json({
+        success: true,
+        data: {
+          searchTerm,
+          totalResults: results.length,
+          results,
         },
       });
     } catch (error) {
@@ -614,6 +784,195 @@ export class QuickBooksController {
       res.json({
         success: true,
         data: newBill,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Sync products and accounts from QuickBooks to database
+  // Sync only QuickBooks products
+  syncProducts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch products from QuickBooks API
+      const lineItemsResponse = await quickbooksService.getLineItems(integration);
+
+      // Extract products from response
+      const products = lineItemsResponse?.QueryResponse?.Item || [];
+
+      // Sync to database (includes embedding generation)
+      const productsResult = await quickbooksService.syncProductsToDatabase(userId, [products[0]]);
+
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
+
+      res.json({
+        success: true,
+        message: "Products sync completed successfully",
+        data: {
+          products: {
+            inserted: productsResult.inserted,
+            updated: productsResult.updated,
+            skipped: productsResult.skipped,
+            total: products.length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  // Sync only QuickBooks accounts
+  syncAccounts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch accounts from QuickBooks API
+      const accountsResponse = await quickbooksService.getAccounts(integration);
+
+      // Extract accounts from response
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      // Sync to database (includes embedding generation)
+      const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
+
+      res.json({
+        success: true,
+        message: "Accounts sync completed successfully",
+        data: {
+          accounts: {
+            inserted: accountsResult.inserted,
+            updated: accountsResult.updated,
+            skipped: accountsResult.skipped,
+            total: accounts.length,
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  syncProductsAndAccounts = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
+    try {
+      // @ts-ignore - user is added by auth middleware
+      const userId = req.user?.id;
+
+      if (!userId) {
+        throw new BadRequestError("User not authenticated");
+      }
+
+      const integration = await quickbooksService.getUserIntegration(userId);
+
+      if (!integration) {
+        throw new NotFoundError("QuickBooks integration not found");
+      }
+
+      // Fetch products and accounts from QuickBooks API
+      const lineItemsResponse = await quickbooksService.getLineItems(integration);
+      const accountsResponse = await quickbooksService.getAccounts(integration);
+
+      // Extract items and accounts from response
+      const products = lineItemsResponse?.QueryResponse?.Item || [];
+      const accounts = accountsResponse?.QueryResponse?.Account || [];
+
+      // Sync to database
+      const productsResult = await quickbooksService.syncProductsToDatabase(userId, products);
+      const accountsResult = await quickbooksService.syncAccountsToDatabase(userId, accounts);
+
+      // Update lastSyncedAt in metadata after successful sync
+      try {
+        const currentMetadata = (integration.metadata as any) || {};
+        await integrationsService.updateIntegration(integration.id, {
+          metadata: {
+            ...currentMetadata,
+            lastSyncedAt: new Date().toISOString(),
+          },
+        });
+      } catch (updateError: any) {
+        console.error("Failed to update lastSyncedAt in metadata:", updateError);
+        // Don't fail the request if metadata update fails
+      }
+
+      res.json({
+        success: true,
+        message: "Sync completed successfully",
+        data: {
+          products: {
+            inserted: productsResult.inserted,
+            updated: productsResult.updated,
+            skipped: productsResult.skipped,
+            total: products.length,
+          },
+          accounts: {
+            inserted: accountsResult.inserted,
+            updated: accountsResult.updated,
+            skipped: accountsResult.skipped,
+            total: accounts.length,
+          },
+        },
       });
     } catch (error) {
       next(error);

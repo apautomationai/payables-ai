@@ -38,7 +38,14 @@ const navigation = {
 
 export function Footer() {
   return (
-    <footer className="bg-gray-900 text-gray-300 relative overflow-hidden">
+    <footer className="bg-gradient-to-b from-black via-gray-900 to-gray-800 text-gray-300 relative overflow-hidden border-t-4 border-yellow-600/30">
+      {/* Diamond plate texture - ROUGHER */}
+      <div className="absolute inset-0 opacity-[0.1]" style={{
+        backgroundImage: `repeating-linear-gradient(45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px),
+                         repeating-linear-gradient(-45deg, #FDB022 0, #FDB022 2px, transparent 0, transparent 40px)`,
+        backgroundSize: '40px 40px'
+      }} />
+      
       {/* Animated Background Elements */}
       <GeometricPattern />
       <FloatingElements />
@@ -48,10 +55,10 @@ export function Footer() {
       <div className="border-b border-gray-800 relative z-10">
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="mx-auto max-w-2xl text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
+            <h2 className="text-3xl font-bold text-white mb-4 uppercase">
               Ready to Transform Your AP Process?
             </h2>
-            <p className="text-lg text-gray-400 mb-8">
+            <p className="text-lg text-gray-300 mb-8">
               Join hundreds of businesses that have already streamlined their
               accounts payable with Sledge
             </p>
@@ -61,7 +68,7 @@ export function Footer() {
                 placeholder="Enter your email"
                 className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors duration-300 group">
+              <Button className="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-400 hover:to-orange-400 text-gray-900 px-6 py-3 rounded-lg font-bold transition-all duration-300 group shadow-lg shadow-yellow-500/50 border-2 border-yellow-600 uppercase">
                 Subscribe
                 <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
               </Button>
@@ -98,7 +105,7 @@ export function Footer() {
             <div className="flex items-center gap-2 mb-4">
               <Badge
                 variant="outline"
-                className="text-xs font-medium border-emerald-600 bg-emerald-900/20 text-emerald-400"
+                className="text-xs font-medium border-yellow-600 bg-yellow-500/20 text-yellow-400 uppercase"
               >
                 AI-Powered
               </Badge>
@@ -211,7 +218,7 @@ export function Footer() {
       </div>
 
       {/* Animated Wave at Bottom */}
-      <ProfessionalWave />
+      {/* <ProfessionalWave /> */}
     </footer>
   );
 }

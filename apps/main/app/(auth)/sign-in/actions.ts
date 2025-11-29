@@ -126,10 +126,10 @@ export async function signInAction(
         cookieStore.set("userId", String(data.user.id), {
           // secure: process.env.NODE_ENV === "production",
           // sameSite: "lax",
-          path: "/",  
+          path: "/",
         });
       }
-      // This will throw a special NEXT_REDIRECT error
+      // Redirect to dashboard - subscription provider will handle payment redirect if needed
       redirect("/dashboard");
     }
 

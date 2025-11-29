@@ -1,9 +1,12 @@
 import axios from "axios";
 import { eq, and } from "drizzle-orm";
-import db from "@/lib/db";
+import db, { pool } from "@/lib/db";
 import { integrationsModel } from "@/models/integrations.model";
+import { quickbooksProductsModel } from "@/models/quickbooks-products.model";
+import { quickbooksAccountsModel } from "@/models/quickbooks-accounts.model";
 import { BadRequestError, InternalServerError } from "@/helpers/errors";
 import { integrationsService } from "./integrations.service";
+import { embeddingsService } from "./embeddings.service";
 
 // QuickBooks integration type based on generic integrations model
 interface QuickBooksIntegration {
@@ -18,6 +21,9 @@ interface QuickBooksIntegration {
   createdAt: Date | null;
   updatedAt: Date | null;
 }
+
+type QuickBooksProductRecord = typeof quickbooksProductsModel.$inferInsert;
+type QuickBooksAccountRecord = typeof quickbooksAccountsModel.$inferInsert;
 
 export class QuickBooksService {
   private clientId: string;
@@ -127,12 +133,14 @@ export class QuickBooksService {
     try {
       const expiresAt = new Date(Date.now() + tokenData.expiresIn * 1000);
 
+      // Only store scopes, companyName, realmId, and lastSyncedAt in metadata
+      // email and providerId have dedicated fields in the integrations table
+      // realmId is needed for QuickBooks API calls and is the same as providerId
       const metadata = {
-        realmId: tokenData.realmId,
-        companyId: tokenData.realmId,
+        scopes: tokenData.scope ? (Array.isArray(tokenData.scope) ? tokenData.scope : tokenData.scope.split(" ")) : [],
         companyName: companyInfo?.name || "Unknown Company",
-        isActive: true,
-        lastSyncAt: null,
+        realmId: tokenData.realmId, // Same as providerId, needed for API calls
+        lastSyncedAt: null,
       };
 
       // Check if integration already exists
@@ -141,6 +149,9 @@ export class QuickBooksService {
         "quickbooks"
       );
 
+      const email = companyInfo?.email || null;
+      const providerId = tokenData.realmId;
+
       if (existingIntegration) {
         // Update existing integration
         await integrationsService.updateIntegration(existingIntegration.id, {
@@ -148,6 +159,8 @@ export class QuickBooksService {
           refreshToken: tokenData.refreshToken,
           expiryDate: expiresAt,
           status: "success",
+          providerId,
+          email,
           metadata,
         });
 
@@ -170,6 +183,8 @@ export class QuickBooksService {
             accessToken: tokenData.accessToken,
             refreshToken: tokenData.refreshToken,
             expiryDate: expiresAt,
+            providerId,
+            email,
             metadata,
           })
           .returning();
@@ -324,8 +339,10 @@ export class QuickBooksService {
   }
 
   // Get line items (Items that can be used in invoices/bills)
+  // Note: Including all types (Service, Non-Inventory, Inventory) to avoid date restrictions
+  // Inventory items have date restrictions that can cause bill creation to fail
   async getLineItems(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "query?query=SELECT * FROM Item WHERE Active = true");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Item WHERE Active = true AND Type = 'Inventory'");
   }
 
   // Get specific invoice line items by invoice ID
@@ -334,7 +351,7 @@ export class QuickBooksService {
   }
 
   // Get accounts from QuickBooks
-  async getAccounts(integration: QuickBooksIntegration) {
+  async getIncomeAccounts(integration: QuickBooksIntegration) {
     return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Income'");
   }
 
@@ -345,16 +362,150 @@ export class QuickBooksService {
 
   // Get tax accounts for bill creation
   async getTaxAccounts(integration: QuickBooksIntegration) {
-    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType = 'Other Current Liability' OR AccountType = 'Expense'");
+    return this.makeApiCall(integration, "query?query=SELECT * FROM Account WHERE AccountType IN ('Other Current Liability', 'Expense')");
+  }
+
+  // Get accounts from QuickBooks (excluding Accounts Payable and other invalid types for bills)
+  async getAccounts(integration: QuickBooksIntegration) {
+    try {
+      const response = await this.makeApiCall(integration, "query?query=SELECT * FROM Account");
+
+      // Filter out account types that cannot be used in bill line items
+      if (response?.QueryResponse?.Account) {
+        const validAccounts = response.QueryResponse.Account.filter((account: any) => {
+          // Exclude Accounts Payable and other liability accounts that can't be used in bills
+          const invalidAccountTypes = [
+            'Accounts Payable',
+            'AccountsPayable',
+            'Accounts Receivable',
+            'AccountsReceivable'
+          ];
+
+          const invalidSubTypes = [
+            'AccountsPayable',
+            'AccountsReceivable'
+          ];
+
+          // Check AccountType and AccountSubType
+          const isInvalidType = invalidAccountTypes.includes(account.AccountType);
+          const isInvalidSubType = invalidSubTypes.includes(account.AccountSubType);
+
+          // Also check account name for common payable account names
+          const accountName = (account.Name || '').toLowerCase();
+          const isPayableByName = accountName.includes('accounts payable') ||
+            accountName.includes('payable') ||
+            accountName.includes('accounts receivable') ||
+            accountName.includes('receivable');
+
+          console.log(`🏦 Account "${account.Name}":`, {
+            AccountType: account.AccountType,
+            AccountSubType: account.AccountSubType,
+            isInvalidType,
+            isInvalidSubType,
+            isPayableByName,
+            excluded: isInvalidType || isInvalidSubType || isPayableByName
+          });
+
+          return !isInvalidType && !isInvalidSubType && !isPayableByName;
+        });
+
+        console.log(`🏦 Filtered accounts: ${response.QueryResponse.Account.length} -> ${validAccounts.length}`);
+
+        return {
+          ...response,
+          QueryResponse: {
+            ...response.QueryResponse,
+            Account: validAccounts
+          }
+        };
+      }
+
+      return response;
+    } catch (error) {
+      console.error("Error getting accounts:", error);
+      throw error;
+    }
+  }
+
+  // Get accounts from database
+  async getAccountsFromDatabase(userId: number) {
+    try {
+      const accounts = await db
+        .select()
+        .from(quickbooksAccountsModel)
+        .where(
+          and(
+            eq(quickbooksAccountsModel.userId, userId),
+            eq(quickbooksAccountsModel.active, true)
+          )
+        );
+
+      // Filter out invalid account types (same logic as getAccounts)
+      const validAccounts = accounts.filter((account) => {
+        const invalidAccountTypes = [
+          'Accounts Payable',
+          'AccountsPayable',
+          'Accounts Receivable',
+          'AccountsReceivable'
+        ];
+
+        const invalidSubTypes = [
+          'AccountsPayable',
+          'AccountsReceivable'
+        ];
+
+        const isInvalidType = invalidAccountTypes.includes(account.accountType || '');
+        const isInvalidSubType = invalidSubTypes.includes(account.accountSubType || '');
+
+        const accountName = (account.name || '').toLowerCase();
+        const isPayableByName = accountName.includes('accounts payable') ||
+          accountName.includes('payable') ||
+          accountName.includes('accounts receivable') ||
+          accountName.includes('receivable');
+
+        return !isInvalidType && !isInvalidSubType && !isPayableByName;
+      });
+
+      return validAccounts;
+    } catch (error) {
+      console.error("Error getting accounts from database:", error);
+      throw error;
+    }
+  }
+
+  // Get products from database
+  async getProductsFromDatabase(userId: number) {
+    try {
+      const products = await db
+        .select()
+        .from(quickbooksProductsModel)
+        .where(
+          and(
+            eq(quickbooksProductsModel.userId, userId),
+            eq(quickbooksProductsModel.active, true)
+          )
+        );
+
+      return products;
+    } catch (error) {
+      console.error("Error getting products from database:", error);
+      throw error;
+    }
   }
 
   // Create a bill in QuickBooks
   async createBill(integration: QuickBooksIntegration, billData: {
     vendorId: string;
     lineItems: Array<{
-      amount: number;
+      id: number;
+      item_name: string;
       description?: string;
-      itemId?: string;
+      quantity: number;
+      rate: number;
+      amount: number;
+      itemType: 'account' | 'product';
+      resourceId: string;
+      customerId?: string;
     }>;
     totalAmount: number;
     totalTax?: number;
@@ -364,22 +515,78 @@ export class QuickBooksService {
     discountDescription?: string;
   }) {
     try {
-      // Get expense accounts
+      // Get a default expense account for fallback scenarios
       const accountsResponse = await this.getExpenseAccounts(integration);
       const accounts = accountsResponse?.QueryResponse?.Account || [];
 
-      let expenseAccount = accounts.find((acc: any) =>
+      let defaultExpenseAccount = accounts.find((acc: any) =>
         acc.Name?.toLowerCase().includes('expense') ||
         acc.Name?.toLowerCase().includes('cost')
       );
 
-      if (!expenseAccount && accounts.length > 0) {
-        expenseAccount = accounts[0];
+      if (!defaultExpenseAccount && accounts.length > 0) {
+        defaultExpenseAccount = accounts[0];
       }
 
-      if (!expenseAccount) {
-        throw new Error("No expense account found in QuickBooks");
+      if (!defaultExpenseAccount) {
+        throw new Error("No expense account found in QuickBooks for fallback");
       }
+
+      console.log(`🏦 Using default expense account for fallback: ${defaultExpenseAccount.Name} (${defaultExpenseAccount.Id})`);
+
+      // Create line items array based on itemType and resourceId from database
+      const lineItems = billData.lineItems.map((item, index) => {
+        console.log(`🧾 Processing line item "${item.item_name}":`, {
+          itemType: item.itemType,
+          resourceId: item.resourceId,
+          amount: item.amount,
+          quantity: item.quantity
+        });
+
+        const baseItem = {
+          Amount: parseFloat(item.amount.toString()),
+          Id: (index + 1).toString(),
+        };
+
+        if (item.itemType === 'account') {
+          // Validate that this is not an Accounts Payable account
+          // Note: This is a basic check - the main filtering should happen in getAccounts
+          if (item.resourceId && (item.resourceId.includes('payable') || item.resourceId.includes('receivable'))) {
+            throw new Error(`Cannot use Accounts Payable or Accounts Receivable account for line item "${item.item_name}". Please select an expense account instead.`);
+          }
+
+          // Account-based expense line
+          const accountLine = {
+            ...baseItem,
+            DetailType: "AccountBasedExpenseLineDetail",
+            AccountBasedExpenseLineDetail: {
+              AccountRef: {
+                value: item.resourceId
+              }
+            },
+            ...(item.description && { Description: item.description })
+          };
+          console.log(`💰 Created account-based line:`, accountLine);
+          return accountLine;
+        } else if (item.itemType === 'product') {
+          // Item-based expense line
+          const productLine = {
+            ...baseItem,
+            DetailType: "ItemBasedExpenseLineDetail",
+            ItemBasedExpenseLineDetail: {
+              ItemRef: {
+                value: item.resourceId
+              },
+              Qty: parseFloat(item.quantity.toString()) || 1
+            },
+            ...(item.description && { Description: item.description })
+          };
+          console.log(`🛍️ Created item-based line:`, productLine);
+          return productLine;
+        } else {
+          throw new Error(`Invalid itemType: ${item.itemType} for line item ${item.item_name}`);
+        }
+      });
 
       // Get tax accounts if tax amount is provided
       let taxAccount = null;
@@ -395,24 +602,11 @@ export class QuickBooksService {
           acc.AccountType === 'Other Current Liability'
         );
 
-        // If no specific tax account found, use expense account
+        // If no specific tax account found, use default expense account
         if (!taxAccount) {
-          taxAccount = expenseAccount;
+          taxAccount = defaultExpenseAccount;
         }
       }
-
-      // Create line items array
-      const lineItems = billData.lineItems.map((item, index) => ({
-        DetailType: "AccountBasedExpenseLineDetail",
-        Amount: item.amount,
-        Id: (index + 1).toString(), // Sequential ID for bill line items
-        AccountBasedExpenseLineDetail: {
-          AccountRef: {
-            value: expenseAccount.Id
-          }
-        },
-        ...(item.description && { Description: item.description })
-      }));
 
       // Add tax line item if tax amount is provided
       if (billData.totalTax && billData.totalTax > 0 && taxAccount) {
@@ -437,7 +631,7 @@ export class QuickBooksService {
           Id: (lineItems.length + 1).toString(),
           AccountBasedExpenseLineDetail: {
             AccountRef: {
-              value: expenseAccount.Id
+              value: defaultExpenseAccount.Id
             }
           },
           Description: billData.discountDescription || "Discount"
@@ -454,7 +648,103 @@ export class QuickBooksService {
         ...(billData.invoiceDate && { TxnDate: billData.invoiceDate })
       };
 
-      return this.makeApiCall(integration, "bill", "POST", payload);
+      // Try to create the bill with item-based lines first
+      try {
+        console.log(`📋 Attempting to create bill with ${lineItems.length} line items`);
+        return await this.makeApiCall(integration, "bill", "POST", payload);
+      } catch (apiError: any) {
+        // Check if the error is related to items not having purchase accounts
+        const errorMessage = apiError?.message || '';
+        const isItemAccountError = errorMessage.includes('no account associated with the item') ||
+          errorMessage.includes('marked for purchase') ||
+          errorMessage.includes('has an account associated with it');
+
+        if (isItemAccountError) {
+          console.log(`⚠️ Item-based bill creation failed, falling back to account-based lines`);
+
+          // Rebuild line items using account-based approach for products
+          const fallbackLineItems = billData.lineItems.map((item, index) => {
+            const baseItem = {
+              Amount: parseFloat(item.amount.toString()),
+              Id: (index + 1).toString(),
+            };
+
+            if (item.itemType === 'account') {
+              // Keep account-based lines as they are
+              return {
+                ...baseItem,
+                DetailType: "AccountBasedExpenseLineDetail",
+                AccountBasedExpenseLineDetail: {
+                  AccountRef: {
+                    value: item.resourceId
+                  }
+                },
+                ...(item.description && { Description: item.description })
+              };
+            } else if (item.itemType === 'product') {
+              // Convert product lines to account-based using default expense account
+              console.log(`🔄 Converting product "${item.item_name}" to account-based line using default expense account`);
+              return {
+                ...baseItem,
+                DetailType: "AccountBasedExpenseLineDetail",
+                AccountBasedExpenseLineDetail: {
+                  AccountRef: {
+                    value: defaultExpenseAccount.Id
+                  }
+                },
+                Description: `${item.item_name}${item.description ? ` - ${item.description}` : ''}`
+              };
+            } else {
+              throw new Error(`Invalid itemType: ${item.itemType} for line item ${item.item_name}`);
+            }
+          });
+
+          // Add tax and discount items to fallback lines
+          if (billData.totalTax && billData.totalTax > 0 && taxAccount) {
+            fallbackLineItems.push({
+              DetailType: "AccountBasedExpenseLineDetail",
+              Amount: billData.totalTax,
+              Id: (fallbackLineItems.length + 1).toString(),
+              AccountBasedExpenseLineDetail: {
+                AccountRef: {
+                  value: taxAccount.Id
+                }
+              },
+              Description: "Tax"
+            });
+          }
+
+          if (billData.discountAmount && billData.discountAmount > 0) {
+            fallbackLineItems.push({
+              DetailType: "AccountBasedExpenseLineDetail",
+              Amount: -Math.abs(billData.discountAmount),
+              Id: (fallbackLineItems.length + 1).toString(),
+              AccountBasedExpenseLineDetail: {
+                AccountRef: {
+                  value: defaultExpenseAccount.Id
+                }
+              },
+              Description: billData.discountDescription || "Discount"
+            });
+          }
+
+          // Create fallback payload
+          const fallbackPayload = {
+            Line: fallbackLineItems,
+            VendorRef: {
+              value: billData.vendorId
+            },
+            ...(billData.dueDate && { DueDate: billData.dueDate }),
+            ...(billData.invoiceDate && { TxnDate: billData.invoiceDate })
+          };
+
+          console.log(`🔄 Retrying bill creation with account-based fallback`);
+          return await this.makeApiCall(integration, "bill", "POST", fallbackPayload);
+        } else {
+          // Re-throw other errors
+          throw apiError;
+        }
+      }
     } catch (error) {
       console.error("Error creating QuickBooks bill:", error);
       throw error;
@@ -470,17 +760,17 @@ export class QuickBooksService {
     customerId?: string;
   }, lineItemData?: any) {
     try {
-      const accountsResponse = await this.getAccounts(integration);
-      const accounts = accountsResponse?.QueryResponse?.Account || [];
+      const incomeAccountsResponse = await this.getIncomeAccounts(integration);
+      const incomeAccounts = incomeAccountsResponse?.QueryResponse?.Account || [];
 
-      let incomeAccount = accounts.find((acc: any) =>
+      let incomeAccount = incomeAccounts.find((acc: any) =>
         acc.Name?.toLowerCase().includes('sales') ||
         acc.Name?.toLowerCase().includes('income') ||
         acc.Name?.toLowerCase().includes('service')
       );
 
-      if (!incomeAccount && accounts.length > 0) {
-        incomeAccount = accounts[0];
+      if (!incomeAccount && incomeAccounts.length > 0) {
+        incomeAccount = incomeAccounts[0];
       }
 
       if (!incomeAccount) {
@@ -820,24 +1110,448 @@ export class QuickBooksService {
   async disconnectIntegration(userId: number): Promise<void> {
     try {
       // Update integrations table
-      await db
-        .update(integrationsModel)
-        .set({
-          status: "disconnected",
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(integrationsModel.userId, userId),
-            eq(integrationsModel.name, "quickbooks")
-          )
-        );
+      // await db
+      //   .update(integrationsModel)
+      //   .set({
+      //     status: "disconnected",
+      //     updatedAt: new Date(),
+      //   })
+      //   .where(
+      //     and(
+      //       eq(integrationsModel.userId, userId),
+      //       eq(integrationsModel.name, "quickbooks")
+      //     )
+      //   );
+
+      await db.delete(integrationsModel).where(
+        and(
+          eq(integrationsModel.userId, userId),
+          eq(integrationsModel.name, "quickbooks")
+        )
+      );
     } catch (error: any) {
       console.error("Error disconnecting QuickBooks integration:", error);
       throw new InternalServerError(
         "Failed to disconnect QuickBooks integration",
       );
     }
+  }
+
+  private buildProductEmbeddingText(
+    product: Partial<QuickBooksProductRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (product.name) parts.push(`Name: ${product.name}`);
+    if (product.description) parts.push(`Description: ${product.description}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private buildAccountEmbeddingText(
+    account: Partial<QuickBooksAccountRecord>,
+  ): string {
+    const parts: string[] = [];
+
+    if (account.name) parts.push(`Name: ${account.name}`);
+
+    return parts.join("\n").trim();
+  }
+
+  private async maybeGenerateEmbedding(
+    text: string,
+    fallback?: number[] | null,
+  ): Promise<number[] | null> {
+    const normalized = text.trim();
+    if (!normalized) {
+      return null;
+    }
+
+    const embedding = await embeddingsService.generateEmbedding(normalized);
+    if (embedding && embedding.length > 0) {
+      return embedding;
+    }
+
+    return fallback ?? null;
+  }
+
+  private clampMatchCount(value?: number): number {
+    if (!value || Number.isNaN(value)) {
+      return 10;
+    }
+
+    return Math.max(1, Math.min(value, 50));
+  }
+
+
+  async hybridSearchProducts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksProductRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+
+    if (!embeddingVector) {
+      return [];
+    }
+
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          description,
+          active,
+          fully_qualified_name,
+          taxable,
+          unit_price,
+          type,
+          income_account_value,
+          income_account_name,
+          purchase_desc,
+          purchase_cost,
+          expense_account_value,
+          expense_account_name,
+          asset_account_value,
+          asset_account_name,
+          track_qty_on_hand,
+          qty_on_hand,
+          inv_start_date,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_products
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksProductRecord[];
+    } finally {
+      client.release();
+    }
+  }
+
+  async hybridSearchAccounts(
+    userId: number,
+    query: string,
+    matchCount?: number,
+  ): Promise<QuickBooksAccountRecord[]> {
+    const textQuery = query.trim();
+    if (!textQuery) {
+      return [];
+    }
+
+    const maxMatches = this.clampMatchCount(matchCount);
+    const embeddingVector = await embeddingsService.generateEmbedding(textQuery);
+
+    if (!embeddingVector) {
+      return [];
+    }
+
+    const client = await pool.connect();
+
+    try {
+      // Use raw SQL with pgvector cosine distance operator
+      // similarity = 1 - cosine_distance (higher values = more similar)
+      const embeddingString = `[${embeddingVector.join(',')}]`;
+      const query = `
+        SELECT
+          id,
+          user_id,
+          quickbooks_id,
+          name,
+          sub_account,
+          parent_ref_value,
+          fully_qualified_name,
+          active,
+          classification,
+          account_type,
+          account_sub_type,
+          current_balance,
+          current_balance_with_sub_accounts,
+          currency_ref_value,
+          currency_ref_name,
+          domain,
+          sparse,
+          sync_token,
+          meta_data_create_time,
+          meta_data_last_updated_time,
+          embedding,
+          created_at,
+          updated_at,
+          1 - (embedding <=> '${embeddingString}'::vector) as similarity
+        FROM quickbooks_accounts
+        WHERE user_id = $1
+          AND embedding IS NOT NULL
+          AND (1 - (embedding <=> '${embeddingString}'::vector)) > 0.5
+        ORDER BY similarity DESC
+        LIMIT $2
+      `;
+
+      const result = await client.query(query, [userId, maxMatches]);
+      return result.rows as QuickBooksAccountRecord[];
+    } finally {
+      client.release();
+    }
+  }
+
+  // Sync products to database
+  async syncProductsToDatabase(
+    userId: number,
+    products: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const product of products) {
+      try {
+        const quickbooksId = product.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = product.MetaData?.CreateTime
+          ? new Date(product.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = product.MetaData?.LastUpdatedTime
+          ? new Date(product.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform product to flat structure
+        const productData = {
+          userId,
+          quickbooksId,
+          name: product.Name || null,
+          description: product.Description || null,
+          active: product.Active ?? null,
+          fullyQualifiedName: product.FullyQualifiedName || null,
+          taxable: product.Taxable ?? null,
+          unitPrice: product.UnitPrice ? product.UnitPrice.toString() : null,
+          type: product.Type || null,
+          incomeAccountValue: product.IncomeAccountRef?.value || null,
+          incomeAccountName: product.IncomeAccountRef?.name || null,
+          purchaseDesc: product.PurchaseDesc || null,
+          purchaseCost: product.PurchaseCost ? product.PurchaseCost.toString() : null,
+          expenseAccountValue: product.ExpenseAccountRef?.value || null,
+          expenseAccountName: product.ExpenseAccountRef?.name || null,
+          assetAccountValue: product.AssetAccountRef?.value || null,
+          assetAccountName: product.AssetAccountRef?.name || null,
+          trackQtyOnHand: product.TrackQtyOnHand ?? null,
+          qtyOnHand: product.QtyOnHand ? product.QtyOnHand.toString() : null,
+          invStartDate: product.InvStartDate ? new Date(product.InvStartDate) : null,
+          domain: product.domain || null,
+          sparse: product.sparse ?? null,
+          syncToken: product.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        // Check if record exists
+        const embeddingText = this.buildProductEmbeddingText(productData);
+
+        const [existing] = await db
+          .select()
+          .from(quickbooksProductsModel)
+          .where(
+            and(
+              eq(quickbooksProductsModel.userId, userId),
+              eq(quickbooksProductsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+        if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
+
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+            await db
+              .update(quickbooksProductsModel)
+              .set({
+                ...productData,
+                embedding,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksProductsModel.id, existing.id));
+            updated++;
+          } else {
+            // Skip - no changes
+            skipped++;
+          }
+        } else {
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+          await db.insert(quickbooksProductsModel).values({
+            ...productData,
+            embedding,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing product ${product.Id}:`, error);
+        // Continue with next product
+      }
+    }
+
+    return { inserted, updated, skipped };
+  }
+
+  // Sync accounts to database
+  async syncAccountsToDatabase(
+    userId: number,
+    accounts: any[],
+  ): Promise<{ inserted: number; updated: number; skipped: number }> {
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (const account of accounts) {
+      try {
+        const quickbooksId = account.Id?.toString() || "";
+        if (!quickbooksId) {
+          continue;
+        }
+
+        // Parse timestamps from QuickBooks MetaData
+        const metaDataCreateTime = account.MetaData?.CreateTime
+          ? new Date(account.MetaData.CreateTime)
+          : null;
+        const metaDataLastUpdatedTime = account.MetaData?.LastUpdatedTime
+          ? new Date(account.MetaData.LastUpdatedTime)
+          : null;
+
+        // Transform account to flat structure
+        const accountData = {
+          userId,
+          quickbooksId,
+          name: account.Name || null,
+          subAccount: account.SubAccount ?? null,
+          parentRefValue: account.ParentRef?.value || null,
+          fullyQualifiedName: account.FullyQualifiedName || null,
+          active: account.Active ?? null,
+          classification: account.Classification || null,
+          accountType: account.AccountType || null,
+          accountSubType: account.AccountSubType || null,
+          currentBalance: account.CurrentBalance
+            ? account.CurrentBalance.toString()
+            : null,
+          currentBalanceWithSubAccounts: account.CurrentBalanceWithSubAccounts
+            ? account.CurrentBalanceWithSubAccounts.toString()
+            : null,
+          currencyRefValue: account.CurrencyRef?.value || null,
+          currencyRefName: account.CurrencyRef?.name || null,
+          domain: account.domain || null,
+          sparse: account.sparse ?? null,
+          syncToken: account.SyncToken || null,
+          metaDataCreateTime,
+          metaDataLastUpdatedTime,
+        };
+
+        const embeddingText = this.buildAccountEmbeddingText(accountData);
+
+        // Check if record exists
+        const [existing] = await db
+          .select()
+          .from(quickbooksAccountsModel)
+          .where(
+            and(
+              eq(quickbooksAccountsModel.userId, userId),
+              eq(quickbooksAccountsModel.quickbooksId, quickbooksId),
+            ),
+          )
+          .limit(1);
+
+        if (existing) {
+          const existingEmbedding =
+            (existing as { embedding?: number[] | null }).embedding ?? null;
+
+          // Compare updated_at timestamps
+          const dbUpdatedAt = existing.metaDataLastUpdatedTime
+            ? new Date(existing.metaDataLastUpdatedTime).getTime()
+            : 0;
+          const qbUpdatedAt = metaDataLastUpdatedTime
+            ? metaDataLastUpdatedTime.getTime()
+            : 0;
+          const embeddingMissing =
+            !existingEmbedding || existingEmbedding.length === 0;
+
+          if (dbUpdatedAt !== qbUpdatedAt || embeddingMissing) {
+            const embedding = embeddingText
+              ? await this.maybeGenerateEmbedding(embeddingText, existingEmbedding)
+              : null;
+
+            await db
+              .update(quickbooksAccountsModel)
+              .set({
+                ...accountData,
+                embedding,
+                updatedAt: new Date(),
+              })
+              .where(eq(quickbooksAccountsModel.id, existing.id));
+            updated++;
+          } else {
+            // Skip - no changes
+            skipped++;
+          }
+        } else {
+          const embedding = embeddingText
+            ? await this.maybeGenerateEmbedding(embeddingText)
+            : null;
+
+          await db.insert(quickbooksAccountsModel).values({
+            ...accountData,
+            embedding,
+            createdAt: metaDataCreateTime || new Date(),
+            updatedAt: metaDataLastUpdatedTime || new Date(),
+          });
+          inserted++;
+        }
+      } catch (error) {
+        console.error(`Error syncing account ${account.Id}:`, error);
+        // Continue with next account
+      }
+    }
+
+    return { inserted, updated, skipped };
   }
 }
 

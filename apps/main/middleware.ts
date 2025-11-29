@@ -6,6 +6,7 @@ const protectedRoutes = [
   "/invoice-review",
   "/integrations",
   "/profile",
+  "/jobs",
 ];
 
 export async function middleware(request: NextRequest) {
@@ -13,7 +14,7 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
 
   // Check if the current route is protected
-  const isProtectedRoute = protectedRoutes.some(route => 
+  const isProtectedRoute = protectedRoutes.some(route =>
     pathname.startsWith(route)
   );
 
@@ -26,10 +27,11 @@ export async function middleware(request: NextRequest) {
   }
 
   // If user is logged in and tries to access auth pages, redirect to dashboard
-  const isAuthPage = ['/sign-in', '/sign-up', '/forgot-password'].some(route => 
+  // The subscription provider will handle payment redirect if needed
+  const isAuthPage = ['/sign-in', '/sign-up', '/forgot-password'].some(route =>
     pathname.startsWith(route)
   );
-  
+
   if (isAuthPage && token) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

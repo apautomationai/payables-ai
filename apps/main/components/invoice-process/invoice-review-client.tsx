@@ -11,6 +11,7 @@ import AttachmentViewer from "./attachment-viewer";
 import InvoiceDetailsForm from "./invoice-details-form";
 import InvoicesList from "./invoices-list";
 import InvoicePdfViewer from "./invoice-pdf-viewer";
+import { DeleteConfirmationDialog } from "./delete-confirmation-dialog";
 import type { Attachment, InvoiceDetails, InvoiceListItem, InvoiceStatus } from "@/lib/types/invoice";
 import { useRealtimeInvoices } from "@/hooks/use-realtime-invoices";
 
@@ -51,7 +52,13 @@ export default function InvoiceReviewClient({
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
-  const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "invoices");
+  const [activeTabState, setActiveTabState] = useState<"attachments" | "invoices">(activeTab || "attachments");
+
+  // Ref to access line item changes from InvoiceDetailsForm
+  const lineItemChangesRef = useRef<{
+    saveLineItemChanges: () => Promise<void>;
+    hasChanges: () => boolean;
+  } | null>(null);
 
   const [selectedAttachmentId, setSelectedAttachmentId] = useState<string | null>(
     attachments?.length > 0 ? attachments[0]!.id : null
@@ -68,9 +75,85 @@ export default function InvoiceReviewClient({
   const [invoicesList, setInvoicesList] = useState<InvoiceListItem[]>(invoices);
 
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
+
+  // Delete dialog state
+  const [deleteDialog, setDeleteDialog] = useState<{
+    open: boolean;
+    type?: 'invoice' | 'attachment';
+    id?: number | string;
+    associatedInvoice?: {
+      invoiceNumber: string;
+      vendorName: string;
+    };
+  }>({ open: false });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [justDeletedInvoiceId, setJustDeletedInvoiceId] = useState<number | null>(null);
+
+  // Clone dialog state
+  const [cloneDialog, setCloneDialog] = useState<{
+    open: boolean;
+    invoiceId?: number;
+    invoiceNumber?: string;
+  }>({ open: false });
+  const [isCloning, setIsCloning] = useState(false);
+
+  // Sync invoices list with prop changes (for pagination)
+  useEffect(() => {
+    // Don't sync if we just deleted an invoice - let local state take precedence
+    if (justDeletedInvoiceId !== null) {
+      // Check if the deleted invoice is still in the props (it shouldn't be after server refresh)
+      const deletedInvoiceStillExists = invoices.some(inv => inv.id === justDeletedInvoiceId);
+      if (!deletedInvoiceStillExists) {
+        // Server has confirmed deletion, clear the flag and sync with props
+        setJustDeletedInvoiceId(null);
+        setInvoicesList(invoices);
+      }
+      // Otherwise, keep using local state until server confirms
+      return;
+    }
+
+    setInvoicesList(invoices);
+
+    // Update selected invoice when invoices change (for pagination)
+    if (invoices?.length > 0) {
+      // If current selection is not in the new list, select the first item
+      const currentInvoiceExists = invoices.some(inv => inv.id === selectedInvoiceId);
+      if (!currentInvoiceExists) {
+        const firstInvoice = invoices[0];
+        if (firstInvoice) {
+          setSelectedInvoiceId(firstInvoice.id);
+
+          // Load details for the first invoice if available in cache
+          const cachedDetails = initialInvoiceCache[firstInvoice.id];
+          if (cachedDetails) {
+            setInvoiceDetails(cachedDetails);
+            setOriginalInvoiceDetails(cachedDetails);
+          }
+        }
+      }
+    } else {
+      setSelectedInvoiceId(null);
+      setInvoiceDetails(null);
+      setOriginalInvoiceDetails(null);
+    }
+  }, [invoices, selectedInvoiceId, initialInvoiceCache, justDeletedInvoiceId]);
+
+  // Update selected attachment when attachments change (for pagination)
+  useEffect(() => {
+    if (attachments?.length > 0) {
+      // If current selection is not in the new list, select the first item
+      const currentAttachmentExists = attachments.some(att => att.id === selectedAttachmentId);
+      if (!currentAttachmentExists && attachments[0]) {
+        setSelectedAttachmentId(attachments[0].id);
+      }
+    } else {
+      setSelectedAttachmentId(null);
+    }
+  }, [attachments, selectedAttachmentId]);
   const [refreshCount, setRefreshCount] = useState(0);
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
     if (invoiceDetails) {
@@ -277,7 +360,7 @@ export default function InvoiceReviewClient({
       console.log('Invoice deleted, refreshing list:', invoiceId);
       refreshInvoiceData();
     },
-    enableToasts: true,
+    enableToasts: false,
     autoConnect: true,
   });
 
@@ -316,6 +399,7 @@ export default function InvoiceReviewClient({
     if (invoice.id === selectedInvoiceId) return;
 
     setIsEditing(false);
+    setHasUnsavedChanges(false);
     setSelectedInvoiceId(invoice.id);
 
     // Check if we have the details in cache
@@ -350,14 +434,39 @@ export default function InvoiceReviewClient({
     }
   };
 
+  const handleTabChange = (newTab: "attachments" | "invoices") => {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('tab', newTab);
+    // Preserve current page numbers
+    router.push(`/invoice-review?${searchParams.toString()}`);
+    setActiveTabState(newTab);
+  };
+
+  const handleAttachmentPageChange = (page: number) => {
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('page', page.toString());
+    // Preserve the current tab
+    if (activeTabState) {
+      searchParams.set('tab', activeTabState);
+    }
+    router.push(`/invoice-review?${searchParams.toString()}`);
+  };
+
   const handleInvoicePageChange = (page: number) => {
-    router.push(`/invoice-review?page=${page}`);
+    const searchParams = new URLSearchParams(window.location.search);
+    searchParams.set('invoicePage', page.toString());
+    // Preserve the current tab
+    if (activeTabState) {
+      searchParams.set('tab', activeTabState);
+    }
+    router.push(`/invoice-review?${searchParams.toString()}`);
   };
 
   const handleDetailsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!invoiceDetails) return;
     const { name, value } = e.target;
     setInvoiceDetails((prev) => (prev ? { ...prev, [name]: value } : null));
+    setHasUnsavedChanges(true);
   };
 
   const handleCancelEdit = () => {
@@ -385,6 +494,14 @@ export default function InvoiceReviewClient({
       // Access the data property from the response
       const updatedData = response?.data;
 
+      // Save line item changes if any
+      if (lineItemChangesRef.current && lineItemChangesRef.current.hasChanges()) {
+        await lineItemChangesRef.current.saveLineItemChanges();
+        toast.success("Invoice and line items saved successfully");
+      } else {
+        toast.success("Invoice saved successfully");
+      }
+
       setInvoiceDetails(updatedData);
       setOriginalInvoiceDetails(updatedData);
       setInvoiceDetailsCache(prevCache => ({
@@ -397,15 +514,8 @@ export default function InvoiceReviewClient({
         updateInvoiceStatusInList(updatedData.id, updatedData.status);
       }
 
-      // Show appropriate success message
-      const statusChanged = invoiceDetails.status !== updatedData?.status;
-      const message = statusChanged
-        ? "Changes saved successfully. Invoice status reset to pending for review."
-        : "Changes saved successfully";
-
-      toast.success(message);
+      setHasUnsavedChanges(false);
       setIsEditing(false);
-      router.refresh();
     } catch (err) {
       toast.error("Failed to save changes");
     }
@@ -433,7 +543,6 @@ export default function InvoiceReviewClient({
       updateInvoiceStatusInList(updatedData.id, "approved");
 
       toast.success("Invoice has been approved");
-      router.refresh();
     } catch (err) {
 
       toast.error("Failed to approve invoice");
@@ -462,7 +571,6 @@ export default function InvoiceReviewClient({
       updateInvoiceStatusInList(updatedData.id, "rejected");
 
       toast.success("Invoice has been rejected");
-      router.refresh();
     } catch (err) {
       toast.error("Failed to reject invoice");
     }
@@ -532,6 +640,233 @@ export default function InvoiceReviewClient({
     }
   };
 
+  // Handle invoice deletion
+  const handleDeleteInvoice = (invoiceId: number) => {
+    setDeleteDialog({
+      open: true,
+      type: 'invoice',
+      id: invoiceId,
+    });
+  };
+
+  const confirmDeleteInvoice = async () => {
+    if (!deleteDialog.id || deleteDialog.type !== 'invoice') return;
+
+    setIsDeleting(true);
+    try {
+      await client.delete(`/api/v1/invoice/invoices/${deleteDialog.id}`);
+
+      toast.success('Invoice deleted successfully');
+
+      // Mark this invoice as just deleted to prevent useEffect from overwriting local state
+      setJustDeletedInvoiceId(deleteDialog.id as number);
+
+      // Remove from local state
+      const remainingInvoices = invoicesList.filter(i => i.id !== deleteDialog.id);
+      setInvoicesList(remainingInvoices);
+
+      // Force re-render by incrementing refresh count
+      setRefreshCount(prev => prev + 1);
+
+      // Remove from cache
+      setInvoiceDetailsCache(prev => {
+        const newCache = { ...prev };
+        delete newCache[deleteDialog.id as number];
+        return newCache;
+      });
+
+      // Auto-select next invoice if deleted invoice was selected
+      if (selectedInvoiceId === deleteDialog.id) {
+        if (remainingInvoices.length > 0) {
+          const nextInvoice = remainingInvoices[0];
+          if (nextInvoice) {
+            setSelectedInvoiceId(nextInvoice.id);
+            // Load details for the next invoice if available in cache
+            const cachedDetails = invoiceDetailsCache[nextInvoice.id];
+            if (cachedDetails) {
+              setInvoiceDetails(cachedDetails);
+              setOriginalInvoiceDetails(cachedDetails);
+            } else {
+              // Fetch details for the next invoice
+              try {
+                const response = await client.get<InvoiceDetails>(`/api/v1/invoice/invoices/${nextInvoice.id}`);
+                const newDetails = response.data;
+                setInvoiceDetails(newDetails);
+                setOriginalInvoiceDetails(newDetails);
+                setInvoiceDetailsCache(prev => ({
+                  ...prev,
+                  [newDetails.id]: newDetails
+                }));
+              } catch (error) {
+                console.error('Error fetching next invoice details:', error);
+              }
+            }
+          }
+        } else {
+          // No invoices remaining - show empty state
+          setSelectedInvoiceId(null);
+          setInvoiceDetails(null);
+          setOriginalInvoiceDetails(null);
+        }
+      }
+
+      // Close dialog
+      setDeleteDialog({ open: false });
+
+      // If we're on a page beyond what's available after deletion, refresh to correct pagination
+      if (remainingInvoices.length === 0 && invoiceCurrentPage > 1) {
+        // Navigate to previous page if current page is now empty
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set('invoicePage', String(invoiceCurrentPage - 1));
+        if (activeTabState) {
+          searchParams.set('tab', activeTabState);
+        }
+        router.push(`/invoice-review?${searchParams.toString()}`);
+      }
+    } catch (error: any) {
+      let errorMessage = 'Failed to delete invoice';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Handle invoice cloning - show confirmation dialog
+  const handleCloneInvoice = (invoiceId: number) => {
+    // Find the invoice to get its number
+    const invoice = invoicesList.find(inv => inv.id === invoiceId);
+    setCloneDialog({
+      open: true,
+      invoiceId,
+      invoiceNumber: invoice?.invoiceNumber || `Invoice #${invoiceId}`,
+    });
+  };
+
+  // Confirm and execute clone
+  const confirmCloneInvoice = async () => {
+    if (!cloneDialog.invoiceId) return;
+
+    setIsCloning(true);
+    try {
+      const response: any = await client.post(`/api/v1/invoice/invoices/${cloneDialog.invoiceId}/clone`);
+
+      if (response.success) {
+        toast.success("Invoice cloned successfully");
+        setCloneDialog({ open: false });
+
+        // Refresh the page to show the new invoice
+        router.refresh();
+      }
+    } catch (error: any) {
+      console.error("Error cloning invoice:", error);
+      toast.error("Failed to clone invoice");
+    } finally {
+      setIsCloning(false);
+    }
+  };
+
+  // Handle attachment deletion
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    try {
+      // Check for associated invoice
+      const response = await client.get(`/api/v1/google/attachments/${attachmentId}/invoice`) as any;
+      const associatedInvoice = response?.data?.data || response?.data || response;
+
+      setDeleteDialog({
+        open: true,
+        type: 'attachment',
+        id: attachmentId,
+        associatedInvoice: associatedInvoice ? {
+          invoiceNumber: associatedInvoice.invoiceNumber,
+          vendorName: associatedInvoice.vendorName,
+        } : undefined,
+      });
+    } catch (error) {
+      // If no associated invoice found, proceed with deletion dialog
+      setDeleteDialog({
+        open: true,
+        type: 'attachment',
+        id: attachmentId,
+      });
+    }
+  };
+
+  const confirmDeleteAttachment = async () => {
+    if (!deleteDialog.id || deleteDialog.type !== 'attachment') return;
+
+    setIsDeleting(true);
+    try {
+      const response = await client.delete(`/api/v1/google/attachments/${deleteDialog.id}`) as any;
+
+      toast.success('Attachment deleted successfully');
+
+      // If associated invoice was also deleted, remove it from invoices list
+      if (response?.deletedInvoice) {
+        const remainingInvoices = invoicesList.filter(i => i.id !== response.deletedInvoice.id);
+        setInvoicesList(remainingInvoices);
+
+        // Force re-render by incrementing refresh count
+        setRefreshCount(prev => prev + 1);
+
+        // Remove from cache
+        setInvoiceDetailsCache(prev => {
+          const newCache = { ...prev };
+          delete newCache[response.deletedInvoice.id];
+          return newCache;
+        });
+
+        // Clear invoice details if it was selected
+        if (selectedInvoiceId === response.deletedInvoice.id) {
+          // Try to select next available invoice
+          if (remainingInvoices.length > 0) {
+            const nextInvoice = remainingInvoices[0];
+            if (nextInvoice) {
+              setSelectedInvoiceId(nextInvoice.id);
+              const cachedDetails = invoiceDetailsCache[nextInvoice.id];
+              if (cachedDetails) {
+                setInvoiceDetails(cachedDetails);
+                setOriginalInvoiceDetails(cachedDetails);
+              }
+            }
+          } else {
+            setSelectedInvoiceId(null);
+            setInvoiceDetails(null);
+            setOriginalInvoiceDetails(null);
+          }
+        }
+      }
+
+      // Close dialog before refresh
+      setDeleteDialog({ open: false });
+
+      // Refresh attachments list (requires page refresh since attachments are props)
+      // Check if we need to navigate to previous page
+      const remainingAttachments = attachments.filter(a => a.id !== deleteDialog.id);
+      if (remainingAttachments.length === 0 && currentPage > 1) {
+        // Navigate to previous page if current page is now empty
+        const searchParams = new URLSearchParams(window.location.search);
+        searchParams.set('page', String(currentPage - 1));
+        if (activeTabState) {
+          searchParams.set('tab', activeTabState);
+        }
+        router.push(`/invoice-review?${searchParams.toString()}`);
+      } else {
+        router.refresh();
+      }
+    } catch (error: any) {
+      let errorMessage = 'Failed to delete attachment';
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   if (!isClient) return null;
 
   const ModernTabs = () => {
@@ -539,7 +874,7 @@ export default function InvoiceReviewClient({
     const sliderRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-      const activeTabIndex = activeTabState === 'invoices' ? 0 : 1;
+      const activeTabIndex = activeTabState === 'attachments' ? 0 : 1;
       const activeTabNode = tabsRef.current[activeTabIndex];
       const sliderNode = sliderRef.current;
 
@@ -555,11 +890,11 @@ export default function InvoiceReviewClient({
           ref={sliderRef}
           className="absolute top-1 bottom-1 bg-background shadow-sm rounded-md transition-all duration-300 ease-in-out"
         />
-        {['invoices', 'attachments'].map((tab, index) => (
+        {['attachments', 'invoices'].map((tab, index) => (
           <button
             key={tab}
             ref={(el) => { tabsRef.current[index] = el; }}
-            onClick={() => setActiveTabState(tab as "invoices" | "attachments")}
+            onClick={() => handleTabChange(tab as "invoices" | "attachments")}
             className={`relative z-10 px-4 py-1.5 text-sm font-semibold transition-colors duration-300 rounded-md focus:outline-none ${activeTabState === tab ? 'text-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
           >
@@ -588,7 +923,9 @@ export default function InvoiceReviewClient({
                   onFileUpload={handleFileUpload}
                   currentPage={currentPage}
                   totalPages={totalPages}
+                  onPageChange={handleAttachmentPageChange}
                   isUploading={isUploading}
+                  onDeleteAttachment={handleDeleteAttachment}
                 />
               </div>
               <div className="md:col-span-8">
@@ -617,6 +954,8 @@ export default function InvoiceReviewClient({
                   currentPage={invoiceCurrentPage}
                   totalPages={invoiceTotalPages}
                   onPageChange={handleInvoicePageChange}
+                  onDeleteInvoice={handleDeleteInvoice}
+                  onCloneInvoice={handleCloneInvoice}
                 />
               </div>
 
@@ -637,6 +976,7 @@ export default function InvoiceReviewClient({
                     )}
                     <InvoiceDetailsForm
                       invoiceDetails={invoiceDetails}
+                      originalInvoiceDetails={originalInvoiceDetails || invoiceDetails}
                       isEditing={isEditing}
                       setIsEditing={setIsEditing}
                       onDetailsChange={handleDetailsChange}
@@ -646,6 +986,13 @@ export default function InvoiceReviewClient({
                       onReject={handleRejectInvoice}
                       onApprove={handleApproveInvoice}
                       onCancel={handleCancelEdit}
+                      onFieldChange={() => setHasUnsavedChanges(true)}
+                      lineItemChangesRef={lineItemChangesRef}
+                      setInvoicesList={setInvoicesList}
+                      setSelectedInvoiceId={setSelectedInvoiceId}
+                      setInvoiceDetails={setInvoiceDetails}
+                      setOriginalInvoiceDetails={setOriginalInvoiceDetails}
+                      setInvoiceDetailsCache={setInvoiceDetailsCache}
                       onApprovalSuccess={() => {
                         // Update the invoice status in the list for real-time UI update
                         if (invoiceDetails) {
@@ -671,13 +1018,48 @@ export default function InvoiceReviewClient({
                 </>
               ) : (
                 <div className="md:col-span-9 flex items-center justify-center rounded-lg border border-dashed text-center text-muted-foreground">
-                  <p>Select an invoice to view its details.</p>
+                  <div className="p-8">
+                    <p className="text-lg font-medium mb-2">
+                      {invoicesList.length === 0 ? 'No invoices available' : 'Select an invoice to view its details'}
+                    </p>
+                    {invoicesList.length === 0 && (
+                      <p className="text-sm">Upload an attachment to create your first invoice.</p>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog({ open })}
+        onConfirm={deleteDialog.type === 'invoice' ? confirmDeleteInvoice : confirmDeleteAttachment}
+        title={deleteDialog.type === 'invoice' ? 'Delete Invoice' : 'Delete Attachment'}
+        description={
+          deleteDialog.type === 'invoice'
+            ? 'Are you sure you want to delete this invoice? This action cannot be undone.'
+            : 'Are you sure you want to delete this attachment? This action cannot be undone.'
+        }
+        associatedInvoice={deleteDialog.associatedInvoice}
+        isDeleting={isDeleting}
+      />
+
+      {/* Clone Confirmation Dialog */}
+      <DeleteConfirmationDialog
+        open={cloneDialog.open}
+        onOpenChange={(open) => setCloneDialog({ open })}
+        onConfirm={confirmCloneInvoice}
+        title="Clone Invoice"
+        description={`Are you sure you want to clone invoice "${cloneDialog.invoiceNumber}"? This will create a duplicate with all line items.`}
+        isDeleting={isCloning}
+        confirmText="Clone"
+        confirmVariant="default"
+      />
+
       <style jsx global>{`
         @keyframes fadeIn {
             from { opacity: 0; }
